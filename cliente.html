@@ -1,133 +1,113 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mi Perfil – Fitness Evolutions Gym</title>
-  <link rel="stylesheet" href="styles.css
-  " />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cliente — FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body class="pantalla-app">
+<body>
 
-  <div class="bg-gym"></div>
+  <!-- Fondo foto del gym -->
+  <div class="gym-bg"></div>
 
-  <div class="app-shell">
+  <div class="page">
 
-    <!-- ── TOPBAR ── -->
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-small">Fitness</span>
-        <span class="brand-big">EVOLUTIONS GYM</span>
+    <!-- ===== NAV SUPERIOR ===== -->
+    <nav class="topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
       </div>
-      <form action="/logout" method="POST">
-        <button type="submit" class="btn-logout">← Salir</button>
-      </form>
-    </header>
+      <img src="assets/account_circle_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png"
+           alt="Avatar" style="width: 32px; margin-left: auto;">
+    </nav>
 
-    <!-- ── SALUDO ── -->
-    <section class="saludo">
-      <!--
-        El backend inyecta el nombre del usuario aquí,
-        ej: "¡Bienvenido, {{ usuario.nombre }}!"
-      -->
-      <h2>¡Bienvenido, Jhoscar!</h2>
-      <div class="sub-row">
-        <p class="sub">Resumen semanal</p>
-        <a href="historial.html">Ver todo</a>
-      </div>
-    </section>
+    <!-- ===== CONTENIDO ===== -->
+    <main class="content">
 
-    <!-- ── GRÁFICO BARRAS DE ASISTENCIA ── -->
-    <section class="chart-card">
-      <h4>Horas por día</h4>
-      <!--
-        Las alturas de las barras las calcula el backend según
-        el registro de asistencia del usuario en la semana actual.
-        Aquí van valores de ejemplo (maqueta estática).
-      -->
-      <div class="barras">
-        <div class="barra-col">
-          <div class="barra" style="height:60%"></div>
-          <span class="dia-label">L</span>
-        </div>
-        <div class="barra-col">
-          <div class="barra" style="height:80%"></div>
-          <span class="dia-label">M</span>
-        </div>
-        <!-- barra del día actual resaltada con clase .hoy -->
-        <div class="barra-col">
-          <div class="barra hoy" style="height:100%"></div>
-          <span class="dia-label">M</span>
-        </div>
-        <div class="barra-col">
-          <div class="barra" style="height:40%"></div>
-          <span class="dia-label">J</span>
-        </div>
-        <div class="barra-col">
-          <div class="barra" style="height:70%"></div>
-          <span class="dia-label">V</span>
-        </div>
-        <div class="barra-col">
-          <div class="barra" style="height:50%"></div>
-          <span class="dia-label">S</span>
-        </div>
-        <div class="barra-col">
-          <div class="barra" style="height:5%"></div>
-          <span class="dia-label">D</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── GESTIÓN DE SUSCRIPCIÓN ── -->
-    <section class="sus-card">
-      <h3>Gestión de Suscripción</h3>
-
-      <div class="sus-fila">
-        <span class="etiq">Tipo de suscripción</span>
-        <!--
-          El backend inyecta el tipo: Mensual, Trimestral, Anual
-          ej: {{ suscripcion.tipo }}
-        -->
-        <span class="badge-tipo">Mensual</span>
+      <!-- Bienvenida -->
+      <div class="fadein">
+        <p class="welcome-sub">Panel de usuario</p>
+        <h1 class="welcome-title">¡Bienvenido, Jhoscar!</h1>
       </div>
 
-      <div class="sus-fila">
-        <span class="etiq">Tiempo restante</span>
-        <!--
-          El backend calcula y pone los días que quedan
-          ej: {{ suscripcion.dias_restantes }} días
-        -->
-        <span class="val">14 días</span>
-      </div>
-
-      <!-- Barra de progreso: width% = (dias_usados / total_dias) * 100 -->
-      <div class="prog-wrap">
-        <div class="prog-labels">
-          <span>Días usados: 16</span>
-          <span>Total: 30</span>
+      <!-- Resumen semanal (gráfica) -->
+      <div class="fadein-2">
+        <div class="section-header">
+          <span class="section-title">Resumen semanal</span>
+          <span class="ver-todo">Ver todo</span>
         </div>
-        <div class="prog-bar">
-          <div class="prog-fill" style="width: 53%"></div>
+
+        <div class="chart-container">
+          <p class="chart-label">Horas por día</p>
+          <div class="bar-chart">
+            <div class="bar-col">
+              <div class="bar" style="height: 40px;"></div>
+              <span class="bar-day">L</span>
+            </div>
+            <div class="bar-col">
+              <div class="bar" style="height: 60px;"></div>
+              <span class="bar-day">M</span>
+            </div>
+            <div class="bar-col">
+              <div class="bar active" style="height: 80px;"></div>
+              <span class="bar-day">M</span>
+            </div>
+            <div class="bar-col">
+              <div class="bar" style="height: 50px;"></div>
+              <span class="bar-day">J</span>
+            </div>
+            <div class="bar-col">
+              <div class="bar" style="height: 30px;"></div>
+              <span class="bar-day">V</span>
+            </div>
+            <div class="bar-col">
+              <div class="bar" style="height: 70px;"></div>
+              <span class="bar-day">S</span>
+            </div>
+            <div class="bar-col">
+              <div class="bar" style="height: 20px;"></div>
+              <span class="bar-day">D</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Botón para renovar/gestionar la suscripción -->
-      <a href="renovar.html" class="btn-renovar">Renovar suscripción</a>
-    </section>
+      <!-- Gestión de suscripción -->
+      <div class="fadein-3">
+        <div class="section-header">
+          <span class="section-title">Gestión de Suscripción</span>
+        </div>
 
-    <!-- ── NAV INFERIOR ── -->
-    <nav class="nav-bottom">
-      <a href="cliente.html" class="nav-tab activo">
-        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="inicio" />
-        <span>Inicio</span>
+        <div class="subs-card">
+          <div class="subs-row">
+            <span class="subs-key">Tipo de suscripción</span>
+            <span class="subs-val orange">Mensual</span>
+          </div>
+          <div class="subs-row">
+            <span class="subs-key">Tiempo restante</span>
+            <span class="subs-val">14 días</span>
+          </div>
+          <a href="#" class="btn-orange">Renovar suscripción</a>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ===== NAV INFERIOR ===== -->
+    <nav class="bottomnav">
+      <a href="cliente.html" class="bot-link active">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio">
+        Inicio
       </a>
-      <a href="calendario.html" class="nav-tab">
-        <img src="assets/calendar_month_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="calendario" />
-        <span>Calendario</span>
+      <a href="#" class="bot-link">
+        <img src="assets/calendar_month_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Calendario">
+        Calendario
       </a>
-      <a href="ajustes-cliente.html" class="nav-tab">
-        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="ajustes" />
-        <span>Ajustes</span>
+      <a href="#" class="bot-link">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+        Ajustes
       </a>
     </nav>
 
