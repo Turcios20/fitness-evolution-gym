@@ -1,0 +1,497 @@
+/* ============================================================
+   estilos.css — Fitness Evolutions Gym
+   Compartido por: login.html, admin.html, cliente.html
+   ============================================================ */
+
+:root {
+  --naranja:   #e87722;
+  --naranja-h: #ff8f3a;
+  --fondo:     #111111;
+  --card:      rgba(28, 28, 28, 0.93);
+  --card2:     rgba(38, 38, 38, 0.95);
+  --borde:     rgba(255, 255, 255, 0.07);
+  --texto:     #e3e3e3;
+  --gris:      #888;
+  --blanco:    #ffffff;
+  --verde:     #4caf50;
+  --rojo:      #e53e3e;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--fondo);
+  color: var(--texto);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 16px;
+}
+
+/* Fondo del gym que se reutiliza en todas las páginas */
+.bg-gym {
+  position: fixed;
+  inset: 0;
+  background: url('assets/Selfit-EVO-1-1200x800-1.jpeg') center / cover no-repeat;
+  filter: brightness(0.28);
+  z-index: 0;
+}
+
+/* ─── Marca / Logo ─── */
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.brand-small {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 4px;
+  color: var(--naranja);
+  text-transform: uppercase;
+}
+
+.brand-big {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--blanco);
+  line-height: 1.15;
+}
+
+/* ════════════════════════════════════════════
+   PANTALLA LOGIN
+   ════════════════════════════════════════════ */
+.pantalla-login {
+  align-items: center;
+}
+
+.login-box {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+/* Logo centrado en el login */
+.logo {
+  text-align: center;
+  padding-top: 24px;
+}
+
+.logo .brand-small {
+  font-size: 0.78rem;
+  letter-spacing: 5px;
+}
+
+.logo .brand-big {
+  font-size: 1.7rem;
+  margin-top: 4px;
+}
+
+/* Formulario de login */
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.campo input,
+.login-form input {
+  width: 100%;
+  background: rgba(55, 55, 55, 0.85);
+  border: 1px solid var(--borde);
+  border-radius: 9px;
+  padding: 14px 16px;
+  color: var(--texto);
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.campo input:focus,
+.login-form input:focus {
+  border-color: var(--naranja);
+}
+
+.campo input::placeholder,
+.login-form input::placeholder {
+  color: var(--gris);
+}
+
+.btn-primary {
+  width: 100%;
+  background: var(--naranja);
+  color: var(--blanco);
+  border: none;
+  border-radius: 9px;
+  padding: 14px;
+  font-size: 0.96rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover { background: var(--naranja-h); }
+
+.login-links {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2px;
+}
+
+.login-links a {
+  color: var(--gris);
+  font-size: 0.82rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.login-links a:hover { color: var(--naranja); }
+
+/* ════════════════════════════════════════════
+   PANTALLAS INTERNAS (admin / cliente)
+   ════════════════════════════════════════════ */
+.pantalla-app {
+  align-items: flex-start;
+}
+
+/* Contenedor principal tipo "app shell" */
+.app-shell {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 48px);
+  gap: 0;
+}
+
+/* ─── Topbar ─── */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px 8px;
+}
+
+.btn-logout {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--gris);
+  border-radius: 8px;
+  padding: 7px 13px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.btn-logout:hover { border-color: var(--naranja); color: var(--naranja); }
+
+/* ─── Saludo ─── */
+.saludo {
+  padding: 8px 18px 16px;
+}
+
+.saludo h2  { font-size: 1.1rem; font-weight: 700; color: var(--blanco); }
+.saludo .sub { font-size: 0.78rem; color: var(--gris); margin-top: 2px; }
+
+.sub-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.sub-row a {
+  font-size: 0.75rem;
+  color: var(--naranja);
+  text-decoration: none;
+}
+
+/* ─── Stats ─── */
+.stats-row {
+  display: flex;
+  gap: 10px;
+  padding: 0 16px 16px;
+}
+
+.stat-card {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 14px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-card .num   { font-size: 1.5rem; font-weight: 700; color: var(--naranja); }
+.stat-card .label { font-size: 0.68rem; color: var(--gris); line-height: 1.3; }
+
+/* ─── Sección lista ─── */
+.lista-section { padding: 0 0 8px; }
+
+.sec-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 18px 10px;
+}
+
+.sec-header h3 { font-size: 0.9rem; font-weight: 600; color: var(--blanco); }
+.sec-header a  { font-size: 0.75rem; color: var(--naranja); text-decoration: none; }
+
+/* ─── Buscador ─── */
+.buscador {
+  position: relative;
+  margin: 0 16px 12px;
+}
+
+.buscador input {
+  width: 100%;
+  background: var(--card2);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 11px 14px 11px 40px;
+  color: var(--texto);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.buscador input:focus { border-color: var(--naranja); }
+.buscador input::placeholder { color: var(--gris); }
+
+.ico-lupa {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  opacity: 0.4;
+}
+
+/* ─── Filas de miembro ─── */
+.miembro-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 13px 14px;
+  margin: 0 16px 8px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.miembro-fila:hover { background: rgba(48, 48, 48, 0.98); }
+
+.miembro-fila .avatar { width: 36px; opacity: 0.75; }
+
+.miembro-fila .info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.miembro-fila .nombre { font-size: 0.88rem; font-weight: 600; color: var(--blanco); }
+.miembro-fila .tipo   { font-size: 0.72rem; color: var(--gris); }
+.miembro-fila .flecha { width: 13px; opacity: 0.3; }
+
+/* Tags de estado */
+.tag {
+  font-size: 0.68rem;
+  padding: 4px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.tag.alerta {
+  border: 1px solid var(--naranja);
+  background: rgba(232, 119, 34, 0.12);
+  color: var(--naranja);
+}
+
+.tag.ok {
+  border: 1px solid var(--verde);
+  background: rgba(76, 175, 80, 0.12);
+  color: var(--verde);
+}
+
+.tag.peligro {
+  border: 1px solid var(--rojo);
+  background: rgba(229, 62, 62, 0.12);
+  color: var(--rojo);
+}
+
+/* ─── Gráfico de barras ─── */
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  margin: 0 16px 14px;
+  padding: 16px;
+}
+
+.chart-card h4 { font-size: 0.8rem; color: var(--gris); margin-bottom: 14px; }
+
+.barras {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 80px;
+}
+
+.barra-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  height: 100%;
+}
+
+.barra {
+  width: 100%;
+  background: rgba(232, 119, 34, 0.28);
+  border: 1px solid rgba(232, 119, 34, 0.5);
+  border-radius: 4px 4px 0 0;
+}
+
+/* La barra del día actual va sólida */
+.barra.hoy {
+  background: var(--naranja);
+  border-color: var(--naranja);
+}
+
+.dia-label { font-size: 0.63rem; color: var(--gris); }
+
+/* ─── Tarjeta suscripción ─── */
+.sus-card {
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  margin: 0 16px 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sus-card h3 { font-size: 0.92rem; font-weight: 600; color: var(--blanco); }
+
+.sus-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sus-fila .etiq { font-size: 0.78rem; color: var(--gris); }
+.sus-fila .val  { font-size: 0.84rem; font-weight: 600; color: var(--blanco); }
+
+.badge-tipo {
+  background: var(--naranja);
+  color: var(--blanco);
+  font-size: 0.7rem;
+  padding: 3px 11px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.prog-wrap { display: flex; flex-direction: column; gap: 5px; }
+
+.prog-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--gris);
+}
+
+.prog-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.prog-fill {
+  height: 100%;
+  background: var(--naranja);
+  border-radius: 10px;
+}
+
+/* Botón renovar suscripción */
+.btn-renovar {
+  display: block;
+  text-align: center;
+  background: transparent;
+  border: 1px solid var(--naranja);
+  color: var(--naranja);
+  border-radius: 9px;
+  padding: 11px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.btn-renovar:hover { background: rgba(232, 119, 34, 0.15); }
+
+/* ─── Nav inferior ─── */
+.nav-bottom {
+  margin-top: auto;
+  background: rgba(14, 14, 14, 0.97);
+  border-top: 1px solid var(--borde);
+  display: flex;
+  padding: 10px 0 16px;
+  position: sticky;
+  bottom: 0;
+}
+
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  opacity: 0.38;
+  transition: opacity 0.2s;
+}
+
+.nav-tab.activo { opacity: 1; }
+
+/* Punto naranja bajo el tab activo */
+.nav-tab.activo::after {
+  content: '';
+  width: 5px;
+  height: 5px;
+  background: var(--naranja);
+  border-radius: 50%;
+  display: block;
+  margin-top: 1px;
+}
+
+.nav-tab img  { width: 22px; }
+.nav-tab span { font-size: 0.6rem; color: var(--texto); }

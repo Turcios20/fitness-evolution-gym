@@ -1,11 +1,140 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin – Fitness Evolutions Gym</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-    
+<body class="pantalla-app">
+
+  <div class="bg-gym"></div>
+
+  <div class="app-shell">
+
+    <!-- ── TOPBAR ── -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-small">Fitness</span>
+        <span class="brand-big">EVOLUTIONS GYM</span>
+      </div>
+      <!--
+        Cerrar sesión: el backend destruye la sesión en /logout
+        Se usa un form POST para que no se pueda hacer logout con un link
+      -->
+      <form action="/logout" method="POST">
+        <button type="submit" class="btn-logout">← Salir</button>
+      </form>
+    </header>
+
+    <!-- ── SALUDO ── -->
+    <section class="saludo">
+      <!--
+        El backend inyecta el nombre del admin aquí dinámicamente,
+        ej: "¡Bienvenido, {{ admin.nombre }}!"
+      -->
+      <h2>¡Bienvenido, administrador!</h2>
+      <p class="sub">Resumen de hoy</p>
+    </section>
+
+    <!-- ── ESTADÍSTICAS DEL DÍA ── -->
+    <section class="stats-row">
+      <!--
+        Estos valores los rellena el backend con datos reales,
+        ej: {{ stats.checkins }}, {{ stats.ingresos }}, {{ stats.nuevos }}
+      -->
+      <div class="stat-card">
+        <span class="num">22</span>
+        <span class="label">Check-ins</span>
+      </div>
+      <div class="stat-card">
+        <span class="num">$440</span>
+        <span class="label">Ingresos</span>
+      </div>
+      <div class="stat-card">
+        <span class="num">3</span>
+        <span class="label">Nuevos miembros</span>
+      </div>
+    </section>
+
+    <!-- ── GESTIÓN DE MIEMBROS ── -->
+    <section class="lista-section">
+
+      <div class="sec-header">
+        <h3>Gestión de miembros</h3>
+        <a href="miembros.html">Ver todo</a>
+      </div>
+
+      <!-- Buscador: el backend recibe el query y filtra los resultados -->
+      <form action="/admin/buscar" method="GET" class="buscador">
+        <img class="ico-lupa" src="assets/search_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="" />
+        <input
+          type="search"
+          name="q"
+          placeholder="Buscar miembro..."
+          autocomplete="off"
+        />
+      </form>
+
+      <!--
+        Esta lista la genera el backend en un loop,
+        ej: {% for miembro in miembros %} ... {% endfor %}
+        Aquí van los datos de ejemplo (maqueta)
+      -->
+
+      <a href="perfil-miembro.html?id=1" class="miembro-fila">
+        <img class="avatar" src="assets/account_circle_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="avatar" />
+        <div class="info">
+          <span class="nombre">Jhoscar Manuel</span>
+          <span class="tipo">Suscripción mensual</span>
+        </div>
+        <span class="tag alerta">14 días restantes</span>
+        <img class="flecha" src="assets/arrow_forward_ios_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="" />
+      </a>
+
+      <a href="perfil-miembro.html?id=2" class="miembro-fila">
+        <img class="avatar" src="assets/account_circle_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="avatar" />
+        <div class="info">
+          <span class="nombre">María González</span>
+          <span class="tipo">Suscripción trimestral</span>
+        </div>
+        <span class="tag ok">45 días restantes</span>
+        <img class="flecha" src="assets/arrow_forward_ios_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="" />
+      </a>
+
+      <a href="perfil-miembro.html?id=3" class="miembro-fila">
+        <img class="avatar" src="assets/account_circle_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="avatar" />
+        <div class="info">
+          <span class="nombre">Carlos Peña</span>
+          <span class="tipo">Suscripción mensual</span>
+        </div>
+        <span class="tag peligro">3 días restantes</span>
+        <img class="flecha" src="assets/arrow_forward_ios_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="" />
+      </a>
+
+    </section>
+
+    <!-- ── NAV INFERIOR ── -->
+    <nav class="nav-bottom">
+      <a href="admin.html" class="nav-tab activo">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="inicio" />
+        <span>Inicio</span>
+      </a>
+      <a href="miembros.html" class="nav-tab">
+        <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="miembros" />
+        <span>Miembros</span>
+      </a>
+      <a href="finanzas.html" class="nav-tab">
+        <img src="assets/attach_money_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="finanzas" />
+        <span>Finanzas</span>
+      </a>
+      <a href="ajustes.html" class="nav-tab">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="ajustes" />
+        <span>Ajustes</span>
+      </a>
+    </nav>
+
+  </div>
+
 </body>
 </html>
