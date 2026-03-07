@@ -1,71 +1,101 @@
-# fitness-evolution-gym
+﻿# Fitness Evolution Gym
 
-## Tutorial rapido (MySQL + Backend + Frontend)
+Proyecto universitario (frontend HTML/CSS + backend Node.js + MySQL).
 
-### 1. Requisitos
+## 1) Requisitos
 
-1. Tener MySQL Server encendido.
-2. Tener Node.js instalado.
-3. Estar en esta carpeta del proyecto.
+- Node.js 18+
+- MySQL Server activo
+- Git
 
-### 2. Configurar credenciales
+## 2) Clonar y preparar
 
-Archivo `.env` actual:
+```bash
+git clone <URL_DEL_REPO>
+cd fitness-evolution-gym
+npm install
+```
+
+## 3) Configurar variables de entorno
+
+1. Copia `.env.example` como `.env`.
+2. Edita `.env` con tu MySQL local.
+
+Ejemplo:
 
 ```env
 PORT=3000
-DB_HOST=localhost
+DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USER=root
-DB_PASSWORD=saenz0909.
+DB_PASSWORD=tu_password
 DB_NAME=fit_focus_db
 ```
 
-Si tu password o usuario real es otro, corrige este archivo antes de seguir.
+## 4) Crear base de datos y tablas
 
-### 3. Crear la base y tablas
+```bash
+npm run init-db
+```
 
-1. Instala dependencias:
-   - `npm install`
-2. Ejecuta el script SQL automaticamente:
-   - `npm run init-db`
+Esto ejecuta `database.sql` (crea DB, tablas y datos de prueba).
 
-Esto ejecuta `database.sql` y crea:
-- `usuarios`
-- `membresias`
-- `rutinas`
-- `pagos`
-- `asistencia`
-- `inventario`
+## 5) Levantar aplicación
 
-Si aparece `Access denied for user 'root'@'localhost'`:
-1. En MySQL Workbench abre una conexion que si te funcione.
-2. Ejecuta:
-   - `ALTER USER 'root'@'localhost' IDENTIFIED BY 'saenz0909.';`
-3. Ejecuta otra vez:
-   - `npm run init-db`
+```bash
+npm start
+```
 
-### 4. Encender API
+Abrir:
+- `http://localhost:3000` -> login
+- `http://localhost:3000/api/health` -> estado API/DB
 
-1. `npm start`
-2. Probar salud de la API:
-   - abrir `http://localhost:3000/api/health`
+## 6) Usuarios de prueba
 
-### 5. Probar login desde el frontend
+- Admin: `admin@victorsgym.com` / `admin123`
+- Cliente: `jhoscar@correo.com` / `cliente123`
 
-Abrir `login.html` e iniciar con:
+## 7) Flujo para el equipo (pull sin romper nada)
 
-1. Admin:
-   - usuario: `admin@victorsgym.com`
-   - password: `admin123`
-2. Cliente:
-   - usuario: `jhoscar@correo.com`
-   - password: `cliente123`
+### Subir cambios (quien desarrolla)
 
-## Endpoints disponibles
+```bash
+git add .
+git commit -m "mensaje"
+git push origin main
+```
 
-1. `GET /api/health`
-2. `POST /api/auth/login`
-   - body: `{ "username": "correo@mail.com", "password": "..." }`
-3. `POST /api/subscription/renew`
-   - body: `{ "username": "correo@mail.com" }`
+### Bajar cambios (compañeros)
+
+```bash
+git pull origin main
+npm install
+```
+
+Luego cada compañero valida su `.env` local y ejecuta:
+
+```bash
+npm run init-db
+npm start
+```
+
+`.env` no se sube al repo (está en `.gitignore`).
+
+## 8) Agregar usuarios manualmente en MySQL Workbench
+
+```sql
+USE fit_focus_db;
+
+INSERT INTO usuarios (nombre_completo, correo, password, rol)
+VALUES ('Maria Lopez', 'maria@correo.com', 'maria123', 'Cliente');
+
+INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)
+VALUES (LAST_INSERT_ID(), 'Mensual', 20.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY), 'Activo');
+```
+
+## 9) Endpoints actuales
+
+- `GET /api/health`
+- `POST /api/auth/login`
+- `GET /api/client/dashboard?username=<correo>`
+- `POST /api/subscription/renew`

@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 document.addEventListener("DOMContentLoaded", () => {
   const session = GymApp.getSession();
@@ -11,9 +11,36 @@ document.addEventListener("DOMContentLoaded", () => {
   const bottomLinks = document.querySelectorAll(".bottomnav .bot-link");
   const bars = document.querySelectorAll(".bar-chart .bar");
   const sectionActions = document.querySelectorAll(".ver-todo");
+  const welcomeTitle = document.querySelector(".welcome-title");
+  const planEl = document.querySelector(".subs-row .subs-val.orange");
   const remainingDaysEl = Array.from(document.querySelectorAll(".subs-row")).find((row) =>
     (row.querySelector(".subs-key")?.textContent || "").toLowerCase().includes("tiempo restante")
   )?.querySelector(".subs-val");
+
+  function renderClientData(data) {
+    const name = data?.name || session.displayName || "Cliente";
+    const plan = data?.subscription?.plan || "Mensual";
+    const days = Number(data?.subscription?.daysRemaining ?? 14);
+
+    if (welcomeTitle) {
+      welcomeTitle.textContent = `¡Bienvenido, ${name}!`;
+    }
+    if (planEl) {
+      planEl.textContent = plan;
+    }
+    if (remainingDaysEl) {
+      remainingDaysEl.textContent = `${days} días`;
+    }
+  }
+
+  async function loadClientData() {
+    try {
+      const data = await GymApp.api(`/api/client/dashboard?username=${encodeURIComponent(session.username)}`);
+      renderClientData(data);
+    } catch {
+      renderClientData(null);
+    }
+  }
 
   bottomLinks.forEach((link) => {
     const href = link.getAttribute("href");
@@ -51,9 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ username: session.username })
         });
 
-        if (remainingDaysEl) {
-          remainingDaysEl.textContent = "30 días";
-        }
+        await loadClientData();
         alert("Suscripción renovada.");
         return;
       } catch {
@@ -66,4 +91,6 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Renovación simulada localmente (sin backend).");
     });
   }
+
+  loadClientData();
 });
