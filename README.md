@@ -1,6 +1,5 @@
 ﻿# Fitness Evolution Gym
 
-Proyecto universitario (frontend HTML/CSS + backend Node.js + MySQL).
 
 ## 1) Requisitos
 
