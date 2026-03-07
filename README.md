@@ -1,5 +1,8 @@
 ﻿# Fitness Evolution Gym
 
+Documentacion completa: `DOCUMENTACION_COMPLETA.md`
+
+
 
 ## 1) Requisitos
 
