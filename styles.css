@@ -525,3 +525,48 @@ body {
 .fadein-2 { animation: fadeUp 0.4s 0.1s ease both; }
 .fadein-3 { animation: fadeUp 0.4s 0.2s ease both; }
 .fadein-4 { animation: fadeUp 0.4s 0.3s ease both; }
+
+
+/*Responsive a la hora de usar el sitio web en celular*/
+@media (max-width: 768px) {
+  .topnav{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+    padding: 10px 0 16px;
+    justify-content: space-around;
+    background: var(--panel);
+    backdrop-filter: blur(16px);
+  }
+
+  .topnav .logo {
+    margin-left: 20px;
+  }
+
+  .topnav .nav-link {
+    flex-direction: column;
+    gap: 4px;
+    font-size: 10px;
+    padding: 4px 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .topnav .nav-link img {
+    width: 22px;
+    height: 22px;
+    opacity: 0.6;
+  }
+
+  .topnav .nav-link.active img {
+    opacity: 1;
+    filter: sepia(1) saturate(5) hue-rotate(-10deg);
+  }
+
+  .page {
+    padding-bottom: 80px;
+  }
+}
