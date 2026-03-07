@@ -10,7 +10,7 @@
 ## 2) Clonar y preparar
 
 ```bash
-git clone <URL_DEL_REPO>
+git clone https://github.com/Turcios20/fitness-evolution-gym
 cd fitness-evolution-gym
 npm install
 ```
