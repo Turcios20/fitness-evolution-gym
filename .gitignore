@@ -27,3 +27,6 @@ dist/
 build/
 .cache/
 coverage/
+
+# Local notes
+REPASO_BACKEND.txt
