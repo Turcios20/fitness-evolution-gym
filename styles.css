@@ -55,10 +55,8 @@ body {
 
 .content {
   flex: 1;
-  padding: 24px 20px;
-  max-width: 480px;
+  padding: 32px 40px;
   width: 100%;
-  margin: 0 auto;
   overflow-y: auto;
 }
 
@@ -572,12 +570,135 @@ body {
 
 
 /*Responsive a la hora de usar el sitio web en celular*/
+/* =============================================
+   DESKTOP — layout de dos columnas
+   ============================================= */
+@media (min-width: 769px) {
+
+  /* El topnav queda arriba fijo */
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  /* Grid de 2 columnas: contenido principal + sidebar */
+  .admin-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 28px;
+    align-items: start;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px 40px;
+    width: 100%;
+  }
+
+  /* Las tarjetas de miembro van en 2 columnas */
+  .members-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  /* Stats más grandes en desktop */
+  .stat-val {
+    font-size: 42px;
+  }
+
+  .stats-row {
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    padding: 20px 14px;
+  }
+
+  /* Sidebar del admin */
+  .admin-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: 80px;
+  }
+
+  .sidebar-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    backdrop-filter: blur(12px);
+  }
+
+  .sidebar-card-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .sidebar-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 13px;
+  }
+
+  .sidebar-stat-row:last-child { border-bottom: none; }
+  .sidebar-stat-row .key { color: var(--text-dim); font-weight: 500; }
+  .sidebar-stat-row .val { font-weight: 700; color: var(--text); }
+  .sidebar-stat-row .val.orange { color: var(--orange); }
+
+  /* Acceso rápido en sidebar */
+  .quick-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    margin-bottom: 6px;
+  }
+
+  .quick-link:last-child { margin-bottom: 0; }
+
+  .quick-link:hover {
+    background: rgba(232,124,42,0.1);
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .quick-link img { width: 18px; opacity: 0.5; }
+}
+
+/* =============================================
+   MÓVIL — nav inferior limpio
+   ============================================= */
 @media (max-width: 768px) {
-  .topnav{
+
+  .content {
+    padding: 20px 16px;
+  }
+
+  /* El nav baja al fondo */
+  .topnav {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
+    top: auto;
     border-top: 1px solid var(--border);
     border-bottom: none;
     padding: 10px 0 16px;
@@ -586,15 +707,16 @@ body {
     backdrop-filter: blur(16px);
   }
 
+  /* El logo NO se muestra en la barra inferior del móvil */
   .topnav .logo {
-    margin-left: 20px;
+    display: none;
   }
 
   .topnav .nav-link {
     flex-direction: column;
     gap: 4px;
     font-size: 10px;
-    padding: 4px 20px;
+    padding: 4px 16px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -610,8 +732,177 @@ body {
     filter: sepia(1) saturate(5) hue-rotate(-10deg);
   }
 
+  /* Espacio para que el contenido no quede debajo del nav */
   .page {
     padding-bottom: 80px;
   }
+
+  /* En móvil el sidebar no se muestra (está dentro del grid) */
+  .admin-sidebar {
+    display: none;
+  }
+
+  .admin-layout {
+    display: block;
+    padding: 0;
+  }
+
+  /* Cards de miembro en 1 columna */
+  .members-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 }
 
+
+/* ===== FORMULARIO AGREGAR CLIENTE ===== */
+.form-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.form-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Select hereda los mismos estilos que input-field */
+.input-select {
+  cursor: pointer;
+  appearance: none;
+  /* Flecha personalizada */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%23888'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+/* Opción dentro del select */
+.input-select option {
+  background: #1a1a1a;
+  color: var(--text);
+}
+
+/* Mensaje de error debajo del campo */
+.form-error {
+  font-size: 11px;
+  color: #e05555;
+  min-height: 14px;
+  font-weight: 600;
+}
+
+/* Mensaje global del formulario (éxito / error) */
+.form-msg {
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.form-msg--ok {
+  background: rgba(31, 143, 79, 0.18);
+  border: 1px solid #1f8f4f;
+  color: #4cdb8e;
+}
+
+.form-msg--error {
+  background: rgba(176, 42, 42, 0.18);
+  border: 1px solid #b33a3a;
+  color: #e07070;
+}
+
+/* Fila de botones del formulario */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.form-submit {
+  flex: 1;
+  margin-top: 0;
+}
+
+.btn-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.btn-cancel:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* Botón pequeño de volver */
+.btn-back {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  transition: color 0.2s;
+}
+
+.btn-back:hover { color: var(--orange); }
+
+/* ===== PÁGINAS PLACEHOLDER (próximamente) ===== */
+.coming-soon-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 24px;
+  text-align: center;
+  backdrop-filter: blur(16px);
+}
+
+.coming-icon {
+  width: 48px;
+  opacity: 0.35;
+  margin-bottom: 14px;
+  filter: sepia(1) saturate(3) hue-rotate(-10deg);
+}
+
+.coming-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.coming-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
