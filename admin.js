@@ -13,7 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const navLinks = document.querySelectorAll(".topnav .nav-link");
   const searchInput = document.querySelector(".search-bar input");
-  const memberSection = document.querySelector(".fadein-3");
+  // El contenedor ahora es .members-grid para el layout de 2 columnas en desktop
+  const memberSection = document.querySelector(".members-grid");
   const memberTemplate = document.querySelector(".member-card");
   const statsValues = document.querySelectorAll(".stat-card .stat-val");
   const welcomeTitle = document.querySelector(".welcome-title");
@@ -182,13 +183,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function ensureCreateButton() {
-    if (!memberSection || memberSection.querySelector(".admin-create-member")) return;
-    const searchBar = memberSection.querySelector(".search-bar");
+    // Evita crear el botón dos veces
+    if (document.querySelector(".admin-create-member")) return;
+    const searchBar = document.querySelector(".search-bar");
     if (!searchBar) return;
 
     const createBtn = createButton("Agregar cliente", "#de7f2f");
     createBtn.className = "admin-create-member";
     createBtn.style.marginLeft = "8px";
+    createBtn.style.whiteSpace = "nowrap";
+    createBtn.style.padding = "8px 14px";
+    createBtn.style.fontSize = "13px";
+    createBtn.style.borderRadius = "8px";
 
     // Redirige al formulario dedicado en lugar de usar prompts
     createBtn.addEventListener("click", () => {
