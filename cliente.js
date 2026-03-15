@@ -2,12 +2,9 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  // Redirige si no hay sesión
+  // Protege la ruta — solo clientes autenticados
+  if (!GymApp.guardRoute("cliente")) return;
   const session = GymApp.getSession();
-  if (!session) {
-    window.location.href = "login.html";
-    return;
-  }
 
   // ── Referencias al DOM ──
   const welcomeTitle  = document.getElementById("welcomeTitle");
@@ -106,7 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   verTodos.forEach((el) => {
     el.style.cursor = "pointer";
-    el.addEventListener("click", () => alert("Vista completa en construcción."));
+    el.addEventListener("click", () => GymApp.toast("Vista completa en construcción.", "info"));
   });
 
   // ── Renovar suscripción ──
@@ -120,10 +117,10 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ username: session.username }),
         });
         await loadClientData();
-        alert("Suscripción renovada.");
+        GymApp.toast("Suscripción renovada exitosamente.", "success");
       } catch {
         if (daysEl) daysEl.textContent = "30 días";
-        alert("Renovación simulada localmente (sin backend).");
+        GymApp.toast("Renovación registrada (modo local).", "info");
       }
     });
   }
