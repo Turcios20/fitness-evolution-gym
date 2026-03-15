@@ -200,15 +200,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const kebabMenu = document.createElement("div");
     kebabMenu.className = "kebab-menu";
     kebabMenu.innerHTML = `
-      <button class="kebab-item" data-action="edit">✏️ Editar</button>
-      <button class="kebab-item" data-action="renew">🔄 Renovar</button>
-      <button class="kebab-item kebab-item--danger" data-action="del">🗑️ Eliminar</button>`;
+      <button class="kebab-item" data-action="edit"> Editar</button>
+      <button class="kebab-item" data-action="renew"> Renovar</button>
+      <button class="kebab-item kebab-item--danger" data-action="del"> Eliminar</button>`;
 
     kebab.addEventListener("click", e => {
       e.stopPropagation();
-      // Cierra otros menús abiertos
-      document.querySelectorAll(".kebab-menu.open").forEach(m => { if (m !== kebabMenu) m.classList.remove("open"); });
-      kebabMenu.classList.toggle("open");
+
+      // Cierra cualquier menú kebab abierto
+      document.querySelectorAll(".kebab-menu.open").forEach(m => m.classList.remove("open"));
+
+      // Posiciona el menú en base al botón (anclado al body para no ser cortado)
+      const rect = kebab.getBoundingClientRect();
+      kebabMenu.style.top  = (rect.bottom + window.scrollY + 6) + "px";
+      kebabMenu.style.left = (rect.right  + window.scrollX - kebabMenu.offsetWidth || rect.left) + "px";
+      kebabMenu.classList.add("open");
+
+      // Ajusta horizontal después de que el menú ya tiene ancho real
+      requestAnimationFrame(() => {
+        const mw = kebabMenu.offsetWidth;
+        kebabMenu.style.left = (rect.right + window.scrollX - mw) + "px";
+      });
     });
     document.addEventListener("click", () => kebabMenu.classList.remove("open"));
 
@@ -269,7 +281,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const kebabWrap = document.createElement("div");
     kebabWrap.className = "kebab-wrap";
     kebabWrap.appendChild(kebab);
-    kebabWrap.appendChild(kebabMenu);
+    // El menú va al body para no ser cortado por overflow del card
+    kebabMenu.className = "kebab-menu kebab-menu--fixed";
+    document.body.appendChild(kebabMenu);
 
     card.appendChild(avatarEl);
     card.appendChild(info);

@@ -1469,20 +1469,25 @@ body {
 .kebab-btn:hover { border-color: var(--orange); color: var(--text); }
 
 .kebab-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
+  /* Por defecto oculto */
+  display: none;
+}
+
+/* Cuando está anclado al body usa position fixed */
+.kebab-menu--fixed {
+  position: fixed;
   background: rgba(16,16,16,0.97);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 4px 0;
-  min-width: 150px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-  z-index: 50;
+  min-width: 160px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.7);
+  z-index: 9999;
   display: none;
 }
 
-.kebab-menu.open { display: block; }
+.kebab-menu.open,
+.kebab-menu--fixed.open { display: block; }
 
 .kebab-item {
   display: flex;
