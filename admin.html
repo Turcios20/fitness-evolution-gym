@@ -25,82 +25,133 @@
         Inicio
       </a>
 
-      <a href="#" class="nav-link">
+      <a href="miembros.html" class="nav-link">
         <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros">
         Miembros
       </a>
 
-      <a href="#" class="nav-link">
+      <a href="finanzas.html" class="nav-link">
         <img src="assets/attach_money_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Finanzas">
         Finanzas
       </a>
 
-      <a href="#" class="nav-link">
+      <a href="ajustes.html" class="nav-link">
         <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
         Ajustes
       </a>
     </nav>
 
     <!-- ===== CONTENIDO ===== -->
-    <main class="content">
+    <!-- En desktop usa grid de 2 columnas; en móvil cae a 1 columna -->
+    <div class="admin-layout">
 
-      <!-- Bienvenida -->
-      <div class="fadein">
-        <p class="welcome-sub">Panel de control</p>
-        <h1 class="welcome-title">¡Bienvenido, administrador!</h1>
-      </div>
+      <!-- ── COLUMNA PRINCIPAL ── -->
+      <main class="content" style="padding:0;">
 
-      <!-- Resumen del día -->
-      <div class="fadein-2">
-        <div class="section-header">
-          <span class="section-title">Resumen de hoy</span>
+        <!-- Bienvenida -->
+        <div class="fadein">
+          <p class="welcome-sub">Panel de control</p>
+          <h1 class="welcome-title">¡Bienvenido, administrador!</h1>
         </div>
 
-        <div class="stats-row">
-          <div class="stat-card">
-            <div class="stat-val">22</div>
-            <div class="stat-label">Check-ins</div>
+        <!-- Resumen del día -->
+        <div class="fadein-2">
+          <div class="section-header">
+            <span class="section-title">Resumen de hoy</span>
           </div>
-          <div class="stat-card">
-            <div class="stat-val">$440</div>
-            <div class="stat-label">Ingresos</div>
+
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-val">22</div>
+              <div class="stat-label">Check-ins</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val">$440</div>
+              <div class="stat-label">Ingresos</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val">3</div>
+              <div class="stat-label">Nuevos miembros</div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-val">3</div>
-            <div class="stat-label">Nuevos miembros</div>
+        </div>
+
+        <!-- Gestión de miembros -->
+        <div class="fadein-3">
+          <div class="section-header">
+            <span class="section-title">Gestión de miembros</span>
+            <span class="ver-todo">Ver todo</span>
+          </div>
+
+          <!-- Buscador + botón agregar -->
+          <div class="search-bar">
+            <img src="assets/search_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Buscar">
+            <input type="text" placeholder="Buscar miembro...">
+          </div>
+
+          <!-- Las tarjetas las genera admin.js en un grid de 2 columnas en desktop -->
+          <div class="members-grid">
+            <div class="member-card">
+              <img class="avatar"
+                   src="assets/account_circle_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png"
+                   alt="Avatar">
+              <div class="member-info">
+                <div class="member-name">Jhoscar Manuel</div>
+                <div class="member-days">14 días restantes</div>
+              </div>
+              <img class="arrow"
+                   src="assets/arrow_forward_ios_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png"
+                   alt="Ver">
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Gestión de miembros -->
-      <div class="fadein-3">
-        <div class="section-header">
-          <span class="section-title">Gestión de miembros</span>
-          <span class="ver-todo">Ver todo</span>
+      </main>
+
+      <!-- ── SIDEBAR (solo desktop) ── -->
+      <aside class="admin-sidebar fadein-2">
+
+        <!-- Acciones rápidas -->
+        <div class="sidebar-card">
+          <div class="sidebar-card-title">Acciones rápidas</div>
+          <a href="form.html" class="quick-link">
+            <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
+            Agregar cliente
+          </a>
+          <a href="finanzas.html" class="quick-link">
+            <img src="assets/attach_money_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
+            Ver finanzas
+          </a>
+          <a href="ajustes.html" class="quick-link">
+            <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
+            Ajustes del sistema
+          </a>
         </div>
 
-        <!-- Buscador -->
-        <div class="search-bar">
-          <img src="assets/search_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Buscar">
-          <input type="text" placeholder="Buscar miembro...">
-        </div>
-
-        <!-- Tarjeta de miembro -->
-        <div class="member-card">
-          <img class="avatar"
-               src="assets/account_circle_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png"
-               alt="Avatar">
-          <div class="member-info">
-            <div class="member-name">Jhoscar Manuel</div>
-            <div class="member-days">14 días restantes</div>
+        <!-- Resumen rápido -->
+        <div class="sidebar-card">
+          <div class="sidebar-card-title">Resumen del mes</div>
+          <div class="sidebar-stat-row">
+            <span class="key">Total miembros</span>
+            <span class="val" id="total-miembros">—</span>
           </div>
-          <img class="arrow"
-               src="assets/arrow_forward_ios_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png"
-               alt="Ver">
+          <div class="sidebar-stat-row">
+            <span class="key">Activos</span>
+            <span class="val orange">—</span>
+          </div>
+          <div class="sidebar-stat-row">
+            <span class="key">Por vencer (7 días)</span>
+            <span class="val">—</span>
+          </div>
+          <div class="sidebar-stat-row">
+            <span class="key">Ingresos del mes</span>
+            <span class="val orange">$—</span>
+          </div>
         </div>
-      </div>
 
-    </main>
+      </aside>
+
+    </div><!-- fin .admin-layout -->
   </div>
 
   <script src="common.js"></script>
