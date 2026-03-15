@@ -906,3 +906,365 @@ body {
   color: var(--text-dim);
   font-weight: 500;
 }
+
+/* =============================================
+   CLIENTE — topnav propio y avatar de iniciales
+   ============================================= */
+
+/* Topnav del cliente: logo a la izq, avatar a la derecha */
+.cliente-topnav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
+}
+
+/* Contenedor del avatar + dropdown */
+.user-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Círculo con iniciales */
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+  border: 2px solid rgba(255,255,255,0.12);
+  transition: border-color 0.2s, transform 0.15s;
+  /* Glow sutil igual al ejemplo */
+  box-shadow: 0 0 10px rgba(232,124,42,0.3);
+}
+
+.user-avatar:hover {
+  border-color: var(--orange);
+  transform: scale(1.06);
+  box-shadow: 0 0 16px rgba(232,124,42,0.55);
+}
+
+/* Dropdown de sesión — oculto por defecto */
+.avatar-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 180px;
+  background: rgba(18,18,18,0.97);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 0;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  /* Oculto hasta que tenga .open */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 0.18s, transform 0.18s;
+  z-index: 50;
+}
+
+.avatar-dropdown.open {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+
+.dropdown-name {
+  padding: 10px 16px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 4px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 16px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dropdown-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+}
+
+.dropdown-logout {
+  color: #e05555;
+}
+
+.dropdown-logout:hover {
+  background: rgba(224,85,85,0.1);
+  color: #e87070;
+}
+
+/* =============================================
+   CLIENTE — layout de 2 columnas en desktop
+   ============================================= */
+@media (min-width: 769px) {
+
+  /* Limita el contenido del cliente a un ancho legible */
+  .cliente-content {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 32px 40px 120px;
+  }
+
+  /* Las barras del chart no se estiran al infinito */
+  .chart-container {
+    max-width: 100%;
+  }
+
+  .bar-chart {
+    height: 100px;
+  }
+
+  /* Catálogo de planes en 3 columnas */
+  .catalog-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* El nav inferior del cliente también queda fijo y centrado */
+  .cliente-page .bottomnav {
+    padding: 10px 0 14px;
+  }
+}
+
+/* =============================================
+   MÓVIL — cliente
+   ============================================= */
+@media (max-width: 768px) {
+  .cliente-content {
+    padding: 16px 16px 110px;
+  }
+
+  .catalog-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =============================================
+   MODALES PERSONALIZADOS (gym-modal)
+   ============================================= */
+
+/* Overlay oscuro que cubre toda la pantalla */
+.gym-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+/* Caja del modal */
+.gym-modal-box {
+  background: rgba(16, 16, 16, 0.97);
+  border: 1px solid rgba(232, 124, 42, 0.2);
+  border-radius: 16px;
+  padding: 28px 24px 24px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+}
+
+/* Burbuja grande de iniciales */
+.gm-avatar-big {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  color: #fff;
+  margin: 0 auto 16px;
+  box-shadow: 0 0 20px rgba(232,124,42,0.35);
+  border: 2px solid rgba(255,255,255,0.12);
+}
+
+.gm-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 1.5px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.gm-body {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.gm-body strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Fila de botones */
+.gm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.gm-btn {
+  flex: 1;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 9px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.18s, transform 0.12s;
+  letter-spacing: 0.4px;
+}
+
+.gm-btn:hover { opacity: 0.85; transform: scale(1.02); }
+.gm-btn:active { transform: scale(0.98); }
+
+.gm-btn-cancel  { background: rgba(255,255,255,0.07); color: var(--text-dim); border: 1px solid rgba(255,255,255,0.1); }
+.gm-btn-danger  { background: #b33a3a; color: #fff; }
+.gm-btn-primary { background: var(--orange); color: #fff; }
+
+/* ── Grid de planes en el modal Renovar ── */
+.gm-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 4px 0 4px;
+}
+
+.gm-plan-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(232,124,42,0.25);
+  border-radius: 10px;
+  padding: 14px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: border-color 0.18s, background 0.18s;
+  text-align: center;
+}
+
+.gm-plan-card:hover:not([disabled]) {
+  border-color: var(--orange);
+  background: rgba(232,124,42,0.12);
+}
+
+.gm-plan-name  { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: 0.4px; }
+.gm-plan-price { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--orange); line-height: 1; }
+.gm-plan-days  { font-size: 11px; color: var(--text-dim); }
+
+/* Plan deshabilitado */
+.gm-plan-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: rgba(255,255,255,0.06);
+}
+
+.gm-plan-soon {
+  font-size: 10px;
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-top: 4px;
+}
+
+/* ── Formulario dentro del modal Editar ── */
+.gm-form {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 4px 0 4px;
+}
+
+.gm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.gm-field label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.gm-input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.18s;
+  appearance: none;
+}
+
+.gm-input:focus { border-color: var(--orange); }
+.gm-input option { background: #1a1a1a; }
+
+.gm-error {
+  font-size: 11px;
+  color: #e05555;
+  min-height: 14px;
+  font-weight: 600;
+}
+
+/* =============================================
+   AVATAR DE INICIALES EN LAS TARJETAS DE MIEMBRO
+   ============================================= */
+.member-avatar-initials {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px;
+  color: #fff;
+  flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,0.1);
+}
