@@ -1268,3 +1268,273 @@ body {
   flex-shrink: 0;
   border: 2px solid rgba(255,255,255,0.1);
 }
+
+/* =============================================
+   TOASTS
+   ============================================= */
+#gym-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.gym-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(18,18,18,0.97);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  min-width: 220px;
+  max-width: 340px;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: all;
+}
+
+.gym-toast--show  { opacity: 1; transform: translateX(0); }
+.gym-toast--hide  { opacity: 0; transform: translateX(20px); }
+
+.gym-toast-icon   { font-size: 16px; flex-shrink: 0; }
+
+.gym-toast--success { border-color: rgba(31,143,79,0.5); }
+.gym-toast--success .gym-toast-icon { color: #4cdb8e; }
+
+.gym-toast--error { border-color: rgba(179,58,58,0.5); }
+.gym-toast--error .gym-toast-icon { color: #e07070; }
+
+.gym-toast--info  { border-color: rgba(232,124,42,0.35); }
+.gym-toast--info  .gym-toast-icon { color: var(--orange); }
+
+@media (max-width: 768px) {
+  #gym-toast-container {
+    bottom: 90px; /* sobre el nav inferior */
+    right: 12px;
+    left: 12px;
+  }
+  .gym-toast { max-width: 100%; }
+}
+
+/* =============================================
+   BADGES DE ESTADO EN TARJETAS
+   ============================================= */
+.member-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+
+.badge-ok       { background: rgba(31,143,79,0.18);  color: #4cdb8e; border: 1px solid rgba(31,143,79,0.4); }
+.badge-warn     { background: rgba(220,160,0,0.18);  color: #f0c040; border: 1px solid rgba(220,160,0,0.4); }
+.badge-danger   { background: rgba(179,58,58,0.18);  color: #e07070; border: 1px solid rgba(179,58,58,0.5); }
+.badge-expired  { background: rgba(100,100,100,0.18);color: #888;    border: 1px solid rgba(100,100,100,0.4);}
+.badge-inactive { background: rgba(100,100,100,0.18);color: #888;    border: 1px solid rgba(100,100,100,0.4);}
+
+/* =============================================
+   SKELETON LOADERS
+   ============================================= */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.skeleton-card {
+  pointer-events: none;
+  border-color: rgba(255,255,255,0.04) !important;
+}
+
+.sk-circle {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #1e1e1e 25%, #2a2a2a 50%, #1e1e1e 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.2s infinite linear;
+  flex-shrink: 0;
+}
+
+.sk-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+.sk-line {
+  height: 12px; border-radius: 6px;
+  background: linear-gradient(90deg, #1e1e1e 25%, #2a2a2a 50%, #1e1e1e 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+
+.sk-line--w70 { width: 70%; }
+.sk-line--w50 { width: 50%; }
+
+/* =============================================
+   ANIMACIÓN FADE-OUT AL ELIMINAR
+   ============================================= */
+@keyframes cardFadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.94); }
+}
+
+.card-fade-out {
+  animation: cardFadeOut 0.28s ease forwards;
+  pointer-events: none;
+}
+
+/* =============================================
+   FILTROS
+   ============================================= */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.filter-pill {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.filter-pill:hover { border-color: var(--orange); color: var(--text); }
+
+.filter-pill.active {
+  background: rgba(232,124,42,0.18);
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* =============================================
+   MENÚ KEBAB (··· móvil)
+   ============================================= */
+.member-actions-desktop {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.kebab-wrap {
+  position: relative;
+  display: none; /* solo visible en móvil */
+  margin-left: auto;
+}
+
+.kebab-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s;
+}
+
+.kebab-btn:hover { border-color: var(--orange); color: var(--text); }
+
+.kebab-menu {
+  /* Por defecto oculto */
+  display: none;
+}
+
+/* Cuando está anclado al body usa position fixed */
+.kebab-menu--fixed {
+  position: fixed;
+  background: rgba(16,16,16,0.97);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 0;
+  min-width: 160px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.7);
+  z-index: 9999;
+  display: none;
+}
+
+.kebab-menu.open,
+.kebab-menu--fixed.open { display: block; }
+
+.kebab-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+
+.kebab-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.kebab-item--danger { color: #e05555; }
+.kebab-item--danger:hover { background: rgba(224,85,85,0.1); color: #e87070; }
+
+/* En móvil: ocultar botones y mostrar kebab */
+@media (max-width: 768px) {
+  .member-actions-desktop { display: none; }
+  .kebab-wrap { display: block; }
+
+  /* Buscador y botón agregar en columna en móvil */
+  .search-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .search-bar input { min-width: 0; flex: 1; }
+
+  .admin-create-member {
+    width: 100%;
+    margin-left: 0 !important;
+    text-align: center;
+  }
+}
+
+/* Tarjeta vacía */
+.member-card--empty {
+  grid-column: 1 / -1;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: default;
+}
