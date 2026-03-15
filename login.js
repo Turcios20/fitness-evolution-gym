@@ -14,6 +14,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loginButton.addEventListener("click", async (event) => {
     event.preventDefault();
+    await doLogin();
+  });
+
+  // Soporte para Enter en cualquiera de los dos campos
+  [usernameInput, passwordInput].forEach((input) => {
+    input.addEventListener("keydown", async (e) => {
+      if (e.key === "Enter") await doLogin();
+    });
+  });
+
+  async function doLogin() {
 
     const username = usernameInput.value.trim();
     const password = passwordInput.value.trim();
@@ -70,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     window.location.href = matchedUser.role === "admin" ? "admin.html" : "cliente.html";
-  });
+  }
 
   helperLinks.forEach((link) => {
     link.addEventListener("click", (event) => {
