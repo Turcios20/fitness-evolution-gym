@@ -190,27 +190,9 @@ document.addEventListener("DOMContentLoaded", () => {
     createBtn.className = "admin-create-member";
     createBtn.style.marginLeft = "8px";
 
-    createBtn.addEventListener("click", async () => {
-      const name = prompt("Nombre completo");
-      if (!name) return;
-      const email = prompt("Correo");
-      if (!email) return;
-      const password = prompt("Password");
-      if (!password) return;
-      const plan = prompt("Plan", "Mensual") || "Mensual";
-      const priceRaw = prompt("Precio", "20");
-      const price = Number(priceRaw || "20");
-
-      try {
-        await GymApp.api("/api/admin/members", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, role: "cliente", plan, price })
-        });
-        await loadMembers();
-      } catch (error) {
-        alert(`No se pudo crear: ${error.message}`);
-      }
+    // Redirige al formulario dedicado en lugar de usar prompts
+    createBtn.addEventListener("click", () => {
+      window.location.href = "form.html";
     });
 
     searchBar.appendChild(createBtn);
