@@ -154,7 +154,7 @@ Nota:
 
 - Si el servicio o la base de datos pasan mucho tiempo inactivos, el proveedor puede suspenderlos temporalmente. En ese caso hay que reactivarlos manualmente desde el panel del proveedor antes de volver a usar la app.
 
-Pasos sugeridos:
+Pasos:
 
 1. Sube la rama de despliegue a GitHub.
 2. Crea una base MySQL remota.
