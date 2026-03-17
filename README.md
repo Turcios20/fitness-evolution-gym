@@ -32,6 +32,8 @@ DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=tu_password
 DB_NAME=fit_focus_db
+DB_SSL=false
+DB_SSL_REJECT_UNAUTHORIZED=true
 ```
 
 ## 4) Crear base de datos y tablas
@@ -51,6 +53,33 @@ npm start
 Abrir:
 - `http://localhost:3000` -> login
 - `http://localhost:3000/api/health` -> estado API/DB
+
+## 5.1) Preparado para despliegue
+
+El proyecto ya incluye archivos para desplegarse como una sola app Node.js:
+
+- `render.yaml` para crear el servicio web en Render.
+- `database.production.sql` para crear tablas y datos base sin borrar la base remota.
+- `npm run init-db:prod` para inicializar una base de datos ya creada en un proveedor externo.
+
+Variables de entorno recomendadas para produccion:
+
+```env
+PORT=10000
+DB_HOST=tu-host-remoto
+DB_PORT=3306
+DB_USER=tu-usuario
+DB_PASSWORD=tu-password
+DB_NAME=tu-base
+DB_SSL=true
+DB_SSL_REJECT_UNAUTHORIZED=false
+```
+
+Notas:
+
+- `database.sql` sigue siendo solo para local porque elimina y recrea la base completa.
+- `database.production.sql` no elimina la base y puede usarse en servidores.
+- Para proveedores como Aiven suele ser necesario `DB_SSL=true`.
 
 ## 6) Usuarios de prueba
 
@@ -101,3 +130,12 @@ VALUES (LAST_INSERT_ID(), 'Mensual', 20.00, CURDATE(), DATE_ADD(CURDATE(), INTER
 - `POST /api/auth/login`
 - `GET /api/client/dashboard?username=<correo>`
 - `POST /api/subscription/renew`
+
+## 10) Flujo sugerido de despliegue
+
+1. Subir la rama de despliegue a GitHub.
+2. Crear una base MySQL remota.
+3. Crear el servicio web en Render usando este repositorio.
+4. Configurar las variables `DB_*` en Render.
+5. Ejecutar `npm run init-db:prod` apuntando a la base remota.
+6. Abrir la URL publica generada por Render.

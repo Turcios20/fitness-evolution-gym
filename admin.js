@@ -32,6 +32,38 @@ document.addEventListener("DOMContentLoaded", () => {
     return p[(initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % p.length];
   }
 
+  function initializeSidebar() {
+    const sidebarCards = document.querySelectorAll(".admin-sidebar .sidebar-card");
+    const alertCard = sidebarCards[0];
+    const summaryCard = sidebarCards[1];
+
+    if (alertCard) {
+      alertCard.classList.add("sidebar-card--alerts");
+      alertCard.innerHTML = `
+        <div class="sidebar-card-title">Alertas y tareas pendientes</div>
+        <p class="sidebar-card-copy">
+          Un espacio dedicado a lo que requiere atencion inmediata.
+        </p>
+        <div class="alert-list" id="alert-list">
+          <div class="alert-item">
+            <div class="alert-badge alert-badge--warn">Hoy</div>
+            <div class="alert-content">
+              <div class="alert-title">Cargando alertas</div>
+              <div class="alert-text">Estamos revisando membresias, vencimientos y estados.</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (summaryCard) {
+      const rows = summaryCard.querySelectorAll(".sidebar-stat-row");
+      if (rows[1]) rows[1].querySelector(".val")?.setAttribute("id", "active-miembros");
+      if (rows[2]) rows[2].querySelector(".val")?.setAttribute("id", "expiring-miembros");
+      if (rows[3]) rows[3].querySelector(".val")?.setAttribute("id", "monthly-income");
+    }
+  }
+
   // ─────────────────────────────────────────────
   // SISTEMA DE MODALES
   // ─────────────────────────────────────────────
@@ -146,6 +178,90 @@ document.addEventListener("DOMContentLoaded", () => {
     if (days <= 7)  return '<span class="member-badge badge-danger">' + days + ' días</span>';
     if (days <= 15) return '<span class="member-badge badge-warn">'   + days + ' días</span>';
     return '<span class="member-badge badge-ok">' + days + ' días</span>';
+  }
+
+  function renderAlerts(list) {
+    const alertList = document.querySelector("#alert-list");
+    if (!alertList) return;
+
+    const expiringSoon = list.filter(member => {
+      const membership = member.membership;
+      return membership?.status === "Activo" && Number(membership.daysRemaining || 0) <= 7;
+    });
+
+    const inactiveMembers = list.filter(member => member.membership?.status === "Inactivo");
+    const withoutPlan = list.filter(member => !member.membership);
+
+    const alerts = [];
+
+    if (expiringSoon.length) {
+      alerts.push({
+        badge: "Hoy",
+        tone: "warn",
+        title: `${expiringSoon.length} membresias por vencer`,
+        text: "Revisa renovaciones con prioridad para evitar cortes de acceso."
+      });
+    }
+
+    if (inactiveMembers.length) {
+      alerts.push({
+        badge: "Seguimiento",
+        tone: "soft",
+        title: `${inactiveMembers.length} clientes inactivos`,
+        text: "Conviene validar si siguen en pausa o si necesitan reactivacion."
+      });
+    }
+
+    if (withoutPlan.length) {
+      alerts.push({
+        badge: "Pendiente",
+        tone: "danger",
+        title: `${withoutPlan.length} registros sin membresia`,
+        text: "Hay perfiles creados que todavia no tienen un plan activo asignado."
+      });
+    }
+
+    if (!alerts.length) {
+      alerts.push({
+        badge: "Estable",
+        tone: "ok",
+        title: "No hay alertas criticas",
+        text: "El panel esta al dia. Puedes concentrarte en nuevas altas y seguimiento."
+      });
+    }
+
+    alertList.innerHTML = alerts.map(alert => `
+      <div class="alert-item">
+        <div class="alert-badge alert-badge--${alert.tone}">${alert.badge}</div>
+        <div class="alert-content">
+          <div class="alert-title">${alert.title}</div>
+          <div class="alert-text">${alert.text}</div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function renderSidebarSummary(list) {
+    const totalMembersEl = document.querySelector("#total-miembros");
+    const activeMembersEl = document.querySelector("#active-miembros");
+    const expiringMembersEl = document.querySelector("#expiring-miembros");
+    const monthlyIncomeEl = document.querySelector("#monthly-income");
+
+    if (totalMembersEl) totalMembersEl.textContent = String(list.length);
+
+    const activeMembers = list.filter(member => member.membership?.status === "Activo").length;
+    const expiringMembers = list.filter(member => {
+      const membership = member.membership;
+      return membership?.status === "Activo" && Number(membership.daysRemaining || 0) <= 7;
+    }).length;
+    const monthlyIncome = list.reduce((sum, member) => {
+      if (member.membership?.status !== "Activo") return sum;
+      return sum + Number(member.membership.price || 0);
+    }, 0);
+
+    if (activeMembersEl) activeMembersEl.textContent = String(activeMembers);
+    if (expiringMembersEl) expiringMembersEl.textContent = String(expiringMembers);
+    if (monthlyIncomeEl) monthlyIncomeEl.textContent = `$${monthlyIncome}`;
   }
 
   // ─────────────────────────────────────────────
@@ -391,6 +507,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await GymApp.api("/api/admin/members");
       members = data.members || [];
       if (statsValues[2]) statsValues[2].textContent = String(data.total ?? members.length);
+      renderAlerts(members);
+      renderSidebarSummary(members);
       buildFilters();
       applyFilters();
     } catch (err) {
@@ -402,6 +520,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (searchInput)   searchInput.addEventListener("input", applyFilters);
   if (memberTemplate) memberTemplate.remove();
 
+  initializeSidebar();
   ensureCreateButton();
   loadMembers();
 });

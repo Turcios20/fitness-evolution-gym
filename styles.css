@@ -1538,3 +1538,90 @@ body {
   font-size: 14px;
   cursor: default;
 }
+
+@media (min-width: 769px) {
+  .sidebar-card-copy {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .alert-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .alert-item {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 12px;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)),
+      rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .alert-badge {
+    min-width: 82px;
+    max-width: 82px;
+    flex: 0 0 82px;
+    align-self: flex-start;
+    border-radius: 999px;
+    padding: 4px 8px;
+    text-align: center;
+    font-size: 9px;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .alert-badge--warn {
+    background: rgba(232,124,42,0.14);
+    border-color: rgba(232,124,42,0.35);
+    color: var(--orange);
+  }
+
+  .alert-badge--danger {
+    background: rgba(179,58,58,0.14);
+    border-color: rgba(179,58,58,0.35);
+    color: #e07070;
+  }
+
+  .alert-badge--ok {
+    background: rgba(31,143,79,0.14);
+    border-color: rgba(31,143,79,0.35);
+    color: #4cdb8e;
+  }
+
+  .alert-badge--soft {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.1);
+    color: #d2d2d2;
+  }
+
+  .alert-content {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .alert-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .alert-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-dim);
+  }
+}
