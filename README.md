@@ -146,6 +146,10 @@ Ejemplo de renovacion:
 
 El proyecto ya incluye `render.yaml` para desplegar una sola app Node.js en Render.
 
+URL publica actual:
+
+- `https://fitness-evolution-gym.onrender.com/`
+
 Pasos sugeridos:
 
 1. Sube la rama de despliegue a GitHub.
