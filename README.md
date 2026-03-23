@@ -4,21 +4,20 @@ Aplicacion web para gestionar miembros, membresias e inicio de sesion de un gimn
 
 Documentacion adicional: [DOCUMENTACION_COMPLETA.md](DOCUMENTACION_COMPLETA.md)
 
+## Que incluye
+
+- Gestion de miembros y renovaciones
+- Login para administrador y cliente
+- Frontend estatico + API Express
+- Base de datos MySQL
+
 ## Requisitos
 
 - Node.js 18 o superior
-- MySQL Server disponible
+- MySQL Server
 - Git
 
-## Estructura principal
-
-- `backend/server.js`: servidor Express y endpoints de la API
-- `backend/db.js`: pool de conexion MySQL
-- `backend/init-db.js`: inicializacion local con `database.sql`
-- `backend/init-db-prod.js`: inicializacion remota con `database.production.sql`
-- `render.yaml`: configuracion de despliegue en Render
-
-## Instalacion local
+## Puesta en marcha
 
 ```bash
 git clone https://github.com/Turcios20/fitness-evolution-gym
@@ -26,12 +25,26 @@ cd fitness-evolution-gym
 npm install
 ```
 
-## Variables de entorno
-
 1. Copia `.env.example` a `.env`.
-2. Ajusta los valores para tu entorno MySQL.
+2. Ajusta la conexion MySQL.
+3. Inicializa la base local:
 
-Ejemplo para desarrollo local:
+```bash
+npm run init-db
+```
+
+4. Inicia la app:
+
+```bash
+npm start
+```
+
+Rutas principales:
+
+- `http://localhost:3000/`
+- `http://localhost:3000/api/health`
+
+## Variables de entorno
 
 ```env
 PORT=3000
@@ -44,54 +57,35 @@ DB_SSL=false
 DB_SSL_REJECT_UNAUTHORIZED=true
 ```
 
-Descripcion de variables:
+- `PORT`: puerto del servidor
+- `DB_HOST`, `DB_PORT`: conexion MySQL
+- `DB_USER`, `DB_PASSWORD`: credenciales
+- `DB_NAME`: nombre de la base
+- `DB_SSL`: activa SSL en remoto
+- `DB_SSL_REJECT_UNAUTHORIZED`: valida certificado SSL
 
-- `PORT`: puerto del servidor Express
-- `DB_HOST`: host de MySQL
-- `DB_PORT`: puerto de MySQL
-- `DB_USER`: usuario de la base
-- `DB_PASSWORD`: password de la base
-- `DB_NAME`: nombre de la base de datos
-- `DB_SSL`: activa SSL para conexiones remotas
-- `DB_SSL_REJECT_UNAUTHORIZED`: valida o no el certificado SSL
+`npm run init-db` ejecuta `database.sql` y recrea la base completa, asi que debe usarse solo en desarrollo local.
 
-## Base de datos local
+## Acceso y API
 
-Para crear la base, tablas y datos de prueba:
-
-```bash
-npm run init-db
-```
-
-Este comando ejecuta `database.sql`. Ese archivo recrea la base completa, por lo que debe usarse solo en desarrollo local.
-
-## Ejecutar la aplicacion
-
-```bash
-npm start
-```
-
-Rutas principales:
-
-- `http://localhost:3000/` carga `login.html`
-- `http://localhost:3000/api/health` valida conexion con la base
-
-## Usuarios de prueba
+Usuarios de prueba:
 
 - Admin: `admin@victorsgym.com` / `admin123`
 - Cliente: `jhoscar@correo.com` / `cliente123`
 
-## API disponible
-
-### Salud del servicio
+Endpoints principales:
 
 - `GET /api/health`
-
-### Autenticacion
-
 - `POST /api/auth/login`
+- `GET /api/client/dashboard?username=<correo>`
+- `POST /api/subscription/renew`
+- `GET /api/admin/members`
+- `POST /api/admin/members`
+- `PUT /api/admin/members/:id`
+- `POST /api/admin/members/:id/renew`
+- `DELETE /api/admin/members/:id`
 
-Body:
+Ejemplo de login:
 
 ```json
 {
@@ -100,70 +94,24 @@ Body:
 }
 ```
 
-### Cliente
+## Estructura del proyecto
 
-- `GET /api/client/dashboard?username=<correo>`
-- `POST /api/subscription/renew`
-
-Body:
-
-```json
-{
-  "username": "jhoscar@correo.com"
-}
-```
-
-### Administracion de miembros
-
-- `GET /api/admin/members`
-- `POST /api/admin/members`
-- `PUT /api/admin/members/:id`
-- `POST /api/admin/members/:id/renew`
-- `DELETE /api/admin/members/:id`
-
-Ejemplo de creacion:
-
-```json
-{
-  "name": "Maria Lopez",
-  "email": "maria@correo.com",
-  "password": "maria123",
-  "role": "cliente",
-  "plan": "Mensual",
-  "price": 20
-}
-```
-
-Ejemplo de renovacion:
-
-```json
-{
-  "days": 30
-}
-```
+- `backend/server.js`: servidor y API
+- `backend/db.js`: conexion MySQL
+- `backend/init-db.js`: carga `database.sql`
+- `backend/init-db-prod.js`: carga `database.production.sql`
+- `render.yaml`: configuracion de despliegue
 
 ## Despliegue en Render
 
-El proyecto ya incluye `render.yaml` para desplegar una sola app Node.js en Render.
+El proyecto incluye `render.yaml` para desplegar una sola app Node.js.
 
-URL publica actual:
-
-- `https://fitness-evolution-gym.onrender.com/`
-
-Nota:
-
-- Si el servicio o la base de datos pasan mucho tiempo inactivos, el proveedor puede suspenderlos temporalmente. En ese caso hay que reactivarlos manualmente desde el panel del proveedor antes de volver a usar la app.
-
-Pasos:
-
-1. Sube la rama de despliegue a GitHub.
+1. Sube el repositorio a GitHub.
 2. Crea una base MySQL remota.
-3. Crea el servicio web en Render usando este repositorio.
-4. Configura las variables `DB_*` del servicio.
-5. Ejecuta `npm run init-db:prod` contra la base remota.
-6. Verifica `/api/health` y luego abre la URL publica.
-
-Variables recomendadas para produccion:
+3. Crea el servicio en Render.
+4. Configura las variables `DB_*`.
+5. Ejecuta `npm run init-db:prod`.
+6. Verifica `/api/health`.
 
 ```env
 PORT=10000
@@ -176,26 +124,21 @@ DB_SSL=true
 DB_SSL_REJECT_UNAUTHORIZED=false
 ```
 
-Notas de despliegue:
-
-- `database.production.sql` no elimina la base y esta pensado para servidor.
-- `npm run init-db:prod` usa la base indicada en `DB_NAME`.
-- En proveedores remotos normalmente necesitas `DB_SSL=true`.
+- `database.production.sql` esta pensado para servidor y no elimina la base.
+- En remoto normalmente necesitas `DB_SSL=true`.
 
 ## Flujo del equipo
-
-Para traer cambios:
 
 ```bash
 git pull origin main
 npm install
 ```
 
-Si hay cambios de base o variables:
+Si cambian la base o las variables:
 
 ```bash
 npm run init-db
 npm start
 ```
 
-No subas secretos reales en `.env`. El archivo que debe compartirse en el repositorio es `.env.example`.
+No subas secretos reales en `.env`; comparte solo `.env.example`.
