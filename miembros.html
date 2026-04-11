@@ -5,14 +5,327 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Miembros — FITNESS EVOLUTIONS GYM</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* ── Estilos exclusivos de esta página ── */
+
+    /* Stats superiores */
+    .mb-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .mb-stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 14px;
+      text-align: center;
+      backdrop-filter: blur(12px);
+    }
+
+    .mb-stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 34px;
+      line-height: 1;
+      color: var(--orange);
+    }
+
+    .mb-stat-num.ok     { color: #4cdb8e; }
+    .mb-stat-num.warn   { color: #f0c040; }
+    .mb-stat-num.danger { color: #e07070; }
+
+    .mb-stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* Barra de controles */
+    .mb-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .mb-search {
+      flex: 1;
+      min-width: 180px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      backdrop-filter: blur(8px);
+    }
+
+    .mb-search img { width: 16px; opacity: 0.45; }
+
+    .mb-search input {
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    .mb-search input::placeholder { color: var(--text-dim); }
+
+    .mb-btn {
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s;
+      white-space: nowrap;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mb-btn:hover { background: var(--orange-dark); }
+
+    .mb-btn--ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+
+    .mb-btn--ghost:hover { border-color: var(--orange); color: var(--text); background: rgba(232,124,42,0.08); }
+
+    /* Filtros de estado rápidos */
+    .mb-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .mb-tab {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-dim);
+      transition: all 0.18s;
+    }
+
+    .mb-tab:hover { border-color: var(--orange); color: var(--text); }
+
+    .mb-tab.active {
+      background: rgba(232,124,42,0.18);
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+
+    /* Tabla */
+    .mb-table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      margin-bottom: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Rajdhani', sans-serif;
+    }
+
+    thead th {
+      padding: 12px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      background: rgba(0,0,0,0.25);
+      text-align: left;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      transition: color 0.15s;
+    }
+
+    thead th:hover { color: var(--text); }
+
+    thead th .sort-icon { margin-left: 4px; opacity: 0.4; font-size: 10px; }
+    thead th.sorted .sort-icon { opacity: 1; color: var(--orange); }
+
+    tbody tr {
+      border-top: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+    tbody td {
+      padding: 12px 14px;
+      font-size: 14px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+
+    /* Celda del miembro (avatar + nombre + correo) */
+    .td-member {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .td-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 13px;
+      color: #fff;
+      flex-shrink: 0;
+      border: 2px solid rgba(255,255,255,0.08);
+    }
+
+    .td-name  { font-weight: 700; font-size: 14px; }
+    .td-email { font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+
+    /* Celda de plan */
+    .td-plan {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(232,124,42,0.3);
+      background: rgba(232,124,42,0.1);
+      color: var(--orange);
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    /* Acciones de fila */
+    .td-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .td-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      transition: opacity 0.15s;
+    }
+
+    .td-btn:hover { opacity: 0.82; }
+    .td-btn--edit   { background: #de7f2f; }
+    .td-btn--renew  { background: #1f8f4f; }
+    .td-btn--delete { background: #b33a3a; }
+
+    /* Fila vacía */
+    .tr-empty td {
+      text-align: center;
+      color: var(--text-dim);
+      padding: 40px 0;
+      font-size: 14px;
+    }
+
+    /* Skeleton de tabla */
+    .tr-skeleton td .sk-cell {
+      height: 14px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #1e1e1e 25%, #2a2a2a 50%, #1e1e1e 75%);
+      background-size: 400px 100%;
+      animation: shimmer 1.2s infinite linear;
+    }
+
+    /* Paginación */
+    .mb-pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mb-page-info {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .mb-page-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mb-page-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text-dim);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .mb-page-btn:hover:not(:disabled) { border-color: var(--orange); color: var(--text); }
+    .mb-page-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; }
+    .mb-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* Móvil: tabla convertida a cards */
+    @media (max-width: 768px) {
+      .mb-stats { grid-template-columns: repeat(2, 1fr); }
+
+      .mb-table-wrap { overflow-x: auto; }
+
+      table { min-width: 600px; }
+
+      /* En móvil muy pequeño se usa scroll horizontal */
+    }
+  </style>
 </head>
 <body>
   <div class="gym-bg"></div>
   <div class="page">
 
+    <!-- NAV -->
     <nav class="topnav">
       <div class="logo">FITNESS<span>EVOLUTIONS GYM</span></div>
-      <a href="admin.html" class="nav-link">
+      <a href="admin.html"    class="nav-link">
         <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio"> Inicio
       </a>
       <a href="miembros.html" class="nav-link active">
@@ -21,27 +334,74 @@
       <a href="finanzas.html" class="nav-link">
         <img src="assets/attach_money_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Finanzas"> Finanzas
       </a>
-      <a href="ajustes.html" class="nav-link">
+      <a href="ajustes.html"  class="nav-link">
         <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes"> Ajustes
       </a>
     </nav>
 
+    <!-- CONTENIDO -->
     <main class="content">
+
       <div class="fadein">
         <p class="welcome-sub">Panel de control</p>
-        <h1 class="welcome-title">Miembros</h1>
+        <h1 class="welcome-title">Gestión de miembros</h1>
       </div>
-      <div class="fadein-2 coming-soon-card">
-        <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros" class="coming-icon">
-        <p class="coming-title">Lista completa de miembros</p>
-        <p class="coming-sub">Este módulo está en desarrollo. Próximamente disponible.</p>
-        <a href="admin.html" class="btn-orange" style="margin-top:20px; display:inline-block; width:auto; padding: 10px 28px;">
-          ← Volver al inicio
-        </a>
-      </div>
-    </main>
 
+      <!-- Stats de estado -->
+      <div class="mb-stats fadein-2" id="mbStats">
+        <div class="mb-stat"><div class="mb-stat-num" id="stTotal">—</div><div class="mb-stat-label">Total</div></div>
+        <div class="mb-stat"><div class="mb-stat-num ok"     id="stActivo">—</div><div class="mb-stat-label">Activos</div></div>
+        <div class="mb-stat"><div class="mb-stat-num warn"   id="stPorVencer">—</div><div class="mb-stat-label">Por vencer</div></div>
+        <div class="mb-stat"><div class="mb-stat-num danger" id="stVencido">—</div><div class="mb-stat-label">Vencidos</div></div>
+      </div>
+
+      <!-- Controles: buscar + agregar + exportar -->
+      <div class="mb-controls fadein-2">
+        <div class="mb-search">
+          <img src="assets/search_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
+          <input type="text" id="mbSearch" placeholder="Buscar por nombre o correo...">
+        </div>
+        <button class="mb-btn mb-btn--ghost" id="btnExport">⬇ Exportar CSV</button>
+        <a href="form.html" class="mb-btn">+ Agregar miembro</a>
+      </div>
+
+      <!-- Tabs de filtro rápido -->
+      <div class="mb-tabs fadein-2">
+        <button class="mb-tab active" data-filter="todos">Todos</button>
+        <button class="mb-tab" data-filter="activo">Activos</button>
+        <button class="mb-tab" data-filter="porvencer">Por vencer (&lt;7 días)</button>
+        <button class="mb-tab" data-filter="vencido">Vencidos</button>
+        <button class="mb-tab" data-filter="inactivo">Inactivos</button>
+      </div>
+
+      <!-- Tabla -->
+      <div class="mb-table-wrap fadein-3">
+        <table>
+          <thead>
+            <tr>
+              <th data-col="name">Miembro <span class="sort-icon">↕</span></th>
+              <th data-col="plan">Plan <span class="sort-icon">↕</span></th>
+              <th data-col="days">Días rest. <span class="sort-icon">↕</span></th>
+              <th data-col="status">Estado <span class="sort-icon">↕</span></th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="mbTbody">
+            <!-- Rows generados por JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="mb-pagination fadein-3">
+        <div class="mb-page-info" id="mbPageInfo">—</div>
+        <div class="mb-page-btns" id="mbPageBtns"></div>
+      </div>
+
+    </main>
   </div>
+
   <script src="common.js"></script>
+  <script src="miembros.js"></script>
 </body>
 </html>
