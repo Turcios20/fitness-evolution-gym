@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recepción — FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="recepcion.css">
+</head>
+<body class="recepcion-page">
+
+  <div class="gym-bg"></div>
+
+  <div class="page">
+
+    <nav class="topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
+      </div>
+
+      <div class="nav-links">
+        <a href="recepcion.html" class="nav-link active">
+          <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio">
+          Inicio
+        </a>
+
+        <a href="#miembros" class="nav-link">
+          <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros">
+          Miembros
+        </a>
+
+        <a href="#ajustes" class="nav-link">
+          <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+          Ajustes
+        </a>
+      </div>
+
+      <div class="user-info">
+        <span class="role-tag">RECEPCIÓN</span>
+        <div class="user-avatar">RG</div>
+      </div>
+    </nav>
+
+    <div class="main-layout">
+      
+      <aside class="sidebar">
+        <div class="sidebar-title">Gestión Diaria</div>
+        <div class="quick-links">
+          <a href="#" class="quick-link">
+            <img src="assets/person_add_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
+            Registrar Entrada
+          </a>
+          <a href="#" class="quick-link">
+            <img src="assets/group_add_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
+            Nuevo Miembro
+          </a>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="sidebar-card-title">Resumen del Día</div>
+          <div class="sidebar-stat-row">
+            <span class="key">Entradas hoy</span>
+            <span class="val orange">42</span>
+          </div>
+          <div class="sidebar-stat-row">
+            <span class="key">Nuevos socios</span>
+            <span class="val">5</span>
+          </div>
+          <div class="sidebar-stat-row">
+            <span class="key">Pagos cobrados</span>
+            <span class="val">12</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="content-area">
+        
+        <section class="dashboard-section fadein">
+          <div class="section-header">
+            <h2>Miembros en el Local</h2>
+            <div class="search-bar">
+              <input type="text" placeholder="Buscar miembro por nombre o ID...">
+            </div>
+          </div>
+
+          <div class="members-table-container">
+            <table class="members-table">
+              <thead>
+                <tr>
+                  <th>Miembro</th>
+                  <th>Estado</th>
+                  <th>Hora Entrada</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="m-info">
+                      <span class="m-name">Juan Pérez</span>
+                      <span class="m-id">ID: #1024</span>
+                    </div>
+                  </td>
+                  <td><span class="status-pill active">Activo</span></td>
+                  <td>02:15 PM</td>
+                  <td><button class="btn-table">Ver</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="m-info">
+                      <span class="m-name">María López</span>
+                      <span class="m-id">ID: #1055</span>
+                    </div>
+                  </td>
+                  <td><span class="status-pill warn">Por Vencer</span></td>
+                  <td>02:45 PM</td>
+                  <td><button class="btn-table">Ver</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="ajustes" class="dashboard-section fadein-2" style="margin-top: 40px;">
+          <div class="section-header">
+            <h2>Ajustes de Terminal</h2>
+          </div>
+          <div class="settings-widget">
+            <div class="setting-item">
+              <div class="setting-text">
+                <p class="s-title">Notificaciones de acceso</p>
+                <p class="s-desc">Emitir sonido cuando un miembro escanea su carnet.</p>
+              </div>
+              <div class="s-control">[ On ]</div>
+            </div>
+            <div class="setting-item disabled">
+              <div class="setting-text">
+                <p class="s-title">Impresora de tickets</p>
+                <p class="s-desc">Módulo no disponible en esta terminal.</p>
+              </div>
+              <div class="s-control">⚙️</div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+</body>
+</html>
