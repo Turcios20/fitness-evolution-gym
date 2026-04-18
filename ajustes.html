@@ -1,47 +1,361 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ajustes — FITNESS EVOLUTIONS GYM</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="ajustes.css" />
 </head>
 <body>
-  <div class="gym-bg"></div>
-  <div class="page">
+<div class="gym-settings">
 
-    <nav class="topnav">
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <button class="hamburger" id="hamburgerBtn" aria-label="Menú" onclick="toggleSidebar()">
+        <span></span><span></span><span></span>
+      </button>
       <div class="logo">FITNESS<span>EVOLUTIONS GYM</span></div>
-      <a href="admin.html" class="nav-link">
-        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio"> Inicio
-      </a>
-      <a href="miembros.html" class="nav-link">
-        <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros"> Miembros
-      </a>
-      <a href="finanzas.html" class="nav-link">
-        <img src="assets/attach_money_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Finanzas"> Finanzas
-      </a>
-      <a href="ajustes.html" class="nav-link active">
-        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes"> Ajustes
-      </a>
+    </div>
+    <nav class="nav" id="topNav">
+      <a class="nav-item" href="#">Inicio</a>
+      <a class="nav-item" href="#">Miembros</a>
+      <a class="nav-item" href="#">Finanzas</a>
+      <a class="nav-item active" href="#">Ajustes</a>
     </nav>
-
-    <main class="content">
-      <div class="fadein">
-        <p class="welcome-sub">Panel de control</p>
-        <h1 class="welcome-title">Ajustes</h1>
-      </div>
-      <div class="fadein-2 coming-soon-card">
-        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes" class="coming-icon">
-        <p class="coming-title">Configuración del sistema</p>
-        <p class="coming-sub">Este módulo está en desarrollo. Próximamente disponible.</p>
-        <a href="admin.html" class="btn-orange" style="margin-top:20px; display:inline-block; width:auto; padding: 10px 28px;">
-          ← Volver al inicio
-        </a>
-      </div>
-    </main>
-
+    <button class="nav-toggle" id="navToggle" onclick="toggleNav()" aria-label="Más opciones">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><circle cx="10" cy="4" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="10" cy="16" r="1.8"/></svg>
+    </button>
   </div>
-  <script src="common.js"></script>
+
+  <!-- MOBILE NAV DROPDOWN -->
+  <div class="mobile-nav" id="mobileNav">
+    <a class="mobile-nav-item" href="#">Inicio</a>
+    <a class="mobile-nav-item" href="#">Miembros</a>
+    <a class="mobile-nav-item" href="#">Finanzas</a>
+    <a class="mobile-nav-item active" href="#">Ajustes</a>
+  </div>
+
+  <!-- OVERLAY -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="breadcrumb">Panel de control / <span>Ajustes</span></div>
+    <div class="page-title">Configuración del sistema</div>
+    <div class="page-sub">Administra las preferencias y opciones del gimnasio</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-close" onclick="closeSidebar()">✕ Cerrar</button>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">General</div>
+        <div class="sidebar-item active" onclick="showSection('gimnasio',this)">
+          <svg class="sidebar-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v1H2V3zm0 3h12v7a1 1 0 01-1 1H3a1 1 0 01-1-1V6zm4 2v1h4V8H6z"/></svg>
+          Datos del gimnasio
+        </div>
+        <div class="sidebar-item" onclick="showSection('horarios',this)">
+          <svg class="sidebar-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 1.5a5.5 5.5 0 110 11 5.5 5.5 0 010-11zM7 5v3.5l3 1.8-.5.9L6 9V5h1z"/></svg>
+          Horarios
+        </div>
+        <div class="sidebar-item" onclick="showSection('apariencia',this)">
+          <svg class="sidebar-icon" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg>
+          Apariencia
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Acceso</div>
+        <div class="sidebar-item" onclick="showSection('usuarios',this)">
+          <svg class="sidebar-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 7a3 3 0 100-6 3 3 0 000 6zm-5 7a5 5 0 0110 0H3z"/></svg>
+          Usuarios y roles
+        </div>
+        <div class="sidebar-item" onclick="showSection('seguridad',this)">
+          <svg class="sidebar-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L2 3.5v4C2 11 5 13.5 8 15c3-1.5 6-4 6-7.5v-4L8 1z"/></svg>
+          Seguridad
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sistema</div>
+        <div class="sidebar-item" onclick="showSection('notificaciones',this)">
+          <svg class="sidebar-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 14a1.5 1.5 0 003 0H5a1.5 1.5 0 003 0zm5-2H3l1-5a4 4 0 018 0l1 5z"/></svg>
+          Notificaciones
+        </div>
+        <div class="sidebar-item" onclick="showSection('integraciones',this)">
+          <svg class="sidebar-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M11 2l3 3-7 7-3-1-1-3 8-6zM2 12l1 1-1 2-2-2 2-1z"/></svg>
+          Integraciones
+        </div>
+        <div class="sidebar-item" onclick="showSection('backup',this)">
+          <svg class="sidebar-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v8M5 6l3 3 3-3M3 11v2a1 1 0 001 1h8a1 1 0 001-1v-2"/></svg>
+          Respaldos
+        </div>
+        <div class="sidebar-item" onclick="showSection('planes',this)">
+          <svg class="sidebar-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 4h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4zm0 0V3a1 1 0 011-1h10a1 1 0 011 1v1"/></svg>
+          Planes de membresía
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- DATOS DEL GIMNASIO -->
+      <div class="section visible" id="sec-gimnasio">
+        <div class="section-title">Datos del gimnasio</div>
+        <div class="section-desc">Información general y de contacto del establecimiento</div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <div class="card-label">Información básica</div>
+            <div class="field-row"><div class="field-label">Nombre del gimnasio</div><input class="field-input" value="FITNESS EVOLUTIONS GYM"/></div>
+            <div class="field-row"><div class="field-label">Eslogan</div><input class="field-input" value="Evoluciona tu cuerpo, transforma tu vida"/></div>
+            <div class="field-row"><div class="field-label">NIT / RUC</div><input class="field-input" value="0614-120593-101-1"/></div>
+          </div>
+          <div class="settings-card">
+            <div class="card-label">Contacto</div>
+            <div class="field-row"><div class="field-label">Teléfono</div><input class="field-input" value="+503 2234-5678"/></div>
+            <div class="field-row"><div class="field-label">Correo electrónico</div><input class="field-input" value="info@fitnessevolutions.com"/></div>
+            <div class="field-row"><div class="field-label">Sitio web</div><input class="field-input" value="https://fitnessevolutions.com"/></div>
+          </div>
+          <div class="settings-card full">
+            <div class="card-label">Dirección y región</div>
+            <div class="three-col">
+              <div class="field-row"><div class="field-label">Dirección</div><input class="field-input" value="Blvd. del Ejército, local 12"/></div>
+              <div class="field-row"><div class="field-label">Ciudad</div><input class="field-input" value="San Salvador"/></div>
+              <div class="field-row"><div class="field-label">País</div><select class="field-select"><option>El Salvador</option><option>Guatemala</option><option>Honduras</option><option>Costa Rica</option></select></div>
+            </div>
+          </div>
+        </div>
+        <button class="save-btn">Guardar cambios</button>
+      </div>
+
+      <!-- HORARIOS -->
+      <div class="section" id="sec-horarios">
+        <div class="section-title">Horarios de operación</div>
+        <div class="section-desc">Define los días y horas en que el gimnasio está abierto</div>
+        <div class="settings-card">
+          <div class="card-label">Horario semanal</div>
+          <div class="hours-header">
+            <span></span><span>Apertura</span><span>Cierre</span><span>Activo</span>
+          </div>
+          <div class="hours-grid">
+            <div class="hours-row"><div class="day-name">Lunes</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="hours-row"><div class="day-name">Martes</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="hours-row"><div class="day-name">Miércoles</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="hours-row"><div class="day-name">Jueves</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="hours-row"><div class="day-name">Viernes</div><input class="field-input" value="05:00"/><input class="field-input" value="21:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="hours-row"><div class="day-name">Sábado</div><input class="field-input" value="07:00"/><input class="field-input" value="18:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="hours-row"><div class="day-name">Domingo</div><input class="field-input" value="08:00"/><input class="field-input" value="13:00"/><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          </div>
+        </div>
+        <button class="save-btn">Guardar horarios</button>
+      </div>
+
+      <!-- APARIENCIA -->
+      <div class="section" id="sec-apariencia">
+        <div class="section-title">Apariencia</div>
+        <div class="section-desc">Personaliza los colores y la identidad visual del sistema</div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <div class="card-label">Color primario</div>
+            <div class="swatches">
+              <span class="color-swatch selected" style="background:#f07922" onclick="selectColor(this,'#f07922')"></span>
+              <span class="color-swatch" style="background:#e24b4a" onclick="selectColor(this,'#e24b4a')"></span>
+              <span class="color-swatch" style="background:#378add" onclick="selectColor(this,'#378add')"></span>
+              <span class="color-swatch" style="background:#1da975" onclick="selectColor(this,'#1da975')"></span>
+              <span class="color-swatch" style="background:#7f77dd" onclick="selectColor(this,'#7f77dd')"></span>
+            </div>
+            <div class="field-row"><div class="field-label">Código HEX</div><input class="field-input" id="hexInput" value="#f07922"/></div>
+          </div>
+          <div class="settings-card">
+            <div class="card-label">Tema</div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Modo oscuro</div><div class="toggle-desc">Interfaz con fondo oscuro</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Sidebar colapsado por defecto</div><div class="toggle-desc">Ocultar menú lateral al cargar</div></div><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          </div>
+          <div class="settings-card full">
+            <div class="card-label">Logo del establecimiento</div>
+            <div class="logo-row">
+              <div class="logo-upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M4 16l4-4 4 4 4-6 4 6"/><rect x="2" y="2" width="20" height="20" rx="3"/></svg><span>Subir logo</span></div>
+              <div><div style="font-size:13px;color:#888;margin-bottom:4px">PNG, SVG o JPG · Máx. 2MB</div><div style="font-size:11px;color:#555">Tamaño recomendado: 200×60px</div><button class="add-btn" style="margin-top:10px">Seleccionar archivo</button></div>
+            </div>
+          </div>
+        </div>
+        <button class="save-btn">Aplicar cambios</button>
+      </div>
+
+      <!-- USUARIOS -->
+      <div class="section" id="sec-usuarios">
+        <div class="section-title">Usuarios y roles</div>
+        <div class="section-desc">Gestiona el acceso del personal al sistema</div>
+        <div class="settings-card" style="margin-bottom:14px">
+          <div class="card-label">Personal con acceso</div>
+          <div class="table-wrap">
+            <table class="user-table">
+              <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+              <tbody>
+                <tr><td data-label="Nombre">Carlos Turcios</td><td data-label="Correo">c.turcios@fitnessevolutions.com</td><td data-label="Rol"><span class="role-badge role-admin">Administrador</span></td><td data-label="Estado"><span class="status-dot dot-active"></span>Activo</td><td><button class="icon-btn">Editar</button></td></tr>
+                <tr><td data-label="Nombre">María López</td><td data-label="Correo">m.lopez@fitnessevolutions.com</td><td data-label="Rol"><span class="role-badge role-trainer">Entrenador</span></td><td data-label="Estado"><span class="status-dot dot-active"></span>Activo</td><td><button class="icon-btn">Editar</button></td></tr>
+                <tr><td data-label="Nombre">José Rivera</td><td data-label="Correo">j.rivera@fitnessevolutions.com</td><td data-label="Rol"><span class="role-badge role-staff">Staff</span></td><td data-label="Estado"><span class="status-dot dot-active"></span>Activo</td><td><button class="icon-btn">Editar</button></td></tr>
+                <tr><td data-label="Nombre">Ana Martínez</td><td data-label="Correo">a.martinez@fitnessevolutions.com</td><td data-label="Rol"><span class="role-badge role-trainer">Entrenador</span></td><td data-label="Estado"><span class="status-dot dot-inactive"></span>Inactivo</td><td><button class="icon-btn">Editar</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <button class="add-btn">+ Agregar usuario</button>
+      </div>
+
+      <!-- SEGURIDAD -->
+      <div class="section" id="sec-seguridad">
+        <div class="section-title">Seguridad</div>
+        <div class="section-desc">Opciones de autenticación y políticas de acceso</div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <div class="card-label">Autenticación</div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Autenticación de dos factores</div><div class="toggle-desc">SMS o app autenticadora</div></div><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Recordar sesión (30 días)</div><div class="toggle-desc">Permite sesiones persistentes</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Bloqueo tras intentos fallidos</div><div class="toggle-desc">Bloquea tras 5 intentos</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+          </div>
+          <div class="settings-card">
+            <div class="card-label">Contraseñas</div>
+            <div class="field-row"><div class="field-label">Longitud mínima</div><select class="field-select"><option>8 caracteres</option><option>10 caracteres</option><option>12 caracteres</option></select></div>
+            <div class="field-row"><div class="field-label">Expiración</div><select class="field-select"><option>Nunca</option><option>90 días</option><option>180 días</option></select></div>
+            <div style="margin-top:16px"><button class="danger-btn">Cerrar todas las sesiones activas</button></div>
+          </div>
+        </div>
+        <button class="save-btn">Guardar configuración</button>
+      </div>
+
+      <!-- NOTIFICACIONES -->
+      <div class="section" id="sec-notificaciones">
+        <div class="section-title">Notificaciones</div>
+        <div class="section-desc">Configura qué eventos generan alertas y por qué canal</div>
+        <div class="notif-block">
+          <div class="notif-header"><div><div class="notif-title">Correo electrónico</div><div class="notif-sub">notificaciones@fitnessevolutions.com</div></div></div>
+          <div class="notif-body">
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Nuevo miembro registrado</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Pago recibido</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Membresía próxima a vencer</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Reporte semanal</div></div><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          </div>
+        </div>
+        <div class="notif-block">
+          <div class="notif-header"><div><div class="notif-title">WhatsApp / SMS</div><div class="notif-sub">Notificaciones a miembros</div></div></div>
+          <div class="notif-body">
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Recordatorio de pago</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Confirmación de inscripción</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Promociones</div></div><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          </div>
+        </div>
+        <button class="save-btn">Guardar notificaciones</button>
+      </div>
+
+      <!-- INTEGRACIONES -->
+      <div class="section" id="sec-integraciones">
+        <div class="section-title">Integraciones</div>
+        <div class="section-desc">Conecta servicios externos al sistema</div>
+        <div class="integration-card"><div class="int-info"><div class="int-icon" style="background:#25d366">💬</div><div><div class="int-name">WhatsApp Business</div><div class="int-status connected">● Conectado</div></div></div><button class="connect-btn connected">Configurar</button></div>
+        <div class="integration-card"><div class="int-info"><div class="int-icon" style="background:#1877f2">📘</div><div><div class="int-name">Facebook / Instagram</div><div class="int-status">No conectado</div></div></div><button class="connect-btn">Conectar</button></div>
+        <div class="integration-card"><div class="int-info"><div class="int-icon" style="background:#1a1a2e">💳</div><div><div class="int-name">Pasarela de pagos (Stripe)</div><div class="int-status">No conectado</div></div></div><button class="connect-btn">Conectar</button></div>
+        <div class="integration-card"><div class="int-info"><div class="int-icon" style="background:#ea4335">📊</div><div><div class="int-name">Google Analytics</div><div class="int-status">No conectado</div></div></div><button class="connect-btn">Conectar</button></div>
+      </div>
+
+      <!-- BACKUP -->
+      <div class="section" id="sec-backup">
+        <div class="section-title">Respaldos</div>
+        <div class="section-desc">Gestiona las copias de seguridad del sistema</div>
+        <div class="settings-card" style="margin-bottom:14px">
+          <div class="card-label">Configuración automática</div>
+          <div class="field-row"><div class="field-label">Frecuencia</div><select class="field-select"><option>Diario (2:00 AM)</option><option>Cada 12 horas</option><option>Semanal</option></select></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Respaldo automático activo</div><div class="toggle-desc">Se ejecuta según la frecuencia configurada</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+        </div>
+        <div class="settings-card">
+          <div class="card-label">Historial de respaldos</div>
+          <div class="backup-row"><div class="backup-info"><div class="backup-name">backup_2026-04-17_02-00</div><div class="backup-date">Hoy, 02:00 AM — automático</div></div><div class="backup-right"><div class="backup-size">4.2 MB</div><div class="backup-actions"><button class="icon-btn">Descargar</button><button class="icon-btn danger">Eliminar</button></div></div></div>
+          <div class="backup-row"><div class="backup-info"><div class="backup-name">backup_2026-04-16_02-00</div><div class="backup-date">Ayer, 02:00 AM — automático</div></div><div class="backup-right"><div class="backup-size">4.0 MB</div><div class="backup-actions"><button class="icon-btn">Descargar</button><button class="icon-btn danger">Eliminar</button></div></div></div>
+          <div class="backup-row"><div class="backup-info"><div class="backup-name">backup_2026-04-15_02-00</div><div class="backup-date">15 abr 2026, 02:00 AM</div></div><div class="backup-right"><div class="backup-size">3.8 MB</div><div class="backup-actions"><button class="icon-btn">Descargar</button><button class="icon-btn danger">Eliminar</button></div></div></div>
+        </div>
+        <button class="save-btn" style="margin-top:14px">Crear respaldo ahora</button>
+      </div>
+
+      <!-- PLANES -->
+      <div class="section" id="sec-planes">
+        <div class="section-title">Planes de membresía</div>
+        <div class="section-desc">Define los tipos de membresía y sus precios</div>
+        <div class="plan-grid">
+          <div class="plan-card selected">
+            <div class="plan-badge">Más popular</div>
+            <div class="plan-name">Mensual</div>
+            <div class="plan-price">$35 <span>/mes</span></div>
+            <ul class="plan-features"><li>Acceso completo</li><li>Clases grupales</li><li>Vestuarios</li></ul>
+          </div>
+          <div class="plan-card">
+            <div class="plan-name">Trimestral</div>
+            <div class="plan-price">$90 <span>/3 meses</span></div>
+            <ul class="plan-features"><li>Acceso completo</li><li>Clases grupales</li><li>1 sesión con trainer</li></ul>
+          </div>
+          <div class="plan-card">
+            <div class="plan-name">Anual</div>
+            <div class="plan-price">$300 <span>/año</span></div>
+            <ul class="plan-features"><li>Acceso completo</li><li>Clases ilimitadas</li><li>4 sesiones con trainer</li></ul>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="add-btn">+ Agregar plan</button>
+          <button class="save-btn" style="margin-top:0">Guardar planes</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  function showSection(id, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+    document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+    document.getElementById('sec-' + id).classList.add('visible');
+    el.classList.add('active');
+    if (window.innerWidth < 900) closeSidebar();
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('visible');
+    document.body.classList.toggle('no-scroll');
+  }
+
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('visible');
+    document.body.classList.remove('no-scroll');
+  }
+
+  function toggleNav() {
+    document.getElementById('mobileNav').classList.toggle('open');
+  }
+
+  document.addEventListener('click', function(e) {
+    const mn = document.getElementById('mobileNav');
+    if (mn.classList.contains('open') &&
+        !mn.contains(e.target) &&
+        !document.getElementById('navToggle').contains(e.target)) {
+      mn.classList.remove('open');
+    }
+  });
+
+  function selectColor(el, hex) {
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('hexInput').value = hex;
+  }
+</script>
 </body>
 </html>
+
