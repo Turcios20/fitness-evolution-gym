@@ -1,0 +1,344 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap");
+
+:root {
+  --orange: #e87c2a;
+  --orange-dark: #c4621a;
+  --bg-dark: #0a0a0a;
+  --panel: rgba(15, 15, 15, 0.92);
+  --panel2: rgba(25, 25, 25, 0.88);
+  --border: rgba(232, 124, 42, 0.25);
+  --text: #e3e3e3;
+  --text-dim: #888888;
+  --radius: 12px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Rajdhani", sans-serif;
+  background: var(--bg-dark);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.gym-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image: url("assets/Selfit-EVO-1-1200x800-1.jpeg");
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.2) saturate(0.6);
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topnav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 24px;
+  backdrop-filter: blur(16px);
+}
+
+.logo {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--orange);
+}
+
+.logo span {
+  display: block;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.role-badge {
+  background: var(--orange);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--panel2);
+  border: 2px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Bebas Neue", sans-serif;
+  box-shadow: 0 0 10px rgba(232, 124, 42, 0.2);
+}
+
+.trainer-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.trainer-logout {
+  border: 1px solid var(--border);
+  background: rgba(232, 124, 42, 0.12);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.trainer-logout:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.content {
+  flex: 1;
+  padding: 32px 24px 110px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.welcome-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.welcome-title {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 28px;
+  letter-spacing: 2px;
+  margin-bottom: 25px;
+}
+
+.trainer-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.t-stat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.t-stat-val {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 36px;
+  color: var(--orange);
+}
+
+.t-stat-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ver-todo {
+  font-size: 12px;
+  color: var(--orange);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  background: var(--panel);
+  border-left: 4px solid var(--orange);
+  padding: 15px;
+  border-radius: 8px;
+  gap: 15px;
+}
+
+.session-time {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 18px;
+  color: var(--orange);
+  min-width: 70px;
+}
+
+.student-name {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+
+.session-goal {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.btn-icon-check {
+  background: rgba(232, 124, 42, 0.15);
+  border: 1px solid var(--orange);
+  color: var(--orange);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tool-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  padding: 20px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.tool-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--orange);
+}
+
+.tool-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.tool-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.bottomnav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  padding: 10px 0 16px;
+  display: flex;
+  justify-content: space-around;
+  backdrop-filter: blur(16px);
+  z-index: 20;
+}
+
+.bot-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.bot-link img {
+  width: 22px;
+  height: 22px;
+  opacity: 0.6;
+}
+
+.bot-link.active {
+  color: var(--orange);
+}
+
+.bot-link.active img {
+  opacity: 1;
+  filter: sepia(1) saturate(5) hue-rotate(-10deg);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fadein {
+  animation: fadeUp 0.4s ease both;
+}
+
+.fadein-2 {
+  animation: fadeUp 0.4s 0.1s ease both;
+}
+
+.fadein-3 {
+  animation: fadeUp 0.4s 0.2s ease both;
+}
+
+.fadein-4 {
+  animation: fadeUp 0.4s 0.3s ease both;
+}
+
+@media (min-width: 769px) {
+  .content {
+    padding-top: 50px;
+  }
+
+  .trainer-stats-grid,
+  .tools-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}

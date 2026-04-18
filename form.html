@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agregar Cliente — FITNESS EVOLUTIONS GYM</title>
+  <title>Agregar Usuario - FITNESS EVOLUTIONS GYM</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,18 +11,16 @@
   <div class="gym-bg"></div>
 
   <div class="page">
-
-    <!-- ===== NAV SUPERIOR ===== -->
     <nav class="topnav">
       <div class="logo">
         FITNESS
         <span>EVOLUTIONS GYM</span>
       </div>
-      <a href="admin.html" class="nav-link">
+      <a href="admin.html" class="nav-link" id="linkHome">
         <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio">
         Inicio
       </a>
-      <a href="miembros.html" class="nav-link">
+      <a href="miembros.html" class="nav-link" id="linkMembers">
         <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros">
         Miembros
       </a>
@@ -30,76 +28,52 @@
         <img src="assets/attach_money_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Finanzas">
         Finanzas
       </a>
-      <a href="ajustes.html" class="nav-link">
+      <a href="ajustes.html" class="nav-link" id="linkSettings">
         <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
         Ajustes
       </a>
     </nav>
 
-    <!-- ===== FORMULARIO ===== -->
     <main class="content">
-
       <div class="fadein">
-        <!-- Botón volver -->
-        <a href="admin.html" class="btn-back">← Volver</a>
-        <p class="welcome-sub">Gestión de miembros</p>
-        <h1 class="welcome-title">Agregar nuevo cliente</h1>
+        <a href="admin.html" class="btn-back" id="btnBack">Volver</a>
+        <p class="welcome-sub" id="formSubtitle">Gestion de usuarios</p>
+        <h1 class="welcome-title" id="formTitle">Agregar nuevo usuario</h1>
       </div>
 
-      <!-- Tarjeta del formulario -->
       <div class="form-card fadein-2">
-
-        <!-- Mensaje de error / éxito — oculto por defecto -->
         <div id="form-msg" class="form-msg" style="display:none;"></div>
 
-        <!-- Nombre completo -->
         <div class="form-group">
           <label class="form-label" for="nombre">Nombre completo</label>
-          <input
-            class="input-field"
-            type="text"
-            id="nombre"
-            name="nombre"
-            placeholder="Ej: Jhoscar Manuel"
-            autocomplete="off"
-            required
-          />
+          <input class="input-field" type="text" id="nombre" name="nombre" placeholder="Ej: Jhoscar Manuel" autocomplete="off" required />
           <span class="form-error" id="err-nombre"></span>
         </div>
 
-        <!-- Correo electrónico -->
         <div class="form-group">
-          <label class="form-label" for="correo">Correo electrónico</label>
-          <input
-            class="input-field"
-            type="email"
-            id="correo"
-            name="correo"
-            placeholder="correo@ejemplo.com"
-            autocomplete="off"
-            required
-          />
+          <label class="form-label" for="correo">Correo electronico</label>
+          <input class="input-field" type="email" id="correo" name="correo" placeholder="correo@ejemplo.com" autocomplete="off" required />
           <span class="form-error" id="err-correo"></span>
         </div>
 
-        <!-- Contraseña -->
         <div class="form-group">
-          <label class="form-label" for="password">Contraseña</label>
-          <input
-            class="input-field"
-            type="password"
-            id="password"
-            name="password"
-            placeholder="Mínimo 6 caracteres"
-            required
-          />
+          <label class="form-label" for="password">Contrasena</label>
+          <input class="input-field" type="password" id="password" name="password" placeholder="Minimo 6 caracteres" required />
           <span class="form-error" id="err-password"></span>
         </div>
 
-        <!-- Plan de membresía -->
         <div class="form-group">
-          <label class="form-label" for="plan">Plan de membresía</label>
-          <select class="input-field input-select" id="plan" name="plan" required>
+          <label class="form-label" for="rol">Rol</label>
+          <select class="input-field input-select" id="rol" name="rol" required>
+            <option value="cliente">Cliente</option>
+            <option value="recepcionista">Recepcionista</option>
+            <option value="entrenador">Entrenador</option>
+          </select>
+        </div>
+
+        <div class="form-group" data-membership-field>
+          <label class="form-label" for="plan">Plan de membresia</label>
+          <select class="input-field input-select" id="plan" name="plan">
             <option value="">Seleccionar plan...</option>
             <option value="Mensual">Mensual</option>
             <option value="Trimestral">Trimestral</option>
@@ -109,31 +83,17 @@
           <span class="form-error" id="err-plan"></span>
         </div>
 
-        <!-- Precio -->
-        <div class="form-group">
+        <div class="form-group" data-membership-field>
           <label class="form-label" for="precio">Precio ($)</label>
-          <input
-            class="input-field"
-            type="number"
-            id="precio"
-            name="precio"
-            placeholder="20"
-            min="1"
-            required
-          />
+          <input class="input-field" type="number" id="precio" name="precio" placeholder="20" min="1" />
           <span class="form-error" id="err-precio"></span>
         </div>
 
-        <!-- Botones -->
         <div class="form-actions">
-          <a href="admin.html" class="btn-cancel">Cancelar</a>
-          <button type="button" id="btn-guardar" class="btn-orange form-submit">
-            Agregar cliente
-          </button>
+          <a href="admin.html" class="btn-cancel" id="btnCancel">Cancelar</a>
+          <button type="button" id="btn-guardar" class="btn-orange form-submit">Agregar usuario</button>
         </div>
-
       </div>
-
     </main>
   </div>
 
