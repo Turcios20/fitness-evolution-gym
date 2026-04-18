@@ -120,5 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  loadTrainerDashboard();
+  loadTrainerDashboard().catch((error) => {
+    GymApp.toast(`Error inicial: ${error.message}`, "error");
+  });
 });

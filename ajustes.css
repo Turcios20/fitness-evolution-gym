@@ -316,6 +316,16 @@ body.no-scroll { overflow: hidden; }
   border-left-color: var(--accent);
 }
 
+.sidebar-item.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sidebar-item.is-disabled:hover {
+  color: var(--text-soft);
+  background: transparent;
+}
+
 [data-theme="light"] .sidebar-item:hover {
   background: rgba(0, 0, 0, 0.035);
 }
@@ -344,6 +354,17 @@ body.no-scroll { overflow: hidden; }
 
 .section-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
 
+.section-role-note {
+  margin: -6px 0 18px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--text-soft);
+  font-size: 12px;
+  box-shadow: var(--shadow);
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -356,6 +377,21 @@ body.no-scroll { overflow: hidden; }
   border-radius: 10px;
   padding: 16px;
   box-shadow: var(--shadow);
+}
+
+.settings-card.is-disabled,
+.section.is-disabled .settings-card,
+.section.is-disabled .notif-block,
+.section.is-disabled .integration-card,
+.section.is-disabled .plan-card {
+  opacity: 0.52;
+}
+
+.settings-card.is-disabled .color-swatch,
+.settings-card.is-disabled .logo-upload,
+.settings-card.is-disabled .add-btn,
+.toggle-row.is-disabled {
+  pointer-events: none;
 }
 
 .settings-card.full { grid-column: 1 / -1; }

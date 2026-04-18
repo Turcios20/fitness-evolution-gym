@@ -195,7 +195,9 @@ document.addEventListener("DOMContentLoaded", () => {
   [toggleAccessNotifications, toggleAutoRefresh].forEach((button) => {
     button.addEventListener("click", () => {
       setToggle(button, !isToggleOn(button));
-      if (button === toggleAutoRefresh) configureAutoRefresh();
+      if (button === toggleAutoRefresh) {
+        configureAutoRefresh();
+      }
     });
   });
 

@@ -12,6 +12,15 @@
   --radius: 12px;
 }
 
+body[data-theme="light"] {
+  --bg-dark: #f5ede4;
+  --panel: rgba(255, 249, 242, 0.92);
+  --panel2: rgba(250, 241, 231, 0.88);
+  --border: rgba(196, 103, 31, 0.24);
+  --text: #35261a;
+  --text-dim: #7f6753;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -33,6 +42,10 @@ body {
   background-size: cover;
   background-position: center;
   filter: brightness(0.2) saturate(0.6);
+}
+
+body[data-theme="light"] .gym-bg {
+  filter: brightness(0.52) saturate(0.82);
 }
 
 .page {
@@ -88,6 +101,10 @@ body {
   justify-content: center;
   font-family: "Bebas Neue", sans-serif;
   box-shadow: 0 0 10px rgba(232, 124, 42, 0.2);
+}
+
+body[data-theme="light"] .user-avatar {
+  box-shadow: 0 0 14px rgba(196, 103, 31, 0.16);
 }
 
 .trainer-top-actions {
@@ -201,6 +218,10 @@ body {
   gap: 15px;
 }
 
+body[data-theme="light"] .session-item {
+  box-shadow: 0 10px 24px rgba(102, 72, 45, 0.08);
+}
+
 .session-item--empty {
   border-left-color: rgba(232, 124, 42, 0.35);
   justify-content: center;
@@ -240,6 +261,10 @@ body {
   text-transform: uppercase;
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
+}
+
+body[data-theme="light"] .session-meta {
+  background: rgba(127, 103, 83, 0.12);
 }
 
 .session-meta--ok {
@@ -397,4 +422,5 @@ body {
   .session-action--text {
     margin-left: 0;
   }
+
 }

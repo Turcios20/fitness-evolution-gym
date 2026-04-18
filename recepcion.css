@@ -10,6 +10,14 @@
   --radius: 10px;
 }
 
+body[data-theme="light"] {
+  --bg-dark: #f5ede4;
+  --panel: rgba(255, 249, 242, 0.92);
+  --border: rgba(196, 103, 31, 0.24);
+  --text: #35261a;
+  --text-dim: #7f6753;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -31,6 +39,10 @@ body {
   background-size: cover;
   background-position: center;
   filter: brightness(0.15);
+}
+
+body[data-theme="light"] .gym-bg {
+  filter: brightness(0.5) saturate(0.85);
 }
 
 .page {
@@ -63,6 +75,10 @@ body {
   display: block;
   color: #fff;
   font-size: 18px;
+}
+
+body[data-theme="light"] .logo span {
+  color: #241911;
 }
 
 .nav-links {
@@ -105,6 +121,7 @@ body {
 .role-tag {
   font-size: 10px;
   background: var(--orange);
+  color: #fff;
   padding: 2px 8px;
   border-radius: 4px;
   font-weight: 800;
@@ -119,6 +136,10 @@ body {
   place-items: center;
   border: 1px solid var(--orange);
   font-family: "Bebas Neue", sans-serif;
+}
+
+body[data-theme="light"] .user-avatar {
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .logout-btn,
@@ -156,6 +177,10 @@ body {
   background: rgba(10, 10, 10, 0.6);
   border-right: 1px solid var(--border);
   padding: 30px 20px;
+}
+
+body[data-theme="light"] .sidebar {
+  background: rgba(250, 241, 231, 0.72);
 }
 
 .sidebar-title {
@@ -245,6 +270,11 @@ body {
   margin-bottom: 10px;
 }
 
+body[data-theme="light"] .terminal-select {
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text);
+}
+
 .terminal-select:focus {
   outline: none;
   border-color: var(--orange);
@@ -290,6 +320,10 @@ body {
   font-family: "Rajdhani", sans-serif;
 }
 
+body[data-theme="light"] .search-bar input {
+  color: var(--text);
+}
+
 .search-bar input:focus {
   outline: none;
   border-color: var(--orange);
@@ -319,6 +353,10 @@ body {
 .members-table td {
   padding: 15px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body[data-theme="light"] .members-table td {
+  border-bottom-color: rgba(88, 60, 35, 0.08);
 }
 
 .table-empty {
@@ -395,6 +433,10 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+body[data-theme="light"] .setting-item {
+  border-bottom-color: rgba(88, 60, 35, 0.08);
+}
+
 .setting-item.disabled {
   opacity: 0.5;
 }
@@ -423,6 +465,12 @@ body {
   background: rgba(0, 255, 100, 0.12);
   border-color: rgba(0, 255, 100, 0.28);
   color: #72f7a0;
+}
+
+[data-theme="light"] .setting-toggle.is-on {
+  background: rgba(232, 124, 42, 0.12);
+  border-color: rgba(232, 124, 42, 0.35);
+  color: var(--orange);
 }
 
 @keyframes fadeInUp {
