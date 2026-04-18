@@ -8,6 +8,26 @@ CREATE TABLE IF NOT EXISTS usuarios (
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE usuarios
+MODIFY COLUMN rol ENUM('Administrador', 'Cliente', 'Recepcionista', 'Entrenador')
+NOT NULL DEFAULT 'Cliente';
+
+SET @trainer_col_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'usuarios'
+      AND COLUMN_NAME = 'id_entrenador_asignado'
+);
+SET @trainer_col_sql := IF(
+    @trainer_col_exists = 0,
+    'ALTER TABLE usuarios ADD COLUMN id_entrenador_asignado INT NULL AFTER rol',
+    'SELECT 1'
+);
+PREPARE trainer_col_stmt FROM @trainer_col_sql;
+EXECUTE trainer_col_stmt;
+DEALLOCATE PREPARE trainer_col_stmt;
+
 SET @trainer_fk_exists := (
     SELECT COUNT(*)
     FROM information_schema.TABLE_CONSTRAINTS
