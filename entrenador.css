@@ -137,7 +137,7 @@ body {
 
 .trainer-stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 30px;
 }
@@ -201,6 +201,11 @@ body {
   gap: 15px;
 }
 
+.session-item--empty {
+  border-left-color: rgba(232, 124, 42, 0.35);
+  justify-content: center;
+}
+
 .session-time {
   font-family: "Bebas Neue", sans-serif;
   font-size: 18px;
@@ -217,6 +222,34 @@ body {
 .session-goal {
   font-size: 12px;
   color: var(--text-dim);
+}
+
+.session-action--text {
+  margin-left: auto;
+}
+
+.session-meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.session-meta--ok {
+  background: rgba(26, 143, 90, 0.15);
+  color: #78d4a7;
+}
+
+.session-meta--warn {
+  background: rgba(232, 124, 42, 0.16);
+  color: #ffb37a;
 }
 
 .btn-icon-check {
@@ -336,9 +369,32 @@ body {
     padding-top: 50px;
   }
 
-  .trainer-stats-grid,
+  .trainer-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
   .tools-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .trainer-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .session-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .session-time {
+    min-width: auto;
+  }
+
+  .session-action--text {
+    margin-left: 0;
   }
 }

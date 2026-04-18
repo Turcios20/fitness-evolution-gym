@@ -51,36 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       window.location.href = GymApp.getHomeByRole(role);
       return;
-    } catch {
-      // Fallback local mientras no exista API activa.
+    } catch (error) {
+      alert(error.message || "No se pudo iniciar sesion.");
     }
-
-    const localUsers = [
-      { username: "admin@victorsgym.com", password: "admin123", role: "admin", displayName: "Victor Administrator" },
-      { username: "jhoscar@correo.com", password: "cliente123", role: "cliente", displayName: "Jhoscar Ochoa" },
-      { username: "recepcion@fitnessgym.com", password: "recep123", role: "recepcionista", displayName: "Maria Recepcion" },
-      { username: "entrenador@fitnessgym.com", password: "train123", role: "entrenador", displayName: "Carlos Entrenador" },
-      { username: "admin", password: "admin123", role: "admin", displayName: "Administrador" },
-      { username: "cliente", password: "cliente123", role: "cliente", displayName: "Cliente" }
-    ];
-
-    const matchedUser = localUsers.find(
-      (user) => user.username === username && user.password === password
-    );
-
-    if (!matchedUser) {
-      alert("Credenciales invalidas.");
-      return;
-    }
-
-    GymApp.setSession({
-      username: matchedUser.username,
-      displayName: matchedUser.displayName,
-      role: matchedUser.role,
-      token: null
-    });
-
-    window.location.href = GymApp.getHomeByRole(matchedUser.role);
   }
 
   function createOverlay() {

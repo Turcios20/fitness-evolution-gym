@@ -1,20 +1,20 @@
 "use strict";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const session = GymApp.getSession();
-  if (!session || !["admin", "recepcionista"].includes(session.role)) {
-    window.location.href = "login.html";
-    return;
-  }
+  if (!GymApp.guardRoute(["admin", "recepcionista"])) return;
 
+  const session = GymApp.getSession();
   const homePage = GymApp.getHomeByRole(session.role);
+  let trainers = [];
+
   const campos = {
     nombre: document.getElementById("nombre"),
     correo: document.getElementById("correo"),
     password: document.getElementById("password"),
     rol: document.getElementById("rol"),
     plan: document.getElementById("plan"),
-    precio: document.getElementById("precio")
+    precio: document.getElementById("precio"),
+    trainerId: document.getElementById("trainerId")
   };
 
   const errores = {
@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const formTitle = document.getElementById("formTitle");
   const formSubtitle = document.getElementById("formSubtitle");
   const membershipFields = document.querySelectorAll("[data-membership-field]");
+  const trainerFields = document.querySelectorAll("[data-trainer-field]");
 
   document.getElementById("linkHome").href = homePage;
   document.getElementById("btnBack").href = homePage;
@@ -65,13 +66,42 @@ document.addEventListener("DOMContentLoaded", () => {
     return selectedRole() === "cliente";
   }
 
+  function renderTrainerOptions() {
+    if (!campos.trainerId) return;
+
+    campos.trainerId.innerHTML = ['<option value="">Sin asignar</option>']
+      .concat(trainers.map((trainer) => `<option value="${trainer.id}">${trainer.name}</option>`))
+      .join("");
+  }
+
   function syncFormByRole() {
     const clientRole = isClientRole();
     membershipFields.forEach((field) => {
       field.style.display = clientRole ? "block" : "none";
     });
+    trainerFields.forEach((field) => {
+      field.style.display = clientRole && session.role === "admin" ? "block" : "none";
+    });
+
+    if (campos.trainerId) {
+      campos.trainerId.disabled = !clientRole || session.role !== "admin";
+      if (campos.trainerId.disabled) campos.trainerId.value = "";
+    }
+
     formTitle.textContent = clientRole ? "Agregar nuevo cliente" : "Agregar nuevo colaborador";
     btnGuardar.textContent = clientRole ? "Agregar cliente" : "Agregar usuario";
+  }
+
+  async function loadTrainers() {
+    if (session.role !== "admin") return;
+
+    try {
+      const data = await GymApp.api("/api/trainers");
+      trainers = data.trainers || [];
+      renderTrainerOptions();
+    } catch (error) {
+      GymApp.toast(`No se pudo cargar entrenadores: ${error.message}`, "error");
+    }
   }
 
   function validar() {
@@ -126,7 +156,10 @@ document.addEventListener("DOMContentLoaded", () => {
           password: campos.password.value,
           role: selectedRole(),
           plan: isClientRole() ? campos.plan.value : undefined,
-          price: isClientRole() ? Number(campos.precio.value) : undefined
+          price: isClientRole() ? Number(campos.precio.value) : undefined,
+          trainerId: isClientRole() && session.role === "admin" && campos.trainerId.value
+            ? Number(campos.trainerId.value)
+            : undefined
         })
       });
 
@@ -147,5 +180,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   campos.rol.addEventListener("change", syncFormByRole);
+  loadTrainers();
   syncFormByRole();
 });

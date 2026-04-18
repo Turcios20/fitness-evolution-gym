@@ -35,45 +35,27 @@
       <div class="fadein-2">
         <div class="trainer-stats-grid">
           <div class="t-stat-card">
-            <p class="t-stat-val">12</p>
-            <p class="t-stat-label">Alumnos Hoy</p>
+            <p class="t-stat-val" id="statTotalClients">0</p>
+            <p class="t-stat-label">Clientes Asignados</p>
           </div>
           <div class="t-stat-card">
-            <p class="t-stat-val">4</p>
-            <p class="t-stat-label">Rutinas Pendientes</p>
+            <p class="t-stat-val" id="statActiveClients">0</p>
+            <p class="t-stat-label">Membresias Activas</p>
+          </div>
+          <div class="t-stat-card">
+            <p class="t-stat-val" id="statExpiringSoon">0</p>
+            <p class="t-stat-label">Por Vencer</p>
           </div>
         </div>
       </div>
 
       <div class="fadein-3">
         <div class="section-header">
-          <span class="section-title">Proximas Sesiones</span>
-          <span class="ver-todo">Ver agenda</span>
+          <span class="section-title">Mis Clientes</span>
+          <span class="ver-todo" id="clientsHint">Asignados por administracion</span>
         </div>
 
-        <div class="sessions-list">
-          <div class="session-item">
-            <div class="session-time">08:00 AM</div>
-            <div class="session-info">
-              <p class="student-name">Carlos Mendoza</p>
-              <p class="session-goal">Hipertrofia - Pecho/Triceps</p>
-            </div>
-            <div class="session-action">
-              <button class="btn-icon-check">OK</button>
-            </div>
-          </div>
-
-          <div class="session-item">
-            <div class="session-time">09:30 AM</div>
-            <div class="session-info">
-              <p class="student-name">Elena Rodriguez</p>
-              <p class="session-goal">Perdida de peso - Cardio HIIT</p>
-            </div>
-            <div class="session-action">
-              <button class="btn-icon-check">OK</button>
-            </div>
-          </div>
-        </div>
+        <div class="sessions-list" id="assignedClientsList"></div>
       </div>
 
       <div class="fadein-4">

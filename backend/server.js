@@ -5,6 +5,13 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const { pool } = require("./db");
+const {
+  createToken,
+  hashPassword,
+  needsPasswordUpgrade,
+  verifyPassword,
+  verifyToken
+} = require("./security");
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -40,12 +47,64 @@ function roleToDb(role) {
   return ROLE_FRONTEND_TO_DB[value] || "Cliente";
 }
 
+function serializeSettingValue(value) {
+  if (value == null) return null;
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function getBearerToken(req) {
+  const authorization = String(req.headers.authorization || "");
+  if (!authorization.toLowerCase().startsWith("bearer ")) {
+    return null;
+  }
+  return authorization.slice(7).trim();
+}
+
+function authenticate(req, res, next) {
+  try {
+    const token = getBearerToken(req);
+    if (!token) {
+      res.status(401).json({ error: "Token requerido" });
+      return;
+    }
+
+    req.auth = verifyToken(token);
+    next();
+  } catch (error) {
+    res.status(401).json({ error: "Token invalido" });
+  }
+}
+
+function requireRoles(...roles) {
+  return (req, res, next) => {
+    if (!req.auth) {
+      res.status(401).json({ error: "No autenticado" });
+      return;
+    }
+
+    if (!roles.includes(req.auth.role)) {
+      res.status(403).json({ error: "No autorizado" });
+      return;
+    }
+
+    next();
+  };
+}
+
 function normalizeMember(row) {
   return {
     id: row.id_usuario,
     name: row.nombre_completo,
     email: row.correo,
     role: roleToFrontend(row.rol),
+    assignedTrainer: row.id_entrenador_asignado
+      ? {
+          id: row.id_entrenador_asignado,
+          name: row.entrenador_nombre,
+          email: row.entrenador_correo
+        }
+      : null,
     membership: row.id_membresia
       ? {
           id: row.id_membresia,
@@ -60,15 +119,9 @@ function normalizeMember(row) {
   };
 }
 
-function serializeSettingValue(value) {
-  if (value == null) return null;
-  if (typeof value === "object") return JSON.stringify(value);
-  return String(value);
-}
-
 async function getUserByUsername(username, executor = pool) {
   const [rows] = await executor.query(
-    `SELECT id_usuario, nombre_completo, correo, password, rol
+    `SELECT id_usuario, nombre_completo, correo, password, rol, id_entrenador_asignado
      FROM usuarios
      WHERE correo = ?
      LIMIT 1`,
@@ -78,6 +131,36 @@ async function getUserByUsername(username, executor = pool) {
   return rows[0] || null;
 }
 
+async function getTrainerById(trainerId, executor = pool) {
+  if (trainerId == null) return null;
+
+  const [rows] = await executor.query(
+    `SELECT id_usuario, nombre_completo, correo
+     FROM usuarios
+     WHERE id_usuario = ?
+       AND rol = 'Entrenador'
+     LIMIT 1`,
+    [trainerId]
+  );
+
+  return rows[0] || null;
+}
+
+async function listTrainers(executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT id_usuario, nombre_completo, correo
+     FROM usuarios
+     WHERE rol = 'Entrenador'
+     ORDER BY nombre_completo ASC`
+  );
+
+  return rows.map((row) => ({
+    id: row.id_usuario,
+    name: row.nombre_completo,
+    email: row.correo
+  }));
+}
+
 async function listClientMembers(executor = pool) {
   const [rows] = await executor.query(
     `SELECT
@@ -85,6 +168,9 @@ async function listClientMembers(executor = pool) {
        u.nombre_completo,
        u.correo,
        u.rol,
+       u.id_entrenador_asignado,
+       t.nombre_completo AS entrenador_nombre,
+       t.correo AS entrenador_correo,
        m.id_membresia,
        m.tipo_plan,
        m.precio,
@@ -93,6 +179,9 @@ async function listClientMembers(executor = pool) {
        m.fecha_vencimiento,
        GREATEST(DATEDIFF(m.fecha_vencimiento, CURDATE()), 0) AS dias_restantes
      FROM usuarios u
+     LEFT JOIN usuarios t
+       ON t.id_usuario = u.id_entrenador_asignado
+      AND t.rol = 'Entrenador'
      LEFT JOIN membresias m ON m.id_membresia = (
        SELECT m2.id_membresia
        FROM membresias m2
@@ -107,16 +196,38 @@ async function listClientMembers(executor = pool) {
   return rows.map(normalizeMember);
 }
 
+async function resolveTrainerId(connection, trainerId) {
+  if (trainerId == null || trainerId === "") {
+    return null;
+  }
+
+  const normalizedId = Number(trainerId);
+  if (!Number.isFinite(normalizedId)) {
+    throw new Error("Entrenador invalido");
+  }
+
+  const trainer = await getTrainerById(normalizedId, connection);
+  if (!trainer) {
+    throw new Error("Entrenador no encontrado");
+  }
+
+  return normalizedId;
+}
+
 async function createUserWithMembership(connection, payload) {
   const dbRole = roleToDb(payload.role);
   const safePlan = payload.plan || "Mensual";
   const safePrice = Number(payload.price);
   const price = Number.isFinite(safePrice) && safePrice > 0 ? safePrice : 20;
+  const safeTrainerId = dbRole === "Cliente"
+    ? await resolveTrainerId(connection, payload.trainerId)
+    : null;
+  const passwordHash = await hashPassword(payload.password);
 
   const [insertUser] = await connection.query(
-    `INSERT INTO usuarios (nombre_completo, correo, password, rol)
-     VALUES (?, ?, ?, ?)`,
-    [payload.name, payload.email, payload.password, dbRole]
+    `INSERT INTO usuarios (nombre_completo, correo, password, rol, id_entrenador_asignado)
+     VALUES (?, ?, ?, ?, ?)`,
+    [payload.name, payload.email, passwordHash, dbRole, safeTrainerId]
   );
 
   if (dbRole === "Cliente") {
@@ -131,6 +242,21 @@ async function createUserWithMembership(connection, payload) {
 }
 
 async function updateClientMember(connection, memberId, payload) {
+  const [memberRows] = await connection.query(
+    `SELECT rol
+     FROM usuarios
+     WHERE id_usuario = ?
+     LIMIT 1`,
+    [memberId]
+  );
+
+  if (!memberRows.length) {
+    throw new Error("Miembro no encontrado");
+  }
+
+  const currentDbRole = String(memberRows[0].rol || "");
+  const nextDbRole = payload.role ? roleToDb(payload.role) : currentDbRole;
+
   const updates = [];
   const values = [];
 
@@ -144,11 +270,17 @@ async function updateClientMember(connection, memberId, payload) {
   }
   if (payload.password) {
     updates.push("password = ?");
-    values.push(payload.password);
+    values.push(await hashPassword(payload.password));
   }
   if (payload.role) {
     updates.push("rol = ?");
-    values.push(roleToDb(payload.role));
+    values.push(nextDbRole);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "trainerId")) {
+    updates.push("id_entrenador_asignado = ?");
+    values.push(nextDbRole === "Cliente" ? await resolveTrainerId(connection, payload.trainerId) : null);
+  } else if (nextDbRole !== "Cliente") {
+    updates.push("id_entrenador_asignado = NULL");
   }
 
   if (updates.length) {
@@ -256,31 +388,56 @@ app.post("/api/auth/login", async (req, res) => {
     const user = await getUserByUsername(username);
 
     if (!user) {
-      res.status(401).json({ error: "Usuario no encontrado" });
-      return;
-    }
-
-    if (String(user.password) !== String(password)) {
       res.status(401).json({ error: "Credenciales invalidas" });
       return;
     }
+
+    const passwordMatches = await verifyPassword(password, user.password);
+    if (!passwordMatches) {
+      res.status(401).json({ error: "Credenciales invalidas" });
+      return;
+    }
+
+    if (needsPasswordUpgrade(user.password)) {
+      const passwordHash = await hashPassword(password);
+      await pool.query(
+        `UPDATE usuarios
+         SET password = ?
+         WHERE id_usuario = ?`,
+        [passwordHash, user.id_usuario]
+      );
+    }
+
+    const role = roleToFrontend(user.rol);
+    const token = createToken({
+      id: user.id_usuario,
+      username: user.correo,
+      name: user.nombre_completo,
+      role
+    });
 
     res.json({
       id: user.id_usuario,
       username: user.correo,
       name: user.nombre_completo,
-      role: roleToFrontend(user.rol)
+      role,
+      token
     });
   } catch (error) {
-    res.status(500).json({ error: "Error en login", detail: error.message });
+    res.status(500).json({ error: "Error en login" });
   }
 });
 
-app.post("/api/subscription/renew", async (req, res) => {
+app.post("/api/subscription/renew", authenticate, async (req, res) => {
   const { username } = req.body || {};
 
   if (!username) {
     res.status(400).json({ error: "username requerido" });
+    return;
+  }
+
+  if (req.auth.role !== "admin" && req.auth.username !== username) {
+    res.status(403).json({ error: "No autorizado" });
     return;
   }
 
@@ -289,7 +446,6 @@ app.post("/api/subscription/renew", async (req, res) => {
     await connection.beginTransaction();
 
     const user = await getUserByUsername(username, connection);
-
     if (!user) {
       await connection.rollback();
       res.status(404).json({ error: "Usuario no encontrado" });
@@ -329,11 +485,16 @@ app.post("/api/subscription/renew", async (req, res) => {
   }
 });
 
-app.get("/api/client/dashboard", async (req, res) => {
+app.get("/api/client/dashboard", authenticate, async (req, res) => {
   const username = String(req.query.username || "").trim();
 
   if (!username) {
     res.status(400).json({ error: "username requerido" });
+    return;
+  }
+
+  if (req.auth.role !== "admin" && req.auth.username !== username) {
+    res.status(403).json({ error: "No autorizado" });
     return;
   }
 
@@ -344,11 +505,17 @@ app.get("/api/client/dashboard", async (req, res) => {
          u.nombre_completo,
          u.correo,
          u.rol,
+         t.id_usuario AS entrenador_id,
+         t.nombre_completo AS entrenador_nombre,
+         t.correo AS entrenador_correo,
          m.tipo_plan,
          m.fecha_vencimiento,
          m.estado,
          GREATEST(DATEDIFF(m.fecha_vencimiento, CURDATE()), 0) AS dias_restantes
        FROM usuarios u
+       LEFT JOIN usuarios t
+         ON t.id_usuario = u.id_entrenador_asignado
+        AND t.rol = 'Entrenador'
        LEFT JOIN membresias m ON m.id_membresia = (
          SELECT m2.id_membresia
          FROM membresias m2
@@ -372,6 +539,13 @@ app.get("/api/client/dashboard", async (req, res) => {
       name: row.nombre_completo,
       username: row.correo,
       role: roleToFrontend(row.rol),
+      assignedTrainer: row.entrenador_id
+        ? {
+            id: row.entrenador_id,
+            name: row.entrenador_nombre,
+            email: row.entrenador_correo
+          }
+        : null,
       subscription: {
         plan: row.tipo_plan || "Sin plan",
         status: row.estado || "Inactivo",
@@ -384,7 +558,7 @@ app.get("/api/client/dashboard", async (req, res) => {
   }
 });
 
-app.get(["/api/members", "/api/admin/members"], async (_req, res) => {
+app.get(["/api/members", "/api/admin/members"], authenticate, requireRoles("admin", "recepcionista"), async (_req, res) => {
   try {
     const members = await listClientMembers();
     res.json({ members, total: members.length });
@@ -393,11 +567,16 @@ app.get(["/api/members", "/api/admin/members"], async (_req, res) => {
   }
 });
 
-app.post(["/api/members", "/api/admin/members"], async (req, res) => {
+app.post(["/api/members", "/api/admin/members"], authenticate, requireRoles("admin", "recepcionista"), async (req, res) => {
   const { name, email, password } = req.body || {};
 
   if (!name || !email || !password) {
     res.status(400).json({ error: "name, email y password son requeridos" });
+    return;
+  }
+
+  if (req.auth.role !== "admin" && roleToDb(req.body?.role) !== "Cliente") {
+    res.status(403).json({ error: "Recepcion solo puede crear clientes" });
     return;
   }
 
@@ -415,11 +594,16 @@ app.post(["/api/members", "/api/admin/members"], async (req, res) => {
   }
 });
 
-app.put(["/api/members/:id", "/api/admin/members/:id"], async (req, res) => {
+app.put(["/api/members/:id", "/api/admin/members/:id"], authenticate, requireRoles("admin", "recepcionista"), async (req, res) => {
   const memberId = Number(req.params.id);
 
   if (!Number.isFinite(memberId)) {
     res.status(400).json({ error: "id invalido" });
+    return;
+  }
+
+  if (req.auth.role !== "admin" && Object.prototype.hasOwnProperty.call(req.body || {}, "trainerId")) {
+    res.status(403).json({ error: "Solo admin puede asignar entrenador" });
     return;
   }
 
@@ -437,7 +621,7 @@ app.put(["/api/members/:id", "/api/admin/members/:id"], async (req, res) => {
   }
 });
 
-app.post(["/api/members/:id/renew", "/api/admin/members/:id/renew"], async (req, res) => {
+app.post(["/api/members/:id/renew", "/api/admin/members/:id/renew"], authenticate, requireRoles("admin", "recepcionista"), async (req, res) => {
   const memberId = Number(req.params.id);
   const days = Number(req.body?.days || 30);
   const plan = req.body?.plan || "Mensual";
@@ -461,7 +645,7 @@ app.post(["/api/members/:id/renew", "/api/admin/members/:id/renew"], async (req,
   }
 });
 
-app.delete(["/api/members/:id", "/api/admin/members/:id"], async (req, res) => {
+app.delete(["/api/members/:id", "/api/admin/members/:id"], authenticate, requireRoles("admin"), async (req, res) => {
   const memberId = Number(req.params.id);
 
   if (!Number.isFinite(memberId)) {
@@ -488,7 +672,72 @@ app.delete(["/api/members/:id", "/api/admin/members/:id"], async (req, res) => {
   }
 });
 
-app.get("/api/reception/dashboard", async (_req, res) => {
+app.get("/api/trainers", authenticate, requireRoles("admin"), async (_req, res) => {
+  try {
+    const trainers = await listTrainers();
+    res.json({ trainers });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando entrenadores", detail: error.message });
+  }
+});
+
+app.get("/api/trainer/dashboard", authenticate, requireRoles("entrenador"), async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+         u.id_usuario,
+         u.nombre_completo,
+         u.correo,
+         m.tipo_plan,
+         m.estado,
+         m.fecha_vencimiento,
+         GREATEST(DATEDIFF(m.fecha_vencimiento, CURDATE()), 0) AS dias_restantes
+       FROM usuarios u
+       LEFT JOIN membresias m ON m.id_membresia = (
+         SELECT m2.id_membresia
+         FROM membresias m2
+         WHERE m2.id_usuario = u.id_usuario
+         ORDER BY m2.fecha_vencimiento DESC
+         LIMIT 1
+       )
+       WHERE u.rol = 'Cliente'
+         AND u.id_entrenador_asignado = ?
+       ORDER BY u.nombre_completo ASC`,
+      [req.auth.id]
+    );
+
+    const clients = rows.map((row) => ({
+      id: row.id_usuario,
+      name: row.nombre_completo,
+      email: row.correo,
+      plan: row.tipo_plan || "Sin plan",
+      status: row.estado || "Inactivo",
+      daysRemaining: Number(row.dias_restantes || 0),
+      endDate: row.fecha_vencimiento || null
+    }));
+
+    const activeClients = clients.filter((client) => client.status === "Activo").length;
+    const expiringSoon = clients.filter((client) => client.status === "Activo" && client.daysRemaining <= 7).length;
+
+    res.json({
+      trainer: {
+        id: req.auth.id,
+        name: req.auth.name,
+        username: req.auth.username
+      },
+      summary: {
+        totalClients: clients.length,
+        activeClients,
+        expiringSoon
+      },
+      clients
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando panel de entrenador", detail: error.message });
+  }
+});
+
+app.get("/api/reception/dashboard", authenticate, requireRoles("admin", "recepcionista"), async (_req, res) => {
   try {
     const [entriesTodayResult, newMembersResult, paymentsResult, presentMembersResult] = await Promise.all([
       pool.query(
@@ -561,7 +810,7 @@ app.get("/api/reception/dashboard", async (_req, res) => {
   }
 });
 
-app.post("/api/reception/checkins", async (req, res) => {
+app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepcionista"), async (req, res) => {
   const memberId = Number(req.body?.memberId);
 
   if (!Number.isFinite(memberId)) {
@@ -637,11 +886,16 @@ app.post("/api/reception/checkins", async (req, res) => {
   }
 });
 
-app.get("/api/settings", async (req, res) => {
+app.get("/api/settings", authenticate, async (req, res) => {
   const username = String(req.query.username || "").trim();
 
   if (!username) {
     res.status(400).json({ error: "username requerido" });
+    return;
+  }
+
+  if (req.auth.role !== "admin" && req.auth.username !== username) {
+    res.status(403).json({ error: "No autorizado" });
     return;
   }
 
@@ -671,12 +925,17 @@ app.get("/api/settings", async (req, res) => {
   }
 });
 
-app.put("/api/settings", async (req, res) => {
+app.put("/api/settings", authenticate, async (req, res) => {
   const username = String(req.body?.username || "").trim();
   const settings = req.body?.settings;
 
   if (!username || !settings || typeof settings !== "object") {
     res.status(400).json({ error: "username y settings requeridos" });
+    return;
+  }
+
+  if (req.auth.role !== "admin" && req.auth.username !== username) {
+    res.status(403).json({ error: "No autorizado" });
     return;
   }
 

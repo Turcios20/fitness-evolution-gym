@@ -8,8 +8,13 @@ CREATE TABLE usuarios (
     correo VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     rol ENUM('Administrador', 'Cliente', 'Recepcionista', 'Entrenador') NOT NULL DEFAULT 'Cliente',
+    id_entrenador_asignado INT NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE usuarios
+ADD CONSTRAINT fk_usuarios_entrenador
+FOREIGN KEY (id_entrenador_asignado) REFERENCES usuarios(id_usuario) ON DELETE SET NULL;
 
 CREATE TABLE ajustes (
     id_ajuste INT AUTO_INCREMENT PRIMARY KEY,

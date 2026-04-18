@@ -4,8 +4,25 @@ CREATE TABLE IF NOT EXISTS usuarios (
     correo VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     rol ENUM('Administrador', 'Cliente', 'Recepcionista', 'Entrenador') NOT NULL DEFAULT 'Cliente',
+    id_entrenador_asignado INT NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+SET @trainer_fk_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'usuarios'
+      AND CONSTRAINT_NAME = 'fk_usuarios_entrenador'
+);
+SET @trainer_fk_sql := IF(
+    @trainer_fk_exists = 0,
+    'ALTER TABLE usuarios ADD CONSTRAINT fk_usuarios_entrenador FOREIGN KEY (id_entrenador_asignado) REFERENCES usuarios(id_usuario) ON DELETE SET NULL',
+    'SELECT 1'
+);
+PREPARE trainer_fk_stmt FROM @trainer_fk_sql;
+EXECUTE trainer_fk_stmt;
+DEALLOCATE PREPARE trainer_fk_stmt;
 
 CREATE TABLE IF NOT EXISTS ajustes (
     id_ajuste INT AUTO_INCREMENT PRIMARY KEY,

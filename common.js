@@ -3,6 +3,24 @@
 (function bootstrapGymApp() {
   const fromStorage = localStorage.getItem("gymApiBase");
   const API_BASE = fromStorage || (window.location.protocol === "file:" ? "http://localhost:3000" : "");
+  const FAVICON_PATH = "assets/favicon.svg";
+
+  function ensureFavicon() {
+    const head = document.head || document.getElementsByTagName("head")[0];
+    if (!head) return;
+
+    let favicon = head.querySelector('link[rel="icon"]');
+    if (!favicon) {
+      favicon = document.createElement("link");
+      favicon.rel = "icon";
+      head.appendChild(favicon);
+    }
+
+    favicon.type = "image/svg+xml";
+    favicon.href = FAVICON_PATH;
+  }
+
+  ensureFavicon();
 
   function getHomeByRole(role) {
     const value = String(role || "").trim().toLowerCase();
