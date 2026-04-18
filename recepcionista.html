@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recepcion - FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="recepcion.css">
+</head>
+<body class="recepcion-page">
+  <div class="gym-bg"></div>
+
+  <div class="page">
+    <nav class="topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
+      </div>
+
+      <div class="nav-links">
+        <a href="recepcionista.html" class="nav-link active">
+          <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio">
+          Inicio
+        </a>
+        <a href="#miembros" class="nav-link">
+          <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros">
+          Miembros
+        </a>
+        <a href="#ajustes" class="nav-link">
+          <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+          Ajustes
+        </a>
+      </div>
+
+      <div class="user-info">
+        <span class="role-tag">RECEPCION</span>
+        <div class="user-avatar" id="receptionAvatar">RG</div>
+        <button type="button" class="logout-btn" id="btnReceptionLogout">Salir</button>
+      </div>
+    </nav>
+
+    <div class="main-layout">
+      <aside class="sidebar">
+        <div class="sidebar-title" id="receptionWelcome">Gestion diaria</div>
+
+        <div class="quick-links">
+          <button type="button" class="quick-link quick-link-button" id="btnFocusCheckin">
+            <img src="assets/search_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
+            Registrar Entrada
+          </button>
+          <a href="form.html" class="quick-link" id="linkNewMember">
+            <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
+            Nuevo Miembro
+          </a>
+        </div>
+
+        <div class="sidebar-card register-card" id="checkinCard">
+          <div class="sidebar-card-title">Registrar entrada</div>
+          <select id="checkinMemberSelect" class="terminal-select">
+            <option value="">Selecciona un cliente...</option>
+          </select>
+          <button type="button" class="terminal-btn" id="btnRegisterEntry">Registrar ahora</button>
+          <p class="terminal-help">Marca el ingreso del dia para un miembro activo o pendiente de renovar.</p>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="sidebar-card-title">Resumen del dia</div>
+          <div class="sidebar-stat-row">
+            <span class="key">Entradas hoy</span>
+            <span class="val orange" id="statEntriesToday">0</span>
+          </div>
+          <div class="sidebar-stat-row">
+            <span class="key">Nuevos socios</span>
+            <span class="val" id="statNewMembers">0</span>
+          </div>
+          <div class="sidebar-stat-row">
+            <span class="key">Pagos cobrados</span>
+            <span class="val" id="statPayments">0</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="content-area">
+        <section id="miembros" class="dashboard-section fadein">
+          <div class="section-header">
+            <h2>Miembros en el Local</h2>
+            <div class="search-bar">
+              <input type="text" id="receptionSearch" placeholder="Buscar miembro por nombre o correo...">
+            </div>
+          </div>
+
+          <div class="members-table-container">
+            <table class="members-table">
+              <thead>
+                <tr>
+                  <th>Miembro</th>
+                  <th>Estado</th>
+                  <th>Hora Entrada</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="receptionTableBody">
+                <tr>
+                  <td colspan="4" class="table-empty">Cargando miembros presentes...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="ajustes" class="dashboard-section fadein-2" style="margin-top: 40px;">
+          <div class="section-header">
+            <h2>Ajustes de Terminal</h2>
+          </div>
+          <div class="settings-widget">
+            <div class="setting-item">
+              <div class="setting-text">
+                <p class="s-title">Notificaciones de acceso</p>
+                <p class="s-desc">Muestra confirmacion al registrar la entrada de un miembro.</p>
+              </div>
+              <button type="button" class="setting-toggle" id="toggleAccessNotifications">Off</button>
+            </div>
+            <div class="setting-item">
+              <div class="setting-text">
+                <p class="s-title">Actualizacion automatica</p>
+                <p class="s-desc">Refresca la lista de ingresos cada 30 segundos.</p>
+              </div>
+              <button type="button" class="setting-toggle" id="toggleAutoRefresh">Off</button>
+            </div>
+            <div class="setting-item disabled">
+              <div class="setting-text">
+                <p class="s-title">Impresora de tickets</p>
+                <p class="s-desc">Modulo no disponible en esta terminal.</p>
+              </div>
+              <div class="s-control">Bloqueado</div>
+            </div>
+            <button type="button" class="save-settings-btn" id="btnSaveReceptionSettings">Guardar ajustes</button>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="recepcionista.js"></script>
+</body>
+</html>

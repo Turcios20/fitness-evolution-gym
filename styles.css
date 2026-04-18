@@ -217,6 +217,12 @@ body {
   margin-top: 2px;
 }
 
+.member-card .member-trainer {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
 .member-card .arrow {
   width: 14px;
   opacity: 0.4;
@@ -237,6 +243,13 @@ body {
 
 .topnav .logo {
   margin-right: auto;
+}
+
+.topnav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
 }
 
 .nav-link {
@@ -275,6 +288,27 @@ body {
 .nav-link.active img {
   opacity: 1;
   filter: sepia(1) saturate(5) hue-rotate(-10deg);
+}
+
+.topnav-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(232, 124, 42, 0.12);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.topnav-logout:hover {
+  border-color: var(--orange);
+  color: var(--orange);
 }
 
 /* ===== NAV INFERIOR (CLIENTE) ===== */

@@ -3,12 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Miembros — FITNESS EVOLUTIONS GYM</title>
+  <title>Miembros - FITNESS EVOLUTIONS GYM</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    /* ── Estilos exclusivos de esta página ── */
-
-    /* Stats superiores */
     .mb-stats {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -26,14 +23,14 @@
     }
 
     .mb-stat-num {
-      font-family: 'Bebas Neue', sans-serif;
+      font-family: "Bebas Neue", sans-serif;
       font-size: 34px;
       line-height: 1;
       color: var(--orange);
     }
 
-    .mb-stat-num.ok     { color: #4cdb8e; }
-    .mb-stat-num.warn   { color: #f0c040; }
+    .mb-stat-num.ok { color: #4cdb8e; }
+    .mb-stat-num.warn { color: #f0c040; }
     .mb-stat-num.danger { color: #e07070; }
 
     .mb-stat-label {
@@ -45,7 +42,6 @@
       margin-top: 4px;
     }
 
-    /* Barra de controles */
     .mb-controls {
       display: flex;
       gap: 10px;
@@ -67,19 +63,24 @@
       backdrop-filter: blur(8px);
     }
 
-    .mb-search img { width: 16px; opacity: 0.45; }
+    .mb-search img {
+      width: 16px;
+      opacity: 0.45;
+    }
 
     .mb-search input {
       background: none;
       border: none;
       outline: none;
       color: var(--text);
-      font-family: 'Rajdhani', sans-serif;
+      font-family: "Rajdhani", sans-serif;
       font-size: 14px;
       width: 100%;
     }
 
-    .mb-search input::placeholder { color: var(--text-dim); }
+    .mb-search input::placeholder {
+      color: var(--text-dim);
+    }
 
     .mb-btn {
       background: var(--orange);
@@ -87,7 +88,7 @@
       border: none;
       border-radius: 8px;
       padding: 9px 16px;
-      font-family: 'Rajdhani', sans-serif;
+      font-family: "Rajdhani", sans-serif;
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
@@ -99,7 +100,9 @@
       gap: 6px;
     }
 
-    .mb-btn:hover { background: var(--orange-dark); }
+    .mb-btn:hover {
+      background: var(--orange-dark);
+    }
 
     .mb-btn--ghost {
       background: transparent;
@@ -107,9 +110,12 @@
       color: var(--text-dim);
     }
 
-    .mb-btn--ghost:hover { border-color: var(--orange); color: var(--text); background: rgba(232,124,42,0.08); }
+    .mb-btn--ghost:hover {
+      border-color: var(--orange);
+      color: var(--text);
+      background: rgba(232, 124, 42, 0.08);
+    }
 
-    /* Filtros de estado rápidos */
     .mb-tabs {
       display: flex;
       gap: 6px;
@@ -120,25 +126,27 @@
     .mb-tab {
       padding: 5px 14px;
       border-radius: 20px;
-      font-family: 'Rajdhani', sans-serif;
+      font-family: "Rajdhani", sans-serif;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
       color: var(--text-dim);
       transition: all 0.18s;
     }
 
-    .mb-tab:hover { border-color: var(--orange); color: var(--text); }
+    .mb-tab:hover {
+      border-color: var(--orange);
+      color: var(--text);
+    }
 
     .mb-tab.active {
-      background: rgba(232,124,42,0.18);
+      background: rgba(232, 124, 42, 0.18);
       border-color: var(--orange);
       color: var(--orange);
     }
 
-    /* Tabla */
     .mb-table-wrap {
       background: var(--panel);
       border: 1px solid var(--border);
@@ -151,7 +159,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-family: 'Rajdhani', sans-serif;
+      font-family: "Rajdhani", sans-serif;
     }
 
     thead th {
@@ -161,25 +169,40 @@
       letter-spacing: 1px;
       text-transform: uppercase;
       color: var(--text-dim);
-      background: rgba(0,0,0,0.25);
+      background: rgba(0, 0, 0, 0.25);
       text-align: left;
+      white-space: nowrap;
+    }
+
+    thead th[data-col] {
       cursor: pointer;
       user-select: none;
-      white-space: nowrap;
       transition: color 0.15s;
     }
 
-    thead th:hover { color: var(--text); }
+    thead th[data-col]:hover {
+      color: var(--text);
+    }
 
-    thead th .sort-icon { margin-left: 4px; opacity: 0.4; font-size: 10px; }
-    thead th.sorted .sort-icon { opacity: 1; color: var(--orange); }
+    thead th .sort-icon {
+      margin-left: 4px;
+      opacity: 0.4;
+      font-size: 10px;
+    }
+
+    thead th.sorted .sort-icon {
+      opacity: 1;
+      color: var(--orange);
+    }
 
     tbody tr {
-      border-top: 1px solid rgba(255,255,255,0.04);
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
       transition: background 0.15s;
     }
 
-    tbody tr:hover { background: rgba(255,255,255,0.03); }
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
 
     tbody td {
       padding: 12px 14px;
@@ -188,7 +211,6 @@
       vertical-align: middle;
     }
 
-    /* Celda del miembro (avatar + nombre + correo) */
     .td-member {
       display: flex;
       align-items: center;
@@ -202,30 +224,36 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Bebas Neue', sans-serif;
+      font-family: "Bebas Neue", sans-serif;
       font-size: 13px;
       color: #fff;
       flex-shrink: 0;
-      border: 2px solid rgba(255,255,255,0.08);
+      border: 2px solid rgba(255, 255, 255, 0.08);
     }
 
-    .td-name  { font-weight: 700; font-size: 14px; }
-    .td-email { font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+    .td-name {
+      font-weight: 700;
+      font-size: 14px;
+    }
 
-    /* Celda de plan */
+    .td-email {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 1px;
+    }
+
     .td-plan {
       font-size: 12px;
       font-weight: 700;
       padding: 3px 10px;
       border-radius: 20px;
-      border: 1px solid rgba(232,124,42,0.3);
-      background: rgba(232,124,42,0.1);
+      border: 1px solid rgba(232, 124, 42, 0.3);
+      background: rgba(232, 124, 42, 0.1);
       color: var(--orange);
       white-space: nowrap;
       display: inline-block;
     }
 
-    /* Acciones de fila */
     .td-actions {
       display: flex;
       gap: 6px;
@@ -236,7 +264,7 @@
       border: none;
       border-radius: 6px;
       padding: 5px 10px;
-      font-family: 'Rajdhani', sans-serif;
+      font-family: "Rajdhani", sans-serif;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
@@ -244,12 +272,19 @@
       transition: opacity 0.15s;
     }
 
-    .td-btn:hover { opacity: 0.82; }
-    .td-btn--edit   { background: #de7f2f; }
-    .td-btn--renew  { background: #1f8f4f; }
+    .td-btn:hover {
+      opacity: 0.82;
+    }
+
+    .td-btn--edit { background: #de7f2f; }
+    .td-btn--renew { background: #1f8f4f; }
     .td-btn--delete { background: #b33a3a; }
 
-    /* Fila vacía */
+    .td-trainer {
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
     .tr-empty td {
       text-align: center;
       color: var(--text-dim);
@@ -257,7 +292,6 @@
       font-size: 14px;
     }
 
-    /* Skeleton de tabla */
     .tr-skeleton td .sk-cell {
       height: 14px;
       border-radius: 6px;
@@ -266,7 +300,6 @@
       animation: shimmer 1.2s infinite linear;
     }
 
-    /* Paginación */
     .mb-pagination {
       display: flex;
       justify-content: space-between;
@@ -292,7 +325,7 @@
       border: 1px solid var(--border);
       background: var(--panel);
       color: var(--text-dim);
-      font-family: 'Rajdhani', sans-serif;
+      font-family: "Rajdhani", sans-serif;
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
@@ -302,102 +335,109 @@
       transition: all 0.15s;
     }
 
-    .mb-page-btn:hover:not(:disabled) { border-color: var(--orange); color: var(--text); }
-    .mb-page-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; }
-    .mb-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .mb-page-btn:hover:not(:disabled) {
+      border-color: var(--orange);
+      color: var(--text);
+    }
 
-    /* Móvil: tabla convertida a cards */
+    .mb-page-btn.active {
+      background: var(--orange);
+      border-color: var(--orange);
+      color: #fff;
+    }
+
+    .mb-page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
     @media (max-width: 768px) {
-      .mb-stats { grid-template-columns: repeat(2, 1fr); }
+      .mb-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
 
-      .mb-table-wrap { overflow-x: auto; }
+      .mb-table-wrap {
+        overflow-x: auto;
+      }
 
-      table { min-width: 600px; }
-
-      /* En móvil muy pequeño se usa scroll horizontal */
+      table {
+        min-width: 760px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="gym-bg"></div>
   <div class="page">
-
-    <!-- NAV -->
     <nav class="topnav">
       <div class="logo">FITNESS<span>EVOLUTIONS GYM</span></div>
-      <a href="admin.html"    class="nav-link">
-        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio"> Inicio
-      </a>
-      <a href="miembros.html" class="nav-link active">
-        <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros"> Miembros
-      </a>
-      <a href="finanzas.html" class="nav-link">
-        <img src="assets/attach_money_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Finanzas"> Finanzas
-      </a>
-      <a href="ajustes.html"  class="nav-link">
-        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes"> Ajustes
-      </a>
+      <div class="topnav-actions">
+        <a href="admin.html" class="nav-link">
+          <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio"> Inicio
+        </a>
+        <a href="miembros.html" class="nav-link active">
+          <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros"> Miembros
+        </a>
+        <a href="finanzas.html" class="nav-link">
+          <img src="assets/attach_money_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Finanzas"> Finanzas
+        </a>
+        <a href="ajustes.html" class="nav-link">
+          <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes"> Ajustes
+        </a>
+        <button type="button" class="topnav-logout" id="btnAdminLogout">Salir</button>
+      </div>
     </nav>
 
-    <!-- CONTENIDO -->
     <main class="content">
-
       <div class="fadein">
         <p class="welcome-sub">Panel de control</p>
-        <h1 class="welcome-title">Gestión de miembros</h1>
+        <h1 class="welcome-title">Gestion de miembros</h1>
       </div>
 
-      <!-- Stats de estado -->
       <div class="mb-stats fadein-2" id="mbStats">
-        <div class="mb-stat"><div class="mb-stat-num" id="stTotal">—</div><div class="mb-stat-label">Total</div></div>
-        <div class="mb-stat"><div class="mb-stat-num ok"     id="stActivo">—</div><div class="mb-stat-label">Activos</div></div>
-        <div class="mb-stat"><div class="mb-stat-num warn"   id="stPorVencer">—</div><div class="mb-stat-label">Por vencer</div></div>
-        <div class="mb-stat"><div class="mb-stat-num danger" id="stVencido">—</div><div class="mb-stat-label">Vencidos</div></div>
+        <div class="mb-stat"><div class="mb-stat-num" id="stTotal">-</div><div class="mb-stat-label">Total</div></div>
+        <div class="mb-stat"><div class="mb-stat-num ok" id="stActivo">-</div><div class="mb-stat-label">Activos</div></div>
+        <div class="mb-stat"><div class="mb-stat-num warn" id="stPorVencer">-</div><div class="mb-stat-label">Por vencer</div></div>
+        <div class="mb-stat"><div class="mb-stat-num danger" id="stVencido">-</div><div class="mb-stat-label">Vencidos</div></div>
       </div>
 
-      <!-- Controles: buscar + agregar + exportar -->
       <div class="mb-controls fadein-2">
         <div class="mb-search">
           <img src="assets/search_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
           <input type="text" id="mbSearch" placeholder="Buscar por nombre o correo...">
         </div>
-        <button class="mb-btn mb-btn--ghost" id="btnExport">⬇ Exportar CSV</button>
+        <button class="mb-btn mb-btn--ghost" id="btnExport">Exportar CSV</button>
         <a href="form.html" class="mb-btn">+ Agregar miembro</a>
       </div>
 
-      <!-- Tabs de filtro rápido -->
       <div class="mb-tabs fadein-2">
         <button class="mb-tab active" data-filter="todos">Todos</button>
         <button class="mb-tab" data-filter="activo">Activos</button>
-        <button class="mb-tab" data-filter="porvencer">Por vencer (&lt;7 días)</button>
+        <button class="mb-tab" data-filter="porvencer">Por vencer (&lt;7 dias)</button>
         <button class="mb-tab" data-filter="vencido">Vencidos</button>
         <button class="mb-tab" data-filter="inactivo">Inactivos</button>
       </div>
 
-      <!-- Tabla -->
       <div class="mb-table-wrap fadein-3">
         <table>
           <thead>
             <tr>
               <th data-col="name">Miembro <span class="sort-icon">↕</span></th>
               <th data-col="plan">Plan <span class="sort-icon">↕</span></th>
-              <th data-col="days">Días rest. <span class="sort-icon">↕</span></th>
+              <th>Entrenador</th>
+              <th data-col="days">Dias rest. <span class="sort-icon">↕</span></th>
               <th data-col="status">Estado <span class="sort-icon">↕</span></th>
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody id="mbTbody">
-            <!-- Rows generados por JS -->
-          </tbody>
+          <tbody id="mbTbody"></tbody>
         </table>
       </div>
 
-      <!-- Paginación -->
       <div class="mb-pagination fadein-3">
-        <div class="mb-page-info" id="mbPageInfo">—</div>
+        <div class="mb-page-info" id="mbPageInfo">-</div>
         <div class="mb-page-btns" id="mbPageBtns"></div>
       </div>
-
     </main>
   </div>
 
