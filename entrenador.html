@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Entrenador — FITNESS EVOLUTIONS GYM</title>
+  <title>Entrenador - FITNESS EVOLUTIONS GYM</title>
   <link rel="stylesheet" href="entrenador.css">
 </head>
 <body class="entrenador-page">
@@ -11,24 +11,25 @@
   <div class="gym-bg"></div>
 
   <div class="page">
-
     <nav class="topnav trainer-topnav">
       <div class="logo">
         FITNESS
         <span>EVOLUTIONS GYM</span>
       </div>
 
-      <div class="user-avatar-wrap" id="avatarWrap">
-        <span class="role-badge">COACH</span>
-        <div class="user-avatar" id="userAvatar">JD</div>
+      <div class="trainer-top-actions">
+        <div class="user-avatar-wrap" id="avatarWrap">
+          <span class="role-badge">COACH</span>
+          <div class="user-avatar" id="userAvatar">JD</div>
+        </div>
+        <button type="button" class="trainer-logout" id="btnTrainerLogout">Salir</button>
       </div>
     </nav>
 
     <main class="content trainer-content">
-
       <div class="fadein">
         <p class="welcome-sub">Panel de Instructor</p>
-        <h1 class="welcome-title" id="welcomeTitle">¡Hola, Coach!</h1>
+        <h1 class="welcome-title" id="welcomeTitle">Hola, Coach</h1>
       </div>
 
       <div class="fadein-2">
@@ -46,7 +47,7 @@
 
       <div class="fadein-3">
         <div class="section-header">
-          <span class="section-title">Próximas Sesiones</span>
+          <span class="section-title">Proximas Sesiones</span>
           <span class="ver-todo">Ver agenda</span>
         </div>
 
@@ -55,21 +56,21 @@
             <div class="session-time">08:00 AM</div>
             <div class="session-info">
               <p class="student-name">Carlos Mendoza</p>
-              <p class="session-goal">Hipertrofia - Pecho/Tríceps</p>
+              <p class="session-goal">Hipertrofia - Pecho/Triceps</p>
             </div>
             <div class="session-action">
-              <button class="btn-icon-check">✓</button>
+              <button class="btn-icon-check">OK</button>
             </div>
           </div>
 
           <div class="session-item">
             <div class="session-time">09:30 AM</div>
             <div class="session-info">
-              <p class="student-name">Elena Rodríguez</p>
-              <p class="session-goal">Pérdida de peso - Cardio HIIT</p>
+              <p class="student-name">Elena Rodriguez</p>
+              <p class="session-goal">Perdida de peso - Cardio HIIT</p>
             </div>
             <div class="session-action">
-              <button class="btn-icon-check">✓</button>
+              <button class="btn-icon-check">OK</button>
             </div>
           </div>
         </div>
@@ -81,16 +82,15 @@
         </div>
         <div class="tools-grid">
           <a href="#" class="tool-card">
-            <div class="tool-icon">📋</div>
+            <div class="tool-icon">Plan</div>
             <p class="tool-name">Crear Rutina</p>
           </a>
           <a href="#" class="tool-card">
-            <div class="tool-icon">📈</div>
+            <div class="tool-icon">Graf</div>
             <p class="tool-name">Progreso Alumnos</p>
           </a>
         </div>
       </div>
-
     </main>
 
     <nav class="bottomnav">
@@ -107,8 +107,9 @@
         Perfil
       </a>
     </nav>
-
   </div>
 
+  <script src="common.js"></script>
+  <script src="entrenador.js"></script>
 </body>
 </html>

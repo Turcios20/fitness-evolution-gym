@@ -3,15 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Recepción — FITNESS EVOLUTIONS GYM</title>
+  <title>Recepcion - FITNESS EVOLUTIONS GYM</title>
   <link rel="stylesheet" href="recepcion.css">
 </head>
 <body class="recepcion-page">
-
   <div class="gym-bg"></div>
 
   <div class="page">
-
     <nav class="topnav">
       <div class="logo">
         FITNESS
@@ -19,16 +17,14 @@
       </div>
 
       <div class="nav-links">
-        <a href="recepcion.html" class="nav-link active">
+        <a href="recepcionista.html" class="nav-link active">
           <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio">
           Inicio
         </a>
-
         <a href="#miembros" class="nav-link">
           <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros">
           Miembros
         </a>
-
         <a href="#ajustes" class="nav-link">
           <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
           Ajustes
@@ -36,50 +32,59 @@
       </div>
 
       <div class="user-info">
-        <span class="role-tag">RECEPCIÓN</span>
-        <div class="user-avatar">RG</div>
+        <span class="role-tag">RECEPCION</span>
+        <div class="user-avatar" id="receptionAvatar">RG</div>
+        <button type="button" class="logout-btn" id="btnReceptionLogout">Salir</button>
       </div>
     </nav>
 
     <div class="main-layout">
-      
       <aside class="sidebar">
-        <div class="sidebar-title">Gestión Diaria</div>
+        <div class="sidebar-title" id="receptionWelcome">Gestion diaria</div>
+
         <div class="quick-links">
-          <a href="#" class="quick-link">
-            <img src="assets/person_add_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
+          <button type="button" class="quick-link quick-link-button" id="btnFocusCheckin">
+            <img src="assets/search_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
             Registrar Entrada
-          </a>
-          <a href="#" class="quick-link">
-            <img src="assets/group_add_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
+          </button>
+          <a href="form.html" class="quick-link" id="linkNewMember">
+            <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="">
             Nuevo Miembro
           </a>
         </div>
 
+        <div class="sidebar-card register-card" id="checkinCard">
+          <div class="sidebar-card-title">Registrar entrada</div>
+          <select id="checkinMemberSelect" class="terminal-select">
+            <option value="">Selecciona un cliente...</option>
+          </select>
+          <button type="button" class="terminal-btn" id="btnRegisterEntry">Registrar ahora</button>
+          <p class="terminal-help">Marca el ingreso del dia para un miembro activo o pendiente de renovar.</p>
+        </div>
+
         <div class="sidebar-card">
-          <div class="sidebar-card-title">Resumen del Día</div>
+          <div class="sidebar-card-title">Resumen del dia</div>
           <div class="sidebar-stat-row">
             <span class="key">Entradas hoy</span>
-            <span class="val orange">42</span>
+            <span class="val orange" id="statEntriesToday">0</span>
           </div>
           <div class="sidebar-stat-row">
             <span class="key">Nuevos socios</span>
-            <span class="val">5</span>
+            <span class="val" id="statNewMembers">0</span>
           </div>
           <div class="sidebar-stat-row">
             <span class="key">Pagos cobrados</span>
-            <span class="val">12</span>
+            <span class="val" id="statPayments">0</span>
           </div>
         </div>
       </aside>
 
       <main class="content-area">
-        
-        <section class="dashboard-section fadein">
+        <section id="miembros" class="dashboard-section fadein">
           <div class="section-header">
             <h2>Miembros en el Local</h2>
             <div class="search-bar">
-              <input type="text" placeholder="Buscar miembro por nombre o ID...">
+              <input type="text" id="receptionSearch" placeholder="Buscar miembro por nombre o correo...">
             </div>
           </div>
 
@@ -93,28 +98,9 @@
                   <th>Acciones</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="receptionTableBody">
                 <tr>
-                  <td>
-                    <div class="m-info">
-                      <span class="m-name">Juan Pérez</span>
-                      <span class="m-id">ID: #1024</span>
-                    </div>
-                  </td>
-                  <td><span class="status-pill active">Activo</span></td>
-                  <td>02:15 PM</td>
-                  <td><button class="btn-table">Ver</button></td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="m-info">
-                      <span class="m-name">María López</span>
-                      <span class="m-id">ID: #1055</span>
-                    </div>
-                  </td>
-                  <td><span class="status-pill warn">Por Vencer</span></td>
-                  <td>02:45 PM</td>
-                  <td><button class="btn-table">Ver</button></td>
+                  <td colspan="4" class="table-empty">Cargando miembros presentes...</td>
                 </tr>
               </tbody>
             </table>
@@ -129,23 +115,32 @@
             <div class="setting-item">
               <div class="setting-text">
                 <p class="s-title">Notificaciones de acceso</p>
-                <p class="s-desc">Emitir sonido cuando un miembro escanea su carnet.</p>
+                <p class="s-desc">Muestra confirmacion al registrar la entrada de un miembro.</p>
               </div>
-              <div class="s-control">[ On ]</div>
+              <button type="button" class="setting-toggle" id="toggleAccessNotifications">Off</button>
+            </div>
+            <div class="setting-item">
+              <div class="setting-text">
+                <p class="s-title">Actualizacion automatica</p>
+                <p class="s-desc">Refresca la lista de ingresos cada 30 segundos.</p>
+              </div>
+              <button type="button" class="setting-toggle" id="toggleAutoRefresh">Off</button>
             </div>
             <div class="setting-item disabled">
               <div class="setting-text">
                 <p class="s-title">Impresora de tickets</p>
-                <p class="s-desc">Módulo no disponible en esta terminal.</p>
+                <p class="s-desc">Modulo no disponible en esta terminal.</p>
               </div>
-              <div class="s-control">⚙️</div>
+              <div class="s-control">Bloqueado</div>
             </div>
+            <button type="button" class="save-settings-btn" id="btnSaveReceptionSettings">Guardar ajustes</button>
           </div>
         </section>
-
       </main>
     </div>
   </div>
 
+  <script src="common.js"></script>
+  <script src="recepcionista.js"></script>
 </body>
 </html>
