@@ -454,3 +454,14 @@ npm install
 | Toast no aparece | Verificar que `common.js` cargue antes de los otros scripts |
 
 ---
+
+## 15. Mejoras recomendadas (siguiente iteracion)
+
+- Hash de passwords con `bcrypt` (actualmente en texto plano).
+- Autenticacion con JWT en lugar de sesion local.
+- Middleware de autorizacion por rol en endpoints admin.
+- Implementar paginas de Finanzas, Ajustes, Calendario con datos reales.
+- Tests de API con Jest/Supertest.
+- Graficos de asistencia e ingresos en el dashboard admin.
+- Notificaciones automaticas a clientes con membresia por vencer.
+
