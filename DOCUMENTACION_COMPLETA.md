@@ -416,3 +416,72 @@ Estas paginas estan creadas con estructura completa y placeholder visual:
 Todas incluyen nav funcional, avatar y boton de cerrar sesion.
 
 ---
+
+## 13. Trabajo en equipo con Git
+
+### 13.1 Subir cambios
+
+```bash
+git add .
+git commit -m "mensaje de cambio"
+git push origin main
+```
+
+### 13.2 Actualizar repositorio local
+
+```bash
+git pull origin main
+npm install
+```
+
+### 13.3 Regla importante
+
+- `.env` no se versiona (esta en `.gitignore`).
+- Cada integrante usa su propio `.env` local.
+
+---
+
+## 14. Troubleshooting
+
+| Problema | Solucion |
+|----------|----------|
+| `Cannot GET /` | Correr `npm start` y abrir `http://localhost:3000` |
+| `Access denied for user 'root'` | Revisar usuario/password en `.env` |
+| `ER_BAD_DB_ERROR` | Ejecutar `npm run init-db` |
+| Login no entra | Verificar credenciales de prueba y consola del servidor |
+| Sesion expirada al recargar | Normal — las sesiones duran 8 horas. Iniciar sesion de nuevo. |
+| Kebab menu cortado | Verificar que `kebab-menu--fixed` tenga `position: fixed` y `z-index: 9999` |
+| Toast no aparece | Verificar que `common.js` cargue antes de los otros scripts |
+
+---
+
+## 15. Mejoras recomendadas (siguiente iteracion)
+
+- Hash de passwords con `bcrypt` (actualmente en texto plano).
+- Autenticacion con JWT en lugar de sesion local.
+- Middleware de autorizacion por rol en endpoints admin.
+- Implementar paginas de Finanzas, Ajustes, Calendario con datos reales.
+- Tests de API con Jest/Supertest.
+- Graficos de asistencia e ingresos en el dashboard admin.
+- Notificaciones automaticas a clientes con membresia por vencer.
+
+---
+
+## 16. Estado actual
+
+El proyecto permite:
+
+- Login por roles con soporte de Enter y modales propios.
+- Proteccion de rutas con verificacion de rol y expiracion de sesion (8h).
+- Interceptor 401 automatico que redirige al login.
+- Panel cliente con datos reales, avatar de iniciales y dropdown de sesion.
+- Panel admin responsivo con sidebar en desktop y kebab en movil.
+- CRUD completo de miembros con modales personalizados (sin prompt/alert).
+- Badges de estado con colores segun dias restantes.
+- Skeleton loaders y animaciones de eliminacion.
+- Filtros combinables por plan y estado.
+- Toasts de confirmacion en todas las acciones.
+- Dashboard de miembros con tabla ordenable, tabs, busqueda, paginacion y exportacion CSV.
+- Formulario dedicado para agregar clientes.
+- Inicializacion automatica de BD.
+
