@@ -863,6 +863,108 @@ body {
 .fadein-4 { animation: fadeUp 0.4s 0.3s ease both; }
 
 
+/* ── AGREGADO: Botón toggle tema (desktop) ──────────────────────────────── */
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 5px 12px 5px 8px;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  outline: none;
+  transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.theme-toggle-btn:hover {
+  border-color: var(--orange);
+  color: var(--text);
+  background: rgba(232,124,42,0.08);
+  box-shadow: 0 0 0 3px rgba(232,124,42,0.10);
+}
+
+/* Pista deslizante */
+.toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 999px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.10);
+}
+[data-theme="light"] .toggle-track {
+  background: rgba(0,0,0,0.10);
+}
+
+/* Knob (bolita) */
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+[data-theme="light"] .toggle-knob {
+  transform: translateX(16px);
+}
+.toggle-knob svg { width: 8px; height: 8px; color: #fff; }
+
+/* Ícono junto al texto */
+.theme-icon { width: 15px; height: 15px; flex-shrink: 0; }
+.icon-sun  { display: none; }
+.icon-moon { display: block; color: #aab4c8; }
+[data-theme="light"] .icon-sun  { display: block; color: var(--orange); }
+[data-theme="light"] .icon-moon { display: none; }
+
+/* Texto dinámico */
+.toggle-label::after { content: "Noche"; }
+[data-theme="light"] .toggle-label::after { content: "Día"; }
+
+/* ── AGREGADO: Botón solo-ícono fijo en mobile ──────────────────────────── */
+.mobile-theme-btn {
+  display: none;                 /* oculto hasta ≤768px */
+  position: fixed;
+  top: 12px;
+  right: 14px;
+  z-index: 300;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.mobile-theme-btn:hover,
+.mobile-theme-btn:focus-visible {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(232,124,42,0.20);
+}
+.mobile-theme-btn svg { width: 16px; height: 16px; }
+.mobile-theme-btn .m-sun  { display: none; }
+.mobile-theme-btn .m-moon { display: block; color: #aab4c8; }
+[data-theme="light"] .mobile-theme-btn .m-sun  { display: block; color: var(--orange); }
+[data-theme="light"] .mobile-theme-btn .m-moon { display: none; }
+/* ── FIN AGREGADO ──────────────────────────────────────────────────────── */
+
 /*Responsive a la hora de usar el sitio web en celular*/
 /* =============================================
    DESKTOP — layout de dos columnas
@@ -985,6 +1087,11 @@ body {
   .content {
     padding: 20px 16px;
   }
+
+  /* ── AGREGADO: ocultar toggle desktop, mostrar ícono en esquina ── */
+  .theme-toggle-btn { display: none; }
+  .mobile-theme-btn { display: flex; }
+  /* ── FIN AGREGADO ─────────────────────────────────────────────── */
 
   /* El nav baja al fondo */
   .topnav {
