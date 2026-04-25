@@ -3,21 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ajustes — FITNESS EVOLUTIONS GYM</title>
+  <title>Ajustes - FITNESS EVOLUTIONS GYM</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="cliente-page">
   <div class="gym-bg"></div>
   <div class="page">
-
     <nav class="topnav cliente-topnav">
       <div class="logo">FITNESS<span>EVOLUTIONS GYM</span></div>
       <div class="user-avatar-wrap" id="avatarWrap">
         <div class="user-avatar" id="userAvatar">--</div>
         <div class="avatar-dropdown" id="avatarDropdown">
-          <div class="dropdown-name" id="dropdownName">—</div>
+          <div class="dropdown-name" id="dropdownName">-</div>
           <div class="dropdown-divider"></div>
-          <button class="dropdown-item dropdown-logout" id="btnLogout">Cerrar sesión</button>
+          <button class="dropdown-item dropdown-logout" id="btnLogout">Cerrar sesion</button>
         </div>
       </div>
     </nav>
@@ -28,13 +27,31 @@
         <p class="welcome-sub">Panel de usuario</p>
         <h1 class="welcome-title">Ajustes</h1>
       </div>
+
       <div class="fadein-2 coming-soon-card">
         <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes" class="coming-icon">
-        <p class="coming-title">Configuración de tu cuenta</p>
-        <p class="coming-sub">Módulo en desarrollo. Próximamente disponible.</p>
-        <a href="cliente.html" class="btn-orange" style="margin-top:20px;display:inline-block;width:auto;padding:10px 28px;">
-          ← Volver al inicio
-        </a>
+        <p class="coming-title">Preferencias de tu cuenta</p>
+        <p class="coming-sub">Guarda el tema visual para que se mantenga en tus proximos ingresos.</p>
+
+        <div class="toggle-row" style="max-width:420px;margin:24px auto 0;text-align:left;">
+          <div class="toggle-info">
+            <div class="toggle-name">Modo oscuro</div>
+            <div class="toggle-desc">Si lo desactivas, tu cuenta usara el modo claro en todo el sistema.</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="clientThemeToggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div style="margin-top:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+          <button class="btn-orange" id="btnSaveClientTheme" style="margin-top:0;display:inline-block;width:auto;padding:10px 28px;" type="button">
+            Guardar preferencia
+          </button>
+          <a href="cliente.html" class="btn-cancel" style="width:auto;padding:10px 22px;">
+            Volver al inicio
+          </a>
+        </div>
       </div>
     </main>
 
@@ -49,29 +66,9 @@
         <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes"> Ajustes
       </a>
     </nav>
-
   </div>
+
   <script src="common.js"></script>
-  <script>
-    // Mini script para avatar y logout en páginas secundarias del cliente
-    document.addEventListener("DOMContentLoaded", () => {
-      const session = window.GymApp?.getSession();
-      if (!session) { window.location.href = "login.html"; return; }
-      const av = document.getElementById("userAvatar");
-      const dn = document.getElementById("dropdownName");
-      const wrap = document.getElementById("avatarWrap");
-      const drop = document.getElementById("avatarDropdown");
-      const logout = document.getElementById("btnLogout");
-      const name = session.displayName || "Usuario";
-      const initials = name.trim().split(/\s+/).slice(0,2).map(w=>w[0].toUpperCase()).join("");
-      const palette = ["#c45e1a","#7b2d8b","#1a6fbf","#1a8f5a","#8a4f0d","#3d5a9e","#8b1a1a","#b0390e"];
-      av.textContent = initials;
-      av.style.background = palette[(initials.charCodeAt(0)+(initials.charCodeAt(1)||0))%palette.length];
-      dn.textContent = name;
-      wrap.addEventListener("click", e => { e.stopPropagation(); drop.classList.toggle("open"); });
-      document.addEventListener("click", () => drop.classList.remove("open"));
-      logout.addEventListener("click", () => { window.GymApp.clearSession(); window.location.href = "login.html"; });
-    });
-  </script>
+  <script src="ajustes-cliente.js"></script>
 </body>
 </html>

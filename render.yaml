@@ -9,6 +9,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: DATABASE_URL
+        sync: false
       - key: DB_HOST
         sync: false
       - key: DB_PORT
@@ -23,3 +25,5 @@ services:
         value: true
       - key: DB_SSL_REJECT_UNAUTHORIZED
         value: false
+      - key: AUTH_SECRET
+        sync: false

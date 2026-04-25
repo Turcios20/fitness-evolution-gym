@@ -11,13 +11,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const memberTemplate= document.querySelector(".member-card");
   const statsValues   = document.querySelectorAll(".stat-card .stat-val");
   const welcomeTitle  = document.querySelector(".welcome-title");
+  const btnLogout     = document.getElementById("btnAdminLogout");
 
   let members    = [];
+  let trainers   = [];
   let filterPlan = "all";
   let filterStatus = "all";
 
   if (welcomeTitle)
     welcomeTitle.textContent = `¡Bienvenido, ${session.displayName || "administrador"}!`;
+
+  if (btnLogout) {
+    btnLogout.addEventListener("click", () => {
+      GymApp.clearSession();
+      window.location.href = "login.html";
+    });
+  }
 
   // ─────────────────────────────────────────────
   // HELPERS DE INICIALES Y COLOR
@@ -131,6 +140,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const { overlay, box } = createOverlay();
     const currentPlan   = member.membership?.plan   || "Mensual";
     const currentStatus = member.membership?.status || "Activo";
+    const trainerOptions = ['<option value="">Sin asignar</option>']
+      .concat(
+        trainers.map((trainer) => `
+          <option value="${trainer.id}" ${trainer.id === Number(member.assignedTrainer?.id || 0) ? "selected" : ""}>
+            ${trainer.name}
+          </option>
+        `)
+      )
+      .join("");
     box.innerHTML = `
       <h3 class="gm-title">Editar miembro</h3>
       <div class="gm-form">
@@ -148,6 +166,8 @@ document.addEventListener("DOMContentLoaded", () => {
             ${["Activo","Inactivo"].map(s =>
               `<option value="${s}" ${s === currentStatus ? "selected" : ""}>${s}</option>`).join("")}
           </select></div>
+        <div class="gm-field"><label>Entrenador asignado</label>
+          <select id="gmTrainer" class="gm-input">${trainerOptions}</select></div>
         <span class="gm-error" id="gmError"></span>
       </div>
       <div class="gm-actions">
@@ -160,11 +180,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const email  = box.querySelector("#gmEmail").value.trim();
       const plan   = box.querySelector("#gmPlan").value;
       const status = box.querySelector("#gmStatus").value;
+      const trainerIdValue = box.querySelector("#gmTrainer").value;
       const errEl  = box.querySelector("#gmError");
       if (!name)  { errEl.textContent = "El nombre es obligatorio."; return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent = "Correo inválido."; return; }
       overlay.remove();
-      onConfirm({ name, email, plan, status });
+      onConfirm({
+        name,
+        email,
+        plan,
+        status,
+        trainerId: trainerIdValue ? Number(trainerIdValue) : null
+      });
     };
   }
 
@@ -297,6 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
     info.innerHTML = `
       <div class="member-name">${member.name}</div>
       <div class="member-days">${member.email} | ${plan}</div>
+      <div class="member-trainer">Entrenador: ${member.assignedTrainer?.name || "Sin asignar"}</div>
       <div style="margin-top:4px;">${statusBadge(days, status)}</div>`;
 
     // Acciones normales (desktop)
@@ -504,9 +532,13 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadMembers() {
     showSkeletons();
     try {
-      const data = await GymApp.api("/api/admin/members");
-      members = data.members || [];
-      if (statsValues[2]) statsValues[2].textContent = String(data.total ?? members.length);
+      const [memberData, trainerData] = await Promise.all([
+        GymApp.api("/api/admin/members"),
+        GymApp.api("/api/trainers")
+      ]);
+      members = memberData.members || [];
+      trainers = trainerData.trainers || [];
+      if (statsValues[2]) statsValues[2].textContent = String(memberData.total ?? members.length);
       renderAlerts(members);
       renderSidebarSummary(members);
       buildFilters();
