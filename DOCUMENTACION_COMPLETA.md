@@ -304,28 +304,29 @@ Abrir:
 
 ---
 
-## 11. Troubleshooting
+## 11. Responsividad
 
-### 11.1 `Cannot GET /`
+### Desktop (>768px)
 
-- Asegurarse de correr `npm start`.
-- Abrir `http://localhost:3000`.
+- Admin: grid de 2 columnas — lista de miembros (flex) + sidebar con acciones rapidas y resumen del mes.
+- Tarjetas de miembros en grid de 2 columnas.
+- Sidebar con stats del mes pegado al scroll (`position: sticky`).
+- Nav superior horizontal.
 
-### 11.2 `Access denied for user 'root'@'localhost'`
+### Movil (≤768px)
 
-- Revisar usuario/password en `.env`.
-- Confirmar puerto real (`3306` normalmente).
-
-### 11.3 `ER_BAD_DB_ERROR` o DB inexistente
-
-- Ejecutar `npm run init-db`.
-
-### 11.4 Login no entra
-
-- Verificar datos de prueba.
-- Revisar consola del servidor para errores SQL.
+- El sidebar del admin se oculta.
+- Las tarjetas se apilan en 1 columna.
+- Los botones Editar/Renovar/Eliminar se reemplazan por el menu kebab (⋮).
+- El botton "Agregar cliente" baja a su propia linea.
+- El logo del nav superior NO aparece en el nav inferior movil del admin.
+- Los toasts suben sobre el nav inferior (`bottom: 90px`).
+- Cliente: nav inferior fijo con Inicio, Calendario y Ajustes.
+- Stats de miembros en grid 2x2.
+- Tabla de miembros con scroll horizontal.
 
 ---
+
 
 ## 12. Mejoras recomendadas (siguiente iteracion)
 
