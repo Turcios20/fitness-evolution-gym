@@ -426,3 +426,17 @@ git add .
 git commit -m "mensaje de cambio"
 git push origin main
 ```
+
+### 13.2 Actualizar repositorio local
+
+```bash
+git pull origin main
+npm install
+```
+
+### 13.3 Regla importante
+
+- `.env` no se versiona (esta en `.gitignore`).
+- Cada integrante usa su propio `.env` local.
+
+---
