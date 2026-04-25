@@ -235,27 +235,72 @@ Abrir:
 
 ---
 
-## 10. Trabajo en equipo con Git
+### 10.2 Toasts (`gym-toast-*`)
 
-### 10.1 Subir cambios
-
-```bash
-git add .
-git commit -m "mensaje de cambio"
-git push origin main
+```
+#gym-toast-container    Contenedor fixed inferior derecho
+.gym-toast              Toast base (oculto por defecto)
+.gym-toast--show        Visible con animacion
+.gym-toast--hide        Salida con animacion
+.gym-toast--success     Borde verde
+.gym-toast--error       Borde rojo
+.gym-toast--info        Borde naranja
 ```
 
-### 10.2 Actualizar repositorio local
+### 10.3 Badges de estado
 
-```bash
-git pull origin main
-npm install
+```
+.member-badge     Base
+.badge-ok         Verde (>15 dias)
+.badge-warn       Amarillo (8–15 dias)
+.badge-danger     Rojo (≤7 dias)
+.badge-expired    Gris (vencido)
+.badge-inactive   Gris (inactivo)
 ```
 
-### 10.3 Regla importante
+### 10.4 Skeleton loaders
 
-- `.env` no se versiona (esta en `.gitignore`).
-- Cada integrante usa su propio `.env` local.
+```
+.skeleton-card      Tarjeta fantasma
+.sk-circle          Avatar animado
+.sk-line            Linea de texto animada
+.sk-line--w70       70% de ancho
+.sk-line--w50       50% de ancho
+```
+
+### 10.5 Kebab menu movil
+
+```
+.kebab-wrap           Contenedor del boton
+.kebab-btn            Boton ⋮
+.kebab-menu           Menu flotante (display: none por defecto)
+.kebab-menu--fixed    Version anclada al body con position: fixed
+.kebab-menu.open      Visible
+.kebab-item           Opcion del menu
+.kebab-item--danger   Opcion de eliminar (rojo)
+```
+
+### 10.6 Animaciones
+
+```
+@keyframes shimmer       Efecto de carga de skeletons
+@keyframes cardFadeOut   Fade + scale al eliminar una tarjeta
+.card-fade-out           Aplica la animacion
+```
+
+### 10.7 Avatar de iniciales
+
+```
+.member-avatar-initials   Circulo con iniciales en tarjetas de admin
+.user-avatar              Circulo del topbar del cliente
+.user-avatar-wrap         Contenedor con dropdown de sesion
+.avatar-dropdown          Menu desplegable del avatar
+.avatar-dropdown.open     Visible
+.dropdown-name            Nombre del usuario
+.dropdown-divider         Separador
+.dropdown-item            Opcion del menu
+.dropdown-logout          Opcion de cerrar sesion (rojo)
+```
 
 ---
 
