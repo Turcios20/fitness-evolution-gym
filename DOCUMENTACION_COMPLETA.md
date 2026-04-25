@@ -402,3 +402,17 @@ Formulario dedicado para agregar clientes (reemplaza los `prompt()` del admin).
 
 ---
 
+## 12. Paginas en desarrollo
+
+Estas paginas estan creadas con estructura completa y placeholder visual:
+
+| Archivo | Descripcion |
+|---------|-------------|
+| `finanzas.html` | Reportes de ingresos del gym |
+| `ajustes.html` | Configuracion del sistema (admin) |
+| `calendario-cliente.html` | Proximas sesiones del cliente |
+| `ajustes-cliente.html` | Configuracion de cuenta del cliente |
+
+Todas incluyen nav funcional, avatar y boton de cerrar sesion.
+
+---
