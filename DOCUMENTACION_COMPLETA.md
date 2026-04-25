@@ -440,3 +440,17 @@ npm install
 - Cada integrante usa su propio `.env` local.
 
 ---
+
+## 14. Troubleshooting
+
+| Problema | Solucion |
+|----------|----------|
+| `Cannot GET /` | Correr `npm start` y abrir `http://localhost:3000` |
+| `Access denied for user 'root'` | Revisar usuario/password en `.env` |
+| `ER_BAD_DB_ERROR` | Ejecutar `npm run init-db` |
+| Login no entra | Verificar credenciales de prueba y consola del servidor |
+| Sesion expirada al recargar | Normal — las sesiones duran 8 horas. Iniciar sesion de nuevo. |
+| Kebab menu cortado | Verificar que `kebab-menu--fixed` tenga `position: fixed` y `z-index: 9999` |
+| Toast no aparece | Verificar que `common.js` cargue antes de los otros scripts |
+
+---
