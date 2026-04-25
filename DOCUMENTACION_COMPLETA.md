@@ -465,3 +465,23 @@ npm install
 - Graficos de asistencia e ingresos en el dashboard admin.
 - Notificaciones automaticas a clientes con membresia por vencer.
 
+---
+
+## 16. Estado actual
+
+El proyecto permite:
+
+- Login por roles con soporte de Enter y modales propios.
+- Proteccion de rutas con verificacion de rol y expiracion de sesion (8h).
+- Interceptor 401 automatico que redirige al login.
+- Panel cliente con datos reales, avatar de iniciales y dropdown de sesion.
+- Panel admin responsivo con sidebar en desktop y kebab en movil.
+- CRUD completo de miembros con modales personalizados (sin prompt/alert).
+- Badges de estado con colores segun dias restantes.
+- Skeleton loaders y animaciones de eliminacion.
+- Filtros combinables por plan y estado.
+- Toasts de confirmacion en todas las acciones.
+- Dashboard de miembros con tabla ordenable, tabs, busqueda, paginacion y exportacion CSV.
+- Formulario dedicado para agregar clientes.
+- Inicializacion automatica de BD.
+
