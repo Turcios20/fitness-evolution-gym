@@ -416,3 +416,13 @@ Estas paginas estan creadas con estructura completa y placeholder visual:
 Todas incluyen nav funcional, avatar y boton de cerrar sesion.
 
 ---
+
+## 13. Trabajo en equipo con Git
+
+### 13.1 Subir cambios
+
+```bash
+git add .
+git commit -m "mensaje de cambio"
+git push origin main
+```
