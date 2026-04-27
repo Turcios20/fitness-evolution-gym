@@ -1,0 +1,191 @@
+/* CSS unicamente para la pantalal de progreso */
+
+.progreso-content {
+  padding: 30px 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-bottom: 110px;
+}
+
+.progreso-wrapper {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 25px;
+}
+
+#formProgreso {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 25px;
+  backdrop-filter: blur(15px);
+  overflow: hidden;
+}
+
+.medidas-anteriores {
+  display: none;
+}
+
+.medidas-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 15px;
+  backdrop-filter: blur(15px);
+}
+
+.medidas-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin: 0 0 3px 0;
+}
+
+.medidas-fecha {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin: 0 0 15px 0;
+  font-weight: 600;
+}
+
+.medida-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.medida-item:last-child {
+  border-bottom: none;
+}
+
+.medida-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.medida-valor {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--orange);
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.medidas-divider {
+  height: 1px;
+  background: rgba(232, 124, 42, 0.3);
+  margin: 12px 0;
+}
+
+.form-group-main {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  margin: 25px 0 20px;
+}
+
+.section-divider span {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: var(--orange);
+}
+
+.section-divider::after {
+  content: "";
+  height: 1px;
+  background: var(--border);
+  flex-grow: 1;
+  margin-left: 15px;
+}
+
+.measures-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.input-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.input-box label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.input-box input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  position: relative;
+}
+
+.input-box input::placeholder {
+  color: rgba(232, 124, 42, 0.4);
+  font-weight: 500;
+}
+
+.input-box input:focus {
+  outline: none;
+  border-color: var(--orange);
+}
+
+.btn-submit {
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  padding: 16px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  text-transform: uppercase;
+  border-radius: var(--radius);
+}
+
+
+
+/* Animaciones */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fadein { animation: fadeInUp 0.5s ease both; }
+.fadein-2 { animation: fadeInUp 0.5s 0.2s ease both; }
+
+/* Desktop */
+@media (min-width: 768px) {
+  .progreso-wrapper {
+    grid-template-columns: 1.4fr 0.6fr;
+  }
+
+  .medidas-anteriores {
+    display: block;
+  }
+
+  .measures-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}

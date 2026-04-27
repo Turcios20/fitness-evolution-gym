@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progreso — FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="progreso.css">
+</head>
+<body class="cliente-page progreso-page">
+
+  <div class="gym-bg"></div>
+
+  <div class="page">
+
+    <nav class="topnav cliente-topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
+      </div>
+
+      <div class="user-avatar-wrap" id="avatarWrap">
+        <div class="user-avatar" id="userAvatar">--</div>
+      </div>
+    </nav>
+
+    <main class="content progreso-content">
+
+      <div class="fadein">
+        <p class="welcome-sub">Seguimiento Corporal</p>
+        <h1 class="welcome-title">Registrar Progreso</h1>
+      </div>
+
+      <div class="progreso-wrapper fadein-2">
+        
+        <form id="formProgreso">
+          
+          <div class="form-group-main">
+            <div class="input-box">
+              <label for="fecha">Fecha</label>
+              <input type="date" id="fecha" required>
+            </div>
+            <div class="input-box">
+              <label for="peso">Peso (kg)</label>
+              <input type="number" id="peso" step="0.1" placeholder="0.0" required>
+            </div>
+          </div>
+
+          <div class="section-divider">
+            <span>Medidas Corporales (cm)</span>
+          </div>
+
+          <div class="measures-grid">
+            <div class="input-box">
+              <label for="pecho">Pecho</label>
+              <input type="number" id="pecho" step="0.1" placeholder="0.0">
+            </div>
+            <div class="input-box">
+              <label for="cintura">Cintura</label>
+              <input type="number" id="cintura" step="0.1" placeholder="0.0">
+            </div>
+            <div class="input-box">
+              <label for="cadera">Cadera</label>
+              <input type="number" id="cadera" step="0.1" placeholder="0.0">
+            </div>
+            <div class="input-box">
+              <label for="brazos">Brazos</label>
+              <input type="number" id="brazos" step="0.1" placeholder="0.0">
+            </div>
+            <div class="input-box">
+              <label for="piernas">Piernas</label>
+              <input type="number" id="piernas" step="0.1" placeholder="0.0">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-orange btn-submit">Guardar Registro</button>
+        </form>
+
+        <aside class="medidas-anteriores">
+          <div class="medidas-card">
+            <h3 class="medidas-title">Última Medición</h3>
+            <p class="medidas-fecha" id="ultimaFecha">--/--/----</p>
+            
+            <div class="medida-item">
+              <span class="medida-label">Peso</span>
+              <span class="medida-valor" id="ultimaPeso">-- kg</span>
+            </div>
+            
+            <div class="medidas-divider"></div>
+            
+            <div class="medida-item">
+              <span class="medida-label">Pecho</span>
+              <span class="medida-valor" id="ultimaPecho">-- cm</span>
+            </div>
+            <div class="medida-item">
+              <span class="medida-label">Cintura</span>
+              <span class="medida-valor" id="ultimaCintura">-- cm</span>
+            </div>
+            <div class="medida-item">
+              <span class="medida-label">Cadera</span>
+              <span class="medida-valor" id="ultimaCadera">-- cm</span>
+            </div>
+            <div class="medida-item">
+              <span class="medida-label">Brazos</span>
+              <span class="medida-valor" id="ultimaBrazos">-- cm</span>
+            </div>
+            <div class="medida-item">
+              <span class="medida-label">Piernas</span>
+              <span class="medida-valor" id="ultimaPiernas">-- cm</span>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+
+    </main>
+
+    <nav class="bottomnav">
+      <a href="cliente.html" class="bot-link">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio">
+        Inicio
+      </a>
+      <a href="calendario-cliente.html" class="bot-link">
+        <img src="assets/calendar_month_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Calendario">
+        Calendario
+      </a>
+      <a href="progreso.html" class="bot-link active">
+        <img src="assets/exercise_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Progreso"> 
+        Progreso
+      </a>
+      <a href="ajustes-cliente.html" class="bot-link">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+        Ajustes
+      </a>
+    </nav>
+
+  </div>
+
+  <script src="common.js"></script>
+  <script src="progreso.js"></script>
+</body>
+</html>
