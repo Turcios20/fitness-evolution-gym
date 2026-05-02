@@ -1,3 +1,5 @@
+const { enviarCorreoRegistro } = require('./mailer');
+
 "use strict";
 
 require("dotenv").config();
@@ -269,6 +271,18 @@ app.post("/api/admin/members", async (req, res) => {
     }
 
     await connection.commit();
+
+        // ENVÍO DE CORREO
+        try {
+            await enviarFacturaRegistro(email, {
+                nombre: name,
+                monto: price,
+                plan: plan
+            });
+        } catch (mailError) {
+            console.error("El usuario se guardó, pero falló el correo:", mailError);
+        }
+
     res.status(201).json({ ok: true, id: insertUser.insertId });
   } catch (error) {
     await connection.rollback();
