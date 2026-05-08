@@ -978,6 +978,172 @@ app.put("/api/settings", authenticate, async (req, res) => {
   }
 });
 
+// Endpoints para medidas de progreso
+app.get("/api/client/:clientId/measurements", authenticate, async (req, res) => {
+  const clientId = Number(req.params.clientId);
+
+  if (!Number.isFinite(clientId)) {
+    res.status(400).json({ error: "clientId invalido" });
+    return;
+  }
+
+  // Solo puede ser accedido por el cliente mismo o su entrenador o admin
+  if (req.auth.role !== "admin" && req.auth.id !== clientId && req.auth.role !== "entrenador") {
+    res.status(403).json({ error: "No autorizado" });
+    return;
+  }
+
+  // Si es entrenador, verificar que sea el entrenador asignado al cliente
+  if (req.auth.role === "entrenador") {
+    try {
+      const [clientRows] = await pool.query(
+        `SELECT id_entrenador_asignado FROM usuarios WHERE id_usuario = ?`,
+        [clientId]
+      );
+      if (!clientRows.length || clientRows[0].id_entrenador_asignado !== req.auth.id) {
+        res.status(403).json({ error: "No eres el entrenador asignado de este cliente" });
+        return;
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Error validando permisos", detail: error.message });
+      return;
+    }
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT id_medida, id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro
+       FROM medidas_progreso
+       WHERE id_usuario = ?
+       ORDER BY fecha DESC`,
+      [clientId]
+    );
+
+    const measurements = rows.map((row) => ({
+      id: row.id_medida,
+      date: row.fecha,
+      weight: row.peso ? Number(row.peso) : null,
+      chest: row.pecho ? Number(row.pecho) : null,
+      waist: row.cintura ? Number(row.cintura) : null,
+      hips: row.cadera ? Number(row.cadera) : null,
+      arms: row.brazos ? Number(row.brazos) : null,
+      legs: row.piernas ? Number(row.piernas) : null,
+      registeredAt: row.fecha_registro
+    }));
+
+    res.json({ measurements, total: measurements.length });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando medidas", detail: error.message });
+  }
+});
+
+app.post("/api/client/:clientId/measurements", authenticate, async (req, res) => {
+  const clientId = Number(req.params.clientId);
+  const { fecha, peso, pecho, cintura, cadera, brazos, piernas } = req.body || {};
+
+  if (!Number.isFinite(clientId)) {
+    res.status(400).json({ error: "clientId invalido" });
+    return;
+  }
+
+  if (!fecha) {
+    res.status(400).json({ error: "fecha requerida" });
+    return;
+  }
+
+  // Solo el cliente puede registrar sus propias medidas
+  if (req.auth.role !== "admin" && req.auth.id !== clientId) {
+    res.status(403).json({ error: "No autorizado" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    await connection.query(
+      `INSERT INTO medidas_progreso (id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         peso = VALUES(peso),
+         pecho = VALUES(pecho),
+         cintura = VALUES(cintura),
+         cadera = VALUES(cadera),
+         brazos = VALUES(brazos),
+         piernas = VALUES(piernas),
+         fecha_registro = CURRENT_TIMESTAMP`,
+      [clientId, fecha, peso || null, pecho || null, cintura || null, cadera || null, brazos || null, piernas || null]
+    );
+
+    await connection.commit();
+    res.status(201).json({ ok: true, message: "Medidas registradas" });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error guardando medidas", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+// Endpoint para que el entrenador obtenga medidas de sus clientes
+app.get("/api/trainer/clients/:clientId/measurements", authenticate, requireRoles("entrenador"), async (req, res) => {
+  const clientId = Number(req.params.clientId);
+
+  if (!Number.isFinite(clientId)) {
+    res.status(400).json({ error: "clientId invalido" });
+    return;
+  }
+
+  try {
+    // Verificar que sea el entrenador asignado al cliente
+    const [clientRows] = await pool.query(
+      `SELECT id_entrenador_asignado, nombre_completo FROM usuarios WHERE id_usuario = ?`,
+      [clientId]
+    );
+
+    if (!clientRows.length) {
+      res.status(404).json({ error: "Cliente no encontrado" });
+      return;
+    }
+
+    if (clientRows[0].id_entrenador_asignado !== req.auth.id) {
+      res.status(403).json({ error: "No eres el entrenador asignado de este cliente" });
+      return;
+    }
+
+    const clientName = clientRows[0].nombre_completo;
+
+    const [rows] = await pool.query(
+      `SELECT id_medida, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro
+       FROM medidas_progreso
+       WHERE id_usuario = ?
+       ORDER BY fecha DESC`,
+      [clientId]
+    );
+
+    const measurements = rows.map((row) => ({
+      id: row.id_medida,
+      date: row.fecha,
+      weight: row.peso ? Number(row.peso) : null,
+      chest: row.pecho ? Number(row.pecho) : null,
+      waist: row.cintura ? Number(row.cintura) : null,
+      hips: row.cadera ? Number(row.cadera) : null,
+      arms: row.brazos ? Number(row.brazos) : null,
+      legs: row.piernas ? Number(row.piernas) : null,
+      registeredAt: row.fecha_registro
+    }));
+
+    res.json({
+      clientId,
+      clientName,
+      measurements,
+      total: measurements.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando medidas del cliente", detail: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`API corriendo en http://localhost:${PORT}`);
 });

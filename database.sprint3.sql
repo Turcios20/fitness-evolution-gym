@@ -16,3 +16,18 @@ SET @trainer_fk_sql := IF(
 PREPARE trainer_fk_stmt FROM @trainer_fk_sql;
 EXECUTE trainer_fk_stmt;
 DEALLOCATE PREPARE trainer_fk_stmt;
+
+CREATE TABLE IF NOT EXISTS medidas_progreso (
+    id_medida INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    fecha DATE NOT NULL,
+    peso DECIMAL(10,2),
+    pecho DECIMAL(10,2),
+    cintura DECIMAL(10,2),
+    cadera DECIMAL(10,2),
+    brazos DECIMAL(10,2),
+    piernas DECIMAL(10,2),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    UNIQUE KEY unique_medida_fecha (id_usuario, fecha)
+);
