@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rutinas y Planes — FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="entrenador-progreso.css">
+  <link rel="stylesheet" href="entrenador-rutinas.css">
+  <link rel="stylesheet" href="entrenador.css">
+  
+</head>
+<body class="entrenador-page entrenador-progreso-page">
+  <div class="gym-bg"></div>
+  <div class="page">
+
+    <nav class="topnav trainer-topnav">
+      <div class="logo">FITNESS <span>EVOLUTIONS GYM</span></div>
+      <div class="trainer-top-actions">
+        <div class="user-avatar-wrap" id="avatarWrap">
+          <span class="role-badge">COACH</span>
+          <div class="user-avatar" id="userAvatar">CO</div>
+        </div>
+        <button type="button" class="trainer-logout" id="btnTrainerLogout">Salir</button>
+      </div>
+    </nav>
+
+    <main class="content trainer-content entrenador-progreso-content">
+      <div class="fadein">
+        <p class="welcome-sub">Gestión de</p>
+        <h1 class="welcome-title">Rutinas y Planes</h1>
+      </div>
+
+      <div class="fadein-2">
+        <div class="progreso-container">
+
+          <!-- Panel izquierdo: Clientes -->
+          <aside class="progreso-clients-panel">
+            <div class="clients-header">
+              <span class="clients-title">Mis Clientes</span>
+              <span class="clients-count" id="clientsCount">0</span>
+            </div>
+            <div class="clients-list" id="clientsList"></div>
+          </aside>
+
+          <!-- Panel derecho -->
+          <section class="progreso-details-panel">
+
+            <div class="details-placeholder" id="detailsPlaceholder">
+              <p>Selecciona un cliente para gestionar<br>sus rutinas y planes</p>
+            </div>
+
+            <div class="details-content hidden" id="detailsContent">
+
+              <div class="client-header">
+                <h2 id="clientName" class="client-name">--</h2>
+                <p id="clientEmail" class="client-email">--</p>
+              </div>
+
+              <!-- Tabs -->
+              <div class="rutinas-tabs">
+                <button type="button" class="tab-btn active" id="tabRutinas">Rutinas</button>
+                <button type="button" class="tab-btn" id="tabPlanes">Planes</button>
+              </div>
+
+              <!-- SECCIÓN RUTINAS -->
+              <div id="seccionRutinas">
+                <p class="section-divider">Nueva Rutina</p>
+                <div class="rutina-form">
+                  <input type="text" id="inputEjercicio" class="rutina-input" placeholder="Nombre del ejercicio *">
+                  <input type="text" id="inputDescripcion" class="rutina-input" placeholder="Descripción del ejercicio">
+                  <select id="selectDia" class="rutina-input">
+                    <option value="">Selecciona un día...</option>
+                    <option value="Lunes">Lunes</option>
+                    <option value="Martes">Martes</option>
+                    <option value="Miércoles">Miércoles</option>
+                    <option value="Jueves">Jueves</option>
+                    <option value="Viernes">Viernes</option>
+                    <option value="Sábado">Sábado</option>
+                    <option value="Domingo">Domingo</option>
+                  </select>
+                  <div class="form-row">
+                    <input type="number" id="inputSeries" class="rutina-input" placeholder="Series" min="1">
+                    <input type="number" id="inputRepeticiones" class="rutina-input" placeholder="Repeticiones" min="1">
+                    <input type="number" id="inputDuracion" class="rutina-input" placeholder="Minutos" min="1">
+                  </div>
+                  <button type="button" id="btnCrearRutina" class="btn-guardar">Guardar Rutina</button>
+                </div>
+                <p class="section-divider">Rutinas Asignadas</p>
+                <div class="measurements-list" id="listaRutinas"></div>
+                <div class="no-measurements hidden" id="noRutinas">
+                  <p>No hay rutinas asignadas aún</p>
+                </div>
+              </div>
+
+              <!-- SECCIÓN PLANES -->
+              <div id="seccionPlanes" class="hidden">
+                <p class="section-divider">Nuevo Plan de Entrenamiento</p>
+                <div class="rutina-form">
+                  <input type="text" id="inputNombrePlan" class="rutina-input" placeholder="Nombre del plan *">
+                  <input type="text" id="inputObjetivo" class="rutina-input" placeholder="Objetivo (ej: Ganar masa muscular)">
+                  <div class="form-row">
+                    <div>
+                      <label class="date-field-label">Fecha inicio *</label>
+                      <input type="date" id="inputFechaInicio" class="rutina-input">
+                    </div>
+                    <div>
+                      <label class="date-field-label">Fecha fin</label>
+                      <input type="date" id="inputFechaFin" class="rutina-input">
+                    </div>
+                    <div></div>
+                  </div>
+                  <button type="button" id="btnCrearPlan" class="btn-guardar">Guardar Plan</button>
+                </div>
+                <p class="section-divider">Planes Activos</p>
+                <div class="measurements-list" id="listaPlanes"></div>
+                <div class="no-measurements hidden" id="noPlanes">
+                  <p>No hay planes creados aún</p>
+                </div>
+              </div>
+
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <nav class="bottomnav">
+      <a href="entrenador.html" class="bot-link">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Panel">
+        Panel
+      </a>
+      <a href="entrenador-rutinas.html" class="bot-link active">
+        <img src="assets/exercise_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Rutinas">
+        Rutinas
+      </a>
+      <a href="entrenador-progreso.html" class="bot-link">
+        <img src="assets/exercise_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Progreso">
+        Progreso
+      </a>
+      <a href="ajustes.html" class="bot-link">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+        Ajustes
+      </a>
+    </nav>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="entrenador-rutinas.js"></script>
+</body>
+</html>

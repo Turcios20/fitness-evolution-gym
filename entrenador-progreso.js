@@ -135,4 +135,3 @@ document.addEventListener("DOMContentLoaded", () => {
   loadTrainerClients().catch((error) => {
     GymApp.toast(`Error inicial: ${error.message}`, "error");
   });
-});

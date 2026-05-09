@@ -53,6 +53,311 @@ function serializeSettingValue(value) {
   return String(value);
 }
 
+// RUTINAS
+// Obtener rutinas de un cliente
+app.get(
+  "/api/client/:clientId/routines",
+  authenticate,
+  async (req, res) => {
+
+    const clientId = Number(req.params.clientId);
+
+    if (!Number.isFinite(clientId)) {
+      return res.status(400).json({
+        error: "clientId invalido"
+      });
+    }
+
+    try {
+
+      const [rows] = await pool.query(
+        `SELECT
+          id_rutina,
+          nombre_ejercicio,
+          descripcion,
+          series,
+          repeticiones,
+          duracion,
+          dia_semana
+        FROM rutinas
+        WHERE id_usuario = ?
+        ORDER BY id_rutina DESC`,
+        [clientId]
+      );
+
+      res.json({
+        routines: rows
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error cargando rutinas",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
+// Crear rutina
+app.post(
+  "/api/client/:clientId/routines",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+
+    const clientId = Number(req.params.clientId);
+
+    const {
+      ejercicio,
+      descripcion,
+      series,
+      repeticiones,
+      duracion,
+      dia
+    } = req.body || {};
+
+    if (!Number.isFinite(clientId)) {
+      return res.status(400).json({
+        error: "clientId invalido"
+      });
+    }
+
+    if (!ejercicio) {
+      return res.status(400).json({
+        error: "Ejercicio requerido"
+      });
+    }
+
+    try {
+
+      await pool.query(
+        `INSERT INTO rutinas (
+          id_usuario,
+          nombre_ejercicio,
+          descripcion,
+          series,
+          repeticiones,
+          duracion,
+          dia_semana
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          clientId,
+          ejercicio,
+          descripcion || null,
+          series || null,
+          repeticiones || null,
+          duracion || null,
+          dia || null
+        ]
+      );
+
+      res.status(201).json({
+        ok: true,
+        message: "Rutina creada correctamente"
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error creando rutina",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
+// Eliminar rutina
+app.delete(
+  "/api/routines/:routineId",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+
+    const routineId = Number(req.params.routineId);
+
+    if (!Number.isFinite(routineId)) {
+      return res.status(400).json({
+        error: "routineId invalido"
+      });
+    }
+
+    try {
+
+      await pool.query(
+        `DELETE FROM rutinas
+        WHERE id_rutina = ?`,
+        [routineId]
+      );
+
+      res.json({
+        ok: true
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error eliminando rutina",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
+// ===============================
+// PLANES
+// ===============================
+
+// Obtener planes
+app.get(
+  "/api/client/:clientId/plans",
+  authenticate,
+  async (req, res) => {
+
+    const clientId = Number(req.params.clientId);
+
+    if (!Number.isFinite(clientId)) {
+      return res.status(400).json({
+        error: "clientId invalido"
+      });
+    }
+
+    try {
+
+      const [rows] = await pool.query(
+        `SELECT
+          id_plan,
+          nombre_plan,
+          objetivo,
+          fecha_inicio,
+          fecha_fin
+        FROM planes_entrenamiento
+        WHERE id_usuario = ?
+        ORDER BY id_plan DESC`,
+        [clientId]
+      );
+
+      res.json({
+        plans: rows
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error cargando planes",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
+// Crear plan
+app.post(
+  "/api/client/:clientId/plans",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+
+    const clientId = Number(req.params.clientId);
+
+    const {
+      nombre,
+      objetivo,
+      fechaInicio,
+      fechaFin
+    } = req.body || {};
+
+    if (!Number.isFinite(clientId)) {
+      return res.status(400).json({
+        error: "clientId invalido"
+      });
+    }
+
+    if (!nombre) {
+      return res.status(400).json({
+        error: "Nombre requerido"
+      });
+    }
+
+    try {
+
+      await pool.query(
+        `INSERT INTO planes_entrenamiento (
+          id_usuario,
+          nombre_plan,
+          objetivo,
+          fecha_inicio,
+          fecha_fin
+        )
+        VALUES (?, ?, ?, ?, ?)`,
+        [
+          clientId,
+          nombre,
+          objetivo || null,
+          fechaInicio || null,
+          fechaFin || null
+        ]
+      );
+
+      res.status(201).json({
+        ok: true,
+        message: "Plan creado correctamente"
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error creando plan",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
+// Eliminar plan
+app.delete(
+  "/api/plans/:planId",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+
+    const planId = Number(req.params.planId);
+
+    if (!Number.isFinite(planId)) {
+      return res.status(400).json({
+        error: "planId invalido"
+      });
+    }
+
+    try {
+
+      await pool.query(
+        `DELETE FROM planes_entrenamiento
+        WHERE id_plan = ?`,
+        [planId]
+      );
+
+      res.json({
+        ok: true
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error eliminando plan",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
 async function ensureProgressSchema() {
   await pool.query(
     `CREATE TABLE IF NOT EXISTS medidas_progreso (
@@ -1236,13 +1541,433 @@ app.get("/api/trainer/clients/:clientId/measurements", authenticate, requireRole
   }
 });
 
-ensureProgressSchema()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`API corriendo en http://localhost:${PORT}`);
+// ── PAGOS ────────────────────────────────────────────────────────────────────
+
+app.get("/api/admin/payments", async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+         p.id_pago,
+         p.id_usuario,
+         u.nombre_completo,
+         u.correo,
+         p.monto,
+         p.fecha_pago,
+         p.metodo_pago
+       FROM pagos p
+       JOIN usuarios u ON u.id_usuario = p.id_usuario
+       ORDER BY p.fecha_pago DESC
+       LIMIT 200`
+    );
+    res.json({ payments: rows, total: rows.length });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando pagos", detail: error.message });
+  }
+});
+
+app.post("/api/admin/payments", async (req, res) => {
+  const { userId, monto, metodoPago } = req.body || {};
+  if (!userId || !monto) {
+    res.status(400).json({ error: "userId y monto son requeridos" });
+    return;
+  }
+  const metodos = ["Efectivo", "Tarjeta", "Transferencia"];
+  const metodo = metodos.includes(metodoPago) ? metodoPago : "Efectivo";
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO pagos (id_usuario, monto, metodo_pago) VALUES (?, ?, ?)`,
+      [userId, Number(monto), metodo]
+    );
+    res.status(201).json({ ok: true, id: result.insertId });
+  } catch (error) {
+    res.status(500).json({ error: "Error registrando pago", detail: error.message });
+  }
+});
+
+app.get("/api/admin/finance/summary", async (_req, res) => {
+  try {
+    const [totals] = await pool.query(
+      `SELECT
+         COUNT(*)                                          AS total_pagos,
+         COALESCE(SUM(monto), 0)                          AS ingresos_total,
+         COALESCE(SUM(CASE WHEN DATE(fecha_pago) = CURDATE() THEN monto ELSE 0 END), 0) AS ingresos_hoy,
+         COALESCE(SUM(CASE WHEN YEAR(fecha_pago) = YEAR(CURDATE()) AND MONTH(fecha_pago) = MONTH(CURDATE()) THEN monto ELSE 0 END), 0) AS ingresos_mes
+       FROM pagos`
+    );
+
+    const [byMethod] = await pool.query(
+      `SELECT metodo_pago, COUNT(*) AS cantidad, COALESCE(SUM(monto), 0) AS subtotal
+       FROM pagos
+       GROUP BY metodo_pago`
+    );
+
+    const [monthly] = await pool.query(
+      `SELECT
+         DATE_FORMAT(fecha_pago, '%Y-%m') AS mes,
+         COALESCE(SUM(monto), 0)          AS total
+       FROM pagos
+       WHERE fecha_pago >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+       GROUP BY mes
+       ORDER BY mes ASC`
+    );
+
+    res.json({
+      summary: totals[0],
+      byMethod,
+      monthly
     });
-  })
-  .catch((error) => {
-    console.error("No se pudo preparar la tabla de progreso:", error.message);
-    process.exit(1);
-  });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando resumen financiero", detail: error.message });
+  }
+});
+
+// ── CLASES Y RESERVAS ────────────────────────────────────────────────────────
+
+app.get("/api/clases", async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id_clase, nombre, descripcion, entrenador, fecha_hora, duracion_min, capacidad, disponibles
+       FROM clases
+       WHERE fecha_hora >= NOW()
+       ORDER BY fecha_hora ASC`
+    );
+    res.json({ clases: rows });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando clases", detail: error.message });
+  }
+});
+
+app.get("/api/clases/mis-reservas", async (req, res) => {
+  const username = String(req.query.username || "").trim();
+  if (!username) {
+    res.status(400).json({ error: "username requerido" });
+    return;
+  }
+
+  try {
+    const [userRows] = await pool.query(
+      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
+      [username]
+    );
+    if (!userRows.length) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+    const userId = userRows[0].id_usuario;
+
+    const [rows] = await pool.query(
+      `SELECT
+         r.id_reserva,
+         r.estado,
+         r.fecha_reserva,
+         c.id_clase,
+         c.nombre,
+         c.descripcion,
+         c.entrenador,
+         c.fecha_hora,
+         c.duracion_min
+       FROM reservas r
+       JOIN clases c ON c.id_clase = r.id_clase
+       WHERE r.id_usuario = ?
+       ORDER BY c.fecha_hora ASC`,
+      [userId]
+    );
+    res.json({ reservas: rows });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando reservas", detail: error.message });
+  }
+});
+
+app.post("/api/clases/:id/reservar", async (req, res) => {
+  const claseId = Number(req.params.id);
+  const { username } = req.body || {};
+
+  if (!Number.isFinite(claseId) || !username) {
+    res.status(400).json({ error: "id de clase y username requeridos" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [userRows] = await connection.query(
+      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
+      [username]
+    );
+    if (!userRows.length) {
+      await connection.rollback();
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+    const userId = userRows[0].id_usuario;
+
+    const [claseRows] = await connection.query(
+      "SELECT id_clase, disponibles FROM clases WHERE id_clase = ? LIMIT 1 FOR UPDATE",
+      [claseId]
+    );
+    if (!claseRows.length) {
+      await connection.rollback();
+      res.status(404).json({ error: "Clase no encontrada" });
+      return;
+    }
+    if (claseRows[0].disponibles <= 0) {
+      await connection.rollback();
+      res.status(409).json({ error: "No hay cupos disponibles" });
+      return;
+    }
+
+    await connection.query(
+      `INSERT INTO reservas (id_usuario, id_clase) VALUES (?, ?)`,
+      [userId, claseId]
+    );
+    await connection.query(
+      `UPDATE clases SET disponibles = disponibles - 1 WHERE id_clase = ?`,
+      [claseId]
+    );
+
+    await connection.commit();
+    res.status(201).json({ ok: true, message: "Reserva confirmada" });
+  } catch (error) {
+    await connection.rollback();
+    if (error.code === "ER_DUP_ENTRY") {
+      res.status(409).json({ error: "Ya tienes una reserva para esta clase" });
+      return;
+    }
+    res.status(500).json({ error: "Error al reservar", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+app.delete("/api/clases/reservas/:id", async (req, res) => {
+  const reservaId = Number(req.params.id);
+  const { username } = req.body || {};
+
+  if (!Number.isFinite(reservaId) || !username) {
+    res.status(400).json({ error: "id de reserva y username requeridos" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [userRows] = await connection.query(
+      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
+      [username]
+    );
+    if (!userRows.length) {
+      await connection.rollback();
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+    const userId = userRows[0].id_usuario;
+
+    const [reservaRows] = await connection.query(
+      "SELECT id_clase FROM reservas WHERE id_reserva = ? AND id_usuario = ? LIMIT 1",
+      [reservaId, userId]
+    );
+    if (!reservaRows.length) {
+      await connection.rollback();
+      res.status(404).json({ error: "Reserva no encontrada" });
+      return;
+    }
+
+    const claseId = reservaRows[0].id_clase;
+    await connection.query(
+      "UPDATE reservas SET estado = 'Cancelada' WHERE id_reserva = ?",
+      [reservaId]
+    );
+    await connection.query(
+      "UPDATE clases SET disponibles = disponibles + 1 WHERE id_clase = ?",
+      [claseId]
+    );
+
+    await connection.commit();
+    res.json({ ok: true, message: "Reserva cancelada" });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error cancelando reserva", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+// ── CLASES Y RESERVAS ────────────────────────────────────────────────────────
+
+app.get("/api/clases", async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id_clase, nombre, descripcion, entrenador, fecha_hora, duracion_min, capacidad, disponibles
+       FROM clases
+       WHERE fecha_hora >= NOW()
+       ORDER BY fecha_hora ASC`
+    );
+    res.json({ clases: rows });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando clases", detail: error.message });
+  }
+});
+
+app.get("/api/clases/mis-reservas", async (req, res) => {
+  const username = String(req.query.username || "").trim();
+  if (!username) {
+    res.status(400).json({ error: "username requerido" });
+    return;
+  }
+
+  try {
+    const [userRows] = await pool.query(
+      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
+      [username]
+    );
+    if (!userRows.length) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+    const userId = userRows[0].id_usuario;
+
+    const [rows] = await pool.query(
+      `SELECT
+         r.id_reserva,
+         r.estado,
+         r.fecha_reserva,
+         c.id_clase,
+         c.nombre,
+         c.descripcion,
+         c.entrenador,
+         c.fecha_hora,
+         c.duracion_min
+       FROM reservas r
+       JOIN clases c ON c.id_clase = r.id_clase
+       WHERE r.id_usuario = ?
+       ORDER BY c.fecha_hora ASC`,
+      [userId]
+    );
+    res.json({ reservas: rows });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando reservas", detail: error.message });
+  }
+});
+
+app.post("/api/clases/:id/reservar", async (req, res) => {
+  const claseId = Number(req.params.id);
+  const { username } = req.body || {};
+
+  if (!Number.isFinite(claseId) || !username) {
+    res.status(400).json({ error: "id de clase y username requeridos" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [userRows] = await connection.query(
+      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
+      [username]
+    );
+    if (!userRows.length) {
+      await connection.rollback();
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+    const userId = userRows[0].id_usuario;
+
+    const [claseRows] = await connection.query(
+      "SELECT id_clase, disponibles FROM clases WHERE id_clase = ? LIMIT 1 FOR UPDATE",
+      [claseId]
+    );
+    if (!claseRows.length) {
+      await connection.rollback();
+      res.status(404).json({ error: "Clase no encontrada" });
+      return;
+    }
+    if (claseRows[0].disponibles <= 0) {
+      await connection.rollback();
+      res.status(409).json({ error: "No hay cupos disponibles" });
+      return;
+    }
+
+    await connection.query(
+      `INSERT INTO reservas (id_usuario, id_clase) VALUES (?, ?)`,
+      [userId, claseId]
+    );
+    await connection.query(
+      `UPDATE clases SET disponibles = disponibles - 1 WHERE id_clase = ?`,
+      [claseId]
+    );
+
+    await connection.commit();
+    res.status(201).json({ ok: true, message: "Reserva confirmada" });
+  } catch (error) {
+    await connection.rollback();
+    if (error.code === "ER_DUP_ENTRY") {
+      res.status(409).json({ error: "Ya tienes una reserva para esta clase" });
+      return;
+    }
+    res.status(500).json({ error: "Error al reservar", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+app.delete("/api/clases/reservas/:id", async (req, res) => {
+  const reservaId = Number(req.params.id);
+  const { username } = req.body || {};
+
+  if (!Number.isFinite(reservaId) || !username) {
+    res.status(400).json({ error: "id de reserva y username requeridos" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [userRows] = await connection.query(
+      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
+      [username]
+    );
+    if (!userRows.length) {
+      await connection.rollback();
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+    const userId = userRows[0].id_usuario;
+
+    const [reservaRows] = await connection.query(
+      "SELECT id_clase FROM reservas WHERE id_reserva = ? AND id_usuario = ? LIMIT 1",
+      [reservaId, userId]
+    );
+    if (!reservaRows.length) {
+      await connection.rollback();
+      res.status(404).json({ error: "Reserva no encontrada" });
+      return;
+    }
+
+    const claseId = reservaRows[0].id_clase;
+    await connection.query(
+      "UPDATE reservas SET estado = 'Cancelada' WHERE id_reserva = ?",
+      [reservaId]
+    );
+    await connection.query(
+      "UPDATE clases SET disponibles = disponibles + 1 WHERE id_clase = ?",
+      [claseId]
+    );
+
+    await connection.commit();
+    res.json({ ok: true, message: "Reserva cancelada" });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error cancelando reserva", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`API corriendo en http://localhost:${PORT}`);
+});
