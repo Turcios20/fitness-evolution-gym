@@ -7,6 +7,29 @@
   padding-bottom: 110px;
 }
 
+.btn-evolucion-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 12px;
+  margin-bottom: 18px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 124, 42, 0.35);
+  background: rgba(232, 124, 42, 0.12);
+  color: var(--orange);
+  text-decoration: none;
+  font-family: "Rajdhani", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.btn-evolucion-link:hover {
+  background: rgba(232, 124, 42, 0.18);
+  border-color: rgba(232, 124, 42, 0.55);
+}
+
 .progreso-wrapper {
   display: grid;
   grid-template-columns: 1fr;
@@ -20,6 +43,29 @@
   padding: 25px;
   backdrop-filter: blur(15px);
   overflow: hidden;
+}
+
+.prefill-hint {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(232, 124, 42, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.prefill-hint--prefilled {
+  border-color: rgba(232, 124, 42, 0.35);
+  background: rgba(232, 124, 42, 0.08);
+  color: var(--text);
+}
+
+.prefill-hint--editing {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
 }
 
 .medidas-anteriores {

@@ -318,3 +318,41 @@
     font-size: 20px;
   }
 }
+
+.cambio-mejoro {
+  background: rgba(76, 175, 80, 0.2);
+  color: var(--color-improve);
+}
+
+.cambio-empeoro {
+  background: rgba(244, 67, 54, 0.2);
+  color: var(--color-worsen);
+}
+
+.medida-card.mejoro {
+  border-color: rgba(76, 175, 80, 0.3);
+  background: rgba(76, 175, 80, 0.05);
+}
+
+.medida-card.mejoro .medida-card-valor {
+  color: var(--color-improve);
+}
+
+.medida-card.empeoro {
+  border-color: rgba(244, 67, 54, 0.3);
+  background: rgba(244, 67, 54, 0.05);
+}
+
+.medida-card.empeoro .medida-card-valor {
+  color: var(--color-worsen);
+}
+
+.medida-card-unit {
+  font-size: 11px;
+  color: #999;
+}
+
+.historial-current-tag {
+  color: #ff8c00;
+  font-size: 12px;
+}

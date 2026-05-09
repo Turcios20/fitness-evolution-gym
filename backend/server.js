@@ -53,6 +53,26 @@ function serializeSettingValue(value) {
   return String(value);
 }
 
+async function ensureProgressSchema() {
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS medidas_progreso (
+       id_medida INT AUTO_INCREMENT PRIMARY KEY,
+       id_usuario INT NOT NULL,
+       fecha DATE NOT NULL,
+       peso DECIMAL(10,2),
+       pecho DECIMAL(10,2),
+       cintura DECIMAL(10,2),
+       cadera DECIMAL(10,2),
+       brazos DECIMAL(10,2),
+       piernas DECIMAL(10,2),
+       fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+       CONSTRAINT fk_medidas_usuario
+         FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+       UNIQUE KEY unique_medida_fecha (id_usuario, fecha)
+     )`
+  );
+}
+
 function getBearerToken(req) {
   const authorization = String(req.headers.authorization || "");
   if (!authorization.toLowerCase().startsWith("bearer ")) {
@@ -194,6 +214,104 @@ async function listClientMembers(executor = pool) {
   );
 
   return rows.map(normalizeMember);
+}
+
+function mapMeasurementRow(row) {
+  const toNumberOrNull = (value) => (value == null ? null : Number(value));
+
+  return {
+    id: row.id_medida,
+    date: row.fecha,
+    weight: toNumberOrNull(row.peso),
+    chest: toNumberOrNull(row.pecho),
+    waist: toNumberOrNull(row.cintura),
+    hips: toNumberOrNull(row.cadera),
+    arms: toNumberOrNull(row.brazos),
+    legs: toNumberOrNull(row.piernas),
+    registeredAt: row.fecha_registro
+  };
+}
+
+async function getClientById(clientId, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT id_usuario, nombre_completo, correo, rol, id_entrenador_asignado
+     FROM usuarios
+     WHERE id_usuario = ?
+     LIMIT 1`,
+    [clientId]
+  );
+
+  return rows[0] || null;
+}
+
+async function ensureClientEvolutionAccess(clientId, auth, executor = pool) {
+  const client = await getClientById(clientId, executor);
+
+  if (!client || client.rol !== "Cliente") {
+    const error = new Error("Cliente no encontrado");
+    error.status = 404;
+    throw error;
+  }
+
+  if (auth.role === "admin" || auth.id === clientId) {
+    return client;
+  }
+
+  if (auth.role === "entrenador" && client.id_entrenador_asignado === auth.id) {
+    return client;
+  }
+
+  const error = new Error(
+    auth.role === "entrenador"
+      ? "No eres el entrenador asignado de este cliente"
+      : "No autorizado"
+  );
+  error.status = 403;
+  throw error;
+}
+
+async function getClientMeasurements(clientId, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT id_medida, id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro
+     FROM medidas_progreso
+     WHERE id_usuario = ?
+     ORDER BY fecha DESC`,
+    [clientId]
+  );
+
+  return rows.map(mapMeasurementRow);
+}
+
+async function getClientObjective(clientId, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT valor
+     FROM ajustes
+     WHERE id_usuario = ?
+       AND clave = 'objetivo_personal'
+     LIMIT 1`,
+    [clientId]
+  );
+
+  return rows[0]?.valor || null;
+}
+
+async function getClientEvolutionPayload(clientId, auth, executor = pool) {
+  const client = await ensureClientEvolutionAccess(clientId, auth, executor);
+  const [measurements, objective] = await Promise.all([
+    getClientMeasurements(clientId, executor),
+    getClientObjective(clientId, executor)
+  ]);
+
+  return {
+    client: {
+      id: client.id_usuario,
+      name: client.nombre_completo,
+      email: client.correo
+    },
+    objective,
+    measurements,
+    total: measurements.length
+  };
 }
 
 async function resolveTrainerId(connection, trainerId) {
@@ -978,6 +1096,27 @@ app.put("/api/settings", authenticate, async (req, res) => {
   }
 });
 
+app.get("/api/client/:clientId/evolution", authenticate, async (req, res) => {
+  const clientId = Number(req.params.clientId);
+
+  if (!Number.isFinite(clientId)) {
+    res.status(400).json({ error: "clientId invalido" });
+    return;
+  }
+
+  try {
+    const payload = await getClientEvolutionPayload(clientId, req.auth);
+    res.json(payload);
+  } catch (error) {
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
+    res.status(500).json({ error: "Error cargando evolucion", detail: error.message });
+  }
+});
+
 // Endpoints para medidas de progreso
 app.get("/api/client/:clientId/measurements", authenticate, async (req, res) => {
   const clientId = Number(req.params.clientId);
@@ -987,52 +1126,16 @@ app.get("/api/client/:clientId/measurements", authenticate, async (req, res) => 
     return;
   }
 
-  // Solo puede ser accedido por el cliente mismo o su entrenador o admin
-  if (req.auth.role !== "admin" && req.auth.id !== clientId && req.auth.role !== "entrenador") {
-    res.status(403).json({ error: "No autorizado" });
-    return;
-  }
-
-  // Si es entrenador, verificar que sea el entrenador asignado al cliente
-  if (req.auth.role === "entrenador") {
-    try {
-      const [clientRows] = await pool.query(
-        `SELECT id_entrenador_asignado FROM usuarios WHERE id_usuario = ?`,
-        [clientId]
-      );
-      if (!clientRows.length || clientRows[0].id_entrenador_asignado !== req.auth.id) {
-        res.status(403).json({ error: "No eres el entrenador asignado de este cliente" });
-        return;
-      }
-    } catch (error) {
-      res.status(500).json({ error: "Error validando permisos", detail: error.message });
-      return;
-    }
-  }
-
   try {
-    const [rows] = await pool.query(
-      `SELECT id_medida, id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro
-       FROM medidas_progreso
-       WHERE id_usuario = ?
-       ORDER BY fecha DESC`,
-      [clientId]
-    );
-
-    const measurements = rows.map((row) => ({
-      id: row.id_medida,
-      date: row.fecha,
-      weight: row.peso ? Number(row.peso) : null,
-      chest: row.pecho ? Number(row.pecho) : null,
-      waist: row.cintura ? Number(row.cintura) : null,
-      hips: row.cadera ? Number(row.cadera) : null,
-      arms: row.brazos ? Number(row.brazos) : null,
-      legs: row.piernas ? Number(row.piernas) : null,
-      registeredAt: row.fecha_registro
-    }));
-
+    await ensureClientEvolutionAccess(clientId, req.auth);
+    const measurements = await getClientMeasurements(clientId);
     res.json({ measurements, total: measurements.length });
   } catch (error) {
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
     res.status(500).json({ error: "Error cargando medidas", detail: error.message });
   }
 });
@@ -1114,51 +1217,21 @@ app.get("/api/trainer/clients/:clientId/measurements", authenticate, requireRole
   }
 
   try {
-    // Verificar que sea el entrenador asignado al cliente
-    const [clientRows] = await pool.query(
-      `SELECT id_entrenador_asignado, nombre_completo FROM usuarios WHERE id_usuario = ?`,
-      [clientId]
-    );
-
-    if (!clientRows.length) {
-      res.status(404).json({ error: "Cliente no encontrado" });
-      return;
-    }
-
-    if (clientRows[0].id_entrenador_asignado !== req.auth.id) {
-      res.status(403).json({ error: "No eres el entrenador asignado de este cliente" });
-      return;
-    }
-
-    const clientName = clientRows[0].nombre_completo;
-
-    const [rows] = await pool.query(
-      `SELECT id_medida, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro
-       FROM medidas_progreso
-       WHERE id_usuario = ?
-       ORDER BY fecha DESC`,
-      [clientId]
-    );
-
-    const measurements = rows.map((row) => ({
-      id: row.id_medida,
-      date: row.fecha,
-      weight: row.peso ? Number(row.peso) : null,
-      chest: row.pecho ? Number(row.pecho) : null,
-      waist: row.cintura ? Number(row.cintura) : null,
-      hips: row.cadera ? Number(row.cadera) : null,
-      arms: row.brazos ? Number(row.brazos) : null,
-      legs: row.piernas ? Number(row.piernas) : null,
-      registeredAt: row.fecha_registro
-    }));
+    const payload = await getClientEvolutionPayload(clientId, req.auth);
 
     res.json({
       clientId,
-      clientName,
-      measurements,
-      total: measurements.length
+      clientName: payload.client.name,
+      objective: payload.objective,
+      measurements: payload.measurements,
+      total: payload.total
     });
   } catch (error) {
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
     res.status(500).json({ error: "Error cargando medidas del cliente", detail: error.message });
   }
 });

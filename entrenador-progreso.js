@@ -12,11 +12,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailsContent = document.getElementById("detailsContent");
   const clientName = document.getElementById("clientName");
   const clientEmail = document.getElementById("clientEmail");
-  const measurementsList = document.getElementById("measurementsList");
-  const noMeasurements = document.getElementById("noMeasurements");
-
-  let allClients = [];
-  let selectedClientId = null;
+  const trainerObjective = document.getElementById("trainerObjective");
+  const trainerComparisonBody = document.getElementById("trainerComparisonBody");
+  const trainerHistoryList = document.getElementById("trainerHistoryList");
 
   function getInitials(name) {
     return (name || "CO")
@@ -32,24 +30,17 @@ document.addEventListener("DOMContentLoaded", () => {
     return palette[(initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % palette.length];
   }
 
-  const displayName = session.displayName || "Coach";
-  const initials = getInitials(displayName);
+  function renderAvatar() {
+    const displayName = session.displayName || "Coach";
+    const initials = getInitials(displayName);
+    userAvatar.textContent = initials;
+    userAvatar.style.background = avatarColor(initials);
+  }
 
-  userAvatar.textContent = initials;
-  userAvatar.style.background = avatarColor(initials);
-
-  btnLogout.addEventListener("click", () => {
-    GymApp.clearSession();
-    window.location.href = "login.html";
-  });
-
-  function formatDate(dateString) {
-    if (!dateString) return "--/--/----";
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+  function resetEvolutionPanels(message) {
+    trainerObjective.textContent = "No hay objetivo configurado";
+    trainerComparisonBody.innerHTML = `<tr><td colspan="5" class="loading-row">${message}</td></tr>`;
+    trainerHistoryList.innerHTML = `<div class="loading-message">${message}</div>`;
   }
 
   function renderClients(clients) {
@@ -62,6 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>No tienes clientes asignados aún</p>
         </div>
       `;
+      resetEvolutionPanels("Todavía no hay clientes asignados");
       return;
     }
 
@@ -83,101 +75,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function selectClient(client) {
-    // Actualizar estado visual
     document.querySelectorAll(".client-item").forEach((item) => {
       item.classList.remove("active");
     });
     document.querySelector(`[data-client-id="${client.id}"]`)?.classList.add("active");
 
-    selectedClientId = client.id;
     clientName.textContent = client.name;
     clientEmail.textContent = client.email;
-
-    // Ocultar placeholder y mostrar contenido
     detailsPlaceholder.style.display = "none";
     detailsContent.classList.remove("hidden");
-
-    loadMeasurements(client.id);
+    resetEvolutionPanels("Cargando evolución...");
+    loadEvolution(client.id);
   }
 
-  function formatMeasurementValue(value) {
-    if (value == null) return "--";
-    return String(value);
-  }
-
-  function renderMeasurements(measurements) {
-    measurementsList.innerHTML = "";
-
-    if (!measurements.length) {
-      measurementsList.classList.add("hidden");
-      noMeasurements.classList.remove("hidden");
-      return;
-    }
-
-    measurementsList.classList.remove("hidden");
-    noMeasurements.classList.add("hidden");
-
-    measurements.forEach((measurement) => {
-      const card = document.createElement("div");
-      card.className = "measurement-card";
-
-      const date = new Date(measurement.date);
-      const formattedDate = formatDate(measurement.date);
-
-      card.innerHTML = `
-        <div class="measurement-date">
-          <span class="measurement-date-label">Medición</span>
-          <span class="measurement-date-value">${formattedDate}</span>
-        </div>
-        <div class="measurement-values">
-          <div class="measure-item">
-            <span class="measure-label">Peso</span>
-            <span class="measure-value">${formatMeasurementValue(measurement.weight)}</span>
-            <span style="font-size: 10px; color: var(--text-dim);">kg</span>
-          </div>
-          <div class="measure-item">
-            <span class="measure-label">Pecho</span>
-            <span class="measure-value">${formatMeasurementValue(measurement.chest)}</span>
-            <span style="font-size: 10px; color: var(--text-dim);">cm</span>
-          </div>
-          <div class="measure-item">
-            <span class="measure-label">Cintura</span>
-            <span class="measure-value">${formatMeasurementValue(measurement.waist)}</span>
-            <span style="font-size: 10px; color: var(--text-dim);">cm</span>
-          </div>
-          <div class="measure-item">
-            <span class="measure-label">Cadera</span>
-            <span class="measure-value">${formatMeasurementValue(measurement.hips)}</span>
-            <span style="font-size: 10px; color: var(--text-dim);">cm</span>
-          </div>
-          <div class="measure-item">
-            <span class="measure-label">Brazos</span>
-            <span class="measure-value">${formatMeasurementValue(measurement.arms)}</span>
-            <span style="font-size: 10px; color: var(--text-dim);">cm</span>
-          </div>
-          <div class="measure-item">
-            <span class="measure-label">Piernas</span>
-            <span class="measure-value">${formatMeasurementValue(measurement.legs)}</span>
-            <span style="font-size: 10px; color: var(--text-dim);">cm</span>
-          </div>
-        </div>
-      `;
-
-      measurementsList.appendChild(card);
-    });
-  }
-
-  async function loadMeasurements(clientId) {
+  async function loadEvolution(clientId) {
     try {
-      const data = await GymApp.api(`/api/trainer/clients/${clientId}/measurements`);
-      const measurements = Array.isArray(data?.measurements) ? data.measurements : [];
-      renderMeasurements(measurements);
+      const payload = await GymApp.api(`/api/client/${clientId}/evolution`);
+      GymEvolution.renderEvolution(
+        {
+          objective: trainerObjective,
+          comparison: trainerComparisonBody,
+          history: trainerHistoryList
+        },
+        payload
+      );
     } catch (error) {
-      measurementsList.innerHTML = `
-        <div style="text-align: center; padding: 20px; color: var(--text-dim);">
-          <p>Error cargando medidas: ${error.message}</p>
-        </div>
-      `;
+      resetEvolutionPanels(`Error cargando evolución: ${error.message}`);
       GymApp.toast(`Error: ${error.message}`, "error");
     }
   }
@@ -186,10 +109,8 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const data = await GymApp.api("/api/trainer/dashboard");
       const clients = Array.isArray(data?.clients) ? data.clients : [];
-      allClients = clients;
       renderClients(clients);
 
-      // Si hay clientes, seleccionar el primero automáticamente
       if (clients.length > 0) {
         selectClient(clients[0]);
       }
@@ -200,10 +121,17 @@ document.addEventListener("DOMContentLoaded", () => {
           <p style="font-size: 10px; margin-top: 5px;">${error.message}</p>
         </div>
       `;
+      resetEvolutionPanels("No se pudo cargar la evolución");
       GymApp.toast(`Error: ${error.message}`, "error");
     }
   }
 
+  btnLogout.addEventListener("click", () => {
+    GymApp.clearSession();
+    window.location.href = "login.html";
+  });
+
+  renderAvatar();
   loadTrainerClients().catch((error) => {
     GymApp.toast(`Error inicial: ${error.message}`, "error");
   });
