@@ -167,3 +167,11 @@ INSERT INTO clases (nombre, descripcion, entrenador, fecha_hora, duracion_min, c
 ('Zumba Fitness',        'Baile aeróbico al ritmo de la música latina', 'María Torres',  DATE_ADD(NOW(), INTERVAL 4 DAY),  60, 20, 20),
 ('Pilates Core',         'Fortalecimiento del núcleo y postura corporal', 'Laura Soto',   DATE_ADD(NOW(), INTERVAL 5 DAY),  50, 10, 10),
 ('Boxeo Funcional',      'Entrenamiento con técnicas de boxeo adaptadas', 'Roberto Cruz', DATE_ADD(NOW(), INTERVAL 6 DAY),  45, 12, 12);
+
+INSERT INTO clases (nombre, descripcion, entrenador, fecha_hora, duracion_min, capacidad, disponibles) VALUES
+('Spinning Matutino',    'Clase de ciclismo indoor de alta intensidad', 'Carlos López',   DATE_ADD(NOW(), INTERVAL 1 DAY),  45, 15, 15),
+('Yoga & Flexibilidad',  'Sesión de yoga y estiramiento para todos los niveles', 'Ana Martínez', DATE_ADD(NOW(), INTERVAL 2 DAY),  60, 12, 12),
+('CrossFit Avanzado',    'Entrenamiento funcional de alta intensidad', 'Pedro Rojas',    DATE_ADD(NOW(), INTERVAL 3 DAY),  60, 10, 10),
+('Zumba Fitness',        'Baile aeróbico al ritmo de la música latina', 'María Torres',  DATE_ADD(NOW(), INTERVAL 4 DAY),  60, 20, 20),
+('Pilates Core',         'Fortalecimiento del núcleo y postura corporal', 'Laura Soto',   DATE_ADD(NOW(), INTERVAL 5 DAY),  50, 10, 10),
+('Boxeo Funcional',      'Entrenamiento con técnicas de boxeo adaptadas', 'Roberto Cruz', DATE_ADD(NOW(), INTERVAL 6 DAY),  45, 12, 12);
