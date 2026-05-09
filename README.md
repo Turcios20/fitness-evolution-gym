@@ -8,6 +8,8 @@ Documentacion adicional: [DOCUMENTACION_COMPLETA.md](DOCUMENTACION_COMPLETA.md)
 
 - Gestion de miembros y renovaciones
 - Login para administrador y cliente
+- Modulo de finanzas y pagos (SCRUM-10)
+- Reserva de clases y citas con entrenador (SCRUM-8)
 - Frontend estatico + API Express
 - Base de datos MySQL
 
@@ -75,15 +77,31 @@ Usuarios de prueba:
 
 Endpoints principales:
 
+**General**
 - `GET /api/health`
 - `POST /api/auth/login`
+
+**Cliente**
 - `GET /api/client/dashboard?username=<correo>`
 - `POST /api/subscription/renew`
+
+**Miembros (admin)**
 - `GET /api/admin/members`
 - `POST /api/admin/members`
 - `PUT /api/admin/members/:id`
 - `POST /api/admin/members/:id/renew`
 - `DELETE /api/admin/members/:id`
+
+**Finanzas y pagos — SCRUM-10**
+- `GET /api/admin/payments` — historial de pagos
+- `POST /api/admin/payments` — registrar pago manual (`userId`, `monto`, `metodoPago`)
+- `GET /api/admin/finance/summary` — resumen ingresos hoy/mes/total, por metodo, grafico 6 meses
+
+**Clases y reservas — SCRUM-8**
+- `GET /api/clases` — listar clases proximas con cupos disponibles
+- `GET /api/clases/mis-reservas?username=<correo>` — reservas activas del cliente
+- `POST /api/clases/:id/reservar` — reservar clase (`username`)
+- `DELETE /api/clases/reservas/:id` — cancelar reserva (`username`)
 
 Ejemplo de login:
 
@@ -96,11 +114,22 @@ Ejemplo de login:
 
 ## Estructura del proyecto
 
-- `backend/server.js`: servidor y API
+- `backend/server.js`: servidor y API (miembros, pagos, clases, reservas)
 - `backend/db.js`: conexion MySQL
 - `backend/init-db.js`: carga `database.sql`
 - `backend/init-db-prod.js`: carga `database.production.sql`
+- `finanzas.js`: logica del modulo de finanzas (SCRUM-10)
+- `calendario.js`: logica del modulo de clases y reservas (SCRUM-8)
 - `render.yaml`: configuracion de despliegue
+
+### Tablas de base de datos
+
+- `usuarios`: cuentas de admin y clientes
+- `membresias`: planes y fechas de vencimiento
+- `pagos`: historial de pagos registrados
+- `clases`: clases disponibles con cupos
+- `reservas`: reservas de clientes a clases
+- `rutinas`, `asistencia`, `inventario`: tablas auxiliares
 
 ## Despliegue en Render
 
