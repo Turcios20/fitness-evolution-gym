@@ -5,6 +5,153 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Finanzas — FITNESS EVOLUTIONS GYM</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* ── Estilos exclusivos de finanzas ── */
+    .fin-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .fin-stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 14px;
+      text-align: center;
+      backdrop-filter: blur(12px);
+    }
+    .fin-stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 30px;
+      line-height: 1;
+      color: var(--orange);
+    }
+    .fin-stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .fin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .fin-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      backdrop-filter: blur(12px);
+    }
+    .fin-card-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .fin-method-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .fin-method-row:last-child { border-bottom: none; }
+    .fin-method-icon { font-size: 20px; }
+    .fin-method-info { flex: 1; }
+    .fin-method-name { font-weight: 700; font-size: 14px; display: block; }
+    .fin-method-count { font-size: 12px; color: var(--text-dim); }
+    .fin-method-total { font-weight: 700; font-size: 15px; }
+
+    .fin-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      height: 120px;
+      padding-top: 28px;
+    }
+    .fin-bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .fin-bar-val {
+      font-size: 9px;
+      color: var(--text-dim);
+      text-align: center;
+      white-space: nowrap;
+    }
+    .fin-bar {
+      width: 100%;
+      background: var(--orange);
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.4s ease;
+    }
+    .fin-bar-lbl {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .fin-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .fin-btn {
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .fin-btn:hover { background: var(--orange-dark); }
+
+    .fin-table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+    .fin-empty {
+      color: var(--text-dim);
+      font-size: 13px;
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    @media (max-width: 768px) {
+      .fin-stats { grid-template-columns: repeat(2, 1fr); }
+      .fin-grid  { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
   <div class="gym-bg"></div>
@@ -27,21 +174,71 @@
     </nav>
 
     <main class="content">
+
       <div class="fadein">
         <p class="welcome-sub">Panel de control</p>
         <h1 class="welcome-title">Finanzas</h1>
       </div>
-      <div class="fadein-2 coming-soon-card">
-        <img src="assets/attach_money_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Finanzas" class="coming-icon">
-        <p class="coming-title">Reportes e ingresos</p>
-        <p class="coming-sub">Este módulo está en desarrollo. Próximamente disponible.</p>
-        <a href="admin.html" class="btn-orange" style="margin-top:20px; display:inline-block; width:auto; padding: 10px 28px;">
-          ← Volver al inicio
-        </a>
-      </div>
-    </main>
 
+      <!-- Stats de resumen -->
+      <div class="fin-stats fadein-2">
+        <div class="fin-stat">
+          <div class="fin-stat-num" id="finIngresosMes">—</div>
+          <div class="fin-stat-label">Ingresos del mes</div>
+        </div>
+        <div class="fin-stat">
+          <div class="fin-stat-num" id="finIngresosHoy">—</div>
+          <div class="fin-stat-label">Ingresos hoy</div>
+        </div>
+        <div class="fin-stat">
+          <div class="fin-stat-num" id="finIngresosTotal">—</div>
+          <div class="fin-stat-label">Total acumulado</div>
+        </div>
+        <div class="fin-stat">
+          <div class="fin-stat-num" id="finTotalPagos">—</div>
+          <div class="fin-stat-label">Total pagos</div>
+        </div>
+      </div>
+
+      <!-- Gráfico mensual + métodos de pago -->
+      <div class="fin-grid fadein-2">
+        <div class="fin-card">
+          <div class="fin-card-title">Ingresos últimos 6 meses</div>
+          <div id="finMonthly"></div>
+        </div>
+        <div class="fin-card">
+          <div class="fin-card-title">Por método de pago</div>
+          <div id="finByMethod"></div>
+        </div>
+      </div>
+
+      <!-- Historial de pagos -->
+      <div class="fadein-3">
+        <div class="fin-controls">
+          <span class="section-title" style="flex:1">Historial de pagos</span>
+          <button class="fin-btn" id="btnNuevoPago">+ Registrar pago</button>
+        </div>
+        <div class="fin-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Miembro</th>
+                <th>Monto</th>
+                <th>Método</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="finTbody">
+              <tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:32px">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
   </div>
+
   <script src="common.js"></script>
+  <script src="finanzas.js"></script>
 </body>
 </html>
