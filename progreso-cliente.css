@@ -45,6 +45,29 @@
   overflow: hidden;
 }
 
+.prefill-hint {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(232, 124, 42, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.prefill-hint--prefilled {
+  border-color: rgba(232, 124, 42, 0.35);
+  background: rgba(232, 124, 42, 0.08);
+  color: var(--text);
+}
+
+.prefill-hint--editing {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
 .medidas-anteriores {
   display: none;
 }
