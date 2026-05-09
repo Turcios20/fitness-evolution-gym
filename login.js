@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const displayName = data.name || username;
 
       GymApp.setSession({
+        id: data.id,
         username,
         displayName,
         role,

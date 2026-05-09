@@ -24,3 +24,18 @@ SELECT 'Carlos Entrenador', 'entrenador@fitnessgym.com', 'train123', 'Entrenador
 WHERE NOT EXISTS (
     SELECT 1 FROM usuarios WHERE correo = 'entrenador@fitnessgym.com'
 );
+
+CREATE TABLE IF NOT EXISTS medidas_progreso (
+    id_medida INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    fecha DATE NOT NULL,
+    peso DECIMAL(10,2),
+    pecho DECIMAL(10,2),
+    cintura DECIMAL(10,2),
+    cadera DECIMAL(10,2),
+    brazos DECIMAL(10,2),
+    piernas DECIMAL(10,2),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    UNIQUE KEY unique_measurement (id_usuario, fecha)
+);
