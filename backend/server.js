@@ -870,10 +870,6 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
-app.get("/", (_req, res) => {
-  res.sendFile(path.join(__dirname, "..", "login.html"));
-});
-
 app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body || {};
 
@@ -2266,17 +2262,28 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
   }
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`API corriendo en http://localhost:${PORT}`);
-});
-
-server.on("error", (error) => {
-  if (error?.code === "EADDRINUSE") {
-    console.error(`El puerto ${PORT} ya esta en uso.`);
-    console.error("Cierra el proceso anterior o arranca con otro puerto.");
-    console.error(`Ejemplo PowerShell: $env:PORT='3102'; npm start`);
+async function startServer() {
+  try {
+    await ensureProgressSchema();
+  } catch (error) {
+    console.error("No se pudo inicializar el esquema de progreso:", error.message);
     process.exit(1);
   }
 
-  throw error;
-});
+  const server = app.listen(PORT, () => {
+    console.log(`API corriendo en http://localhost:${PORT}`);
+  });
+
+  server.on("error", (error) => {
+    if (error?.code === "EADDRINUSE") {
+      console.error(`El puerto ${PORT} ya esta en uso.`);
+      console.error("Cierra el proceso anterior o arranca con otro puerto.");
+      console.error(`Ejemplo PowerShell: $env:PORT='3102'; npm start`);
+      process.exit(1);
+    }
+
+    throw error;
+  });
+}
+
+startServer();
