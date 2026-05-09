@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progreso de Clientes — FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="entrenador-progreso.css">
+  <link rel="stylesheet" href="entrenador.css">
+</head>
+<body class="entrenador-page entrenador-progreso-page">
+
+  <div class="gym-bg"></div>
+
+  <div class="page">
+    <nav class="topnav trainer-topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
+      </div>
+
+      <div class="trainer-top-actions">
+        <div class="user-avatar-wrap" id="avatarWrap">
+          <span class="role-badge">COACH</span>
+          <div class="user-avatar" id="userAvatar">JD</div>
+        </div>
+        <button type="button" class="trainer-logout" id="btnTrainerLogout">Salir</button>
+      </div>
+    </nav>
+
+    <main class="content trainer-content entrenador-progreso-content">
+
+      <div class="fadein">
+        <p class="welcome-sub">Seguimiento de Clientes</p>
+        <h1 class="welcome-title">Progreso de Alumnos</h1>
+      </div>
+
+      <!-- Lista de Clientes -->
+      <div class="fadein-2">
+        <div class="progreso-container">
+          
+          <!-- Panel de Clientes (izquierda) -->
+          <aside class="progreso-clients-panel">
+            <div class="clients-header">
+              <span class="clients-title">Mis Clientes</span>
+              <span class="clients-count" id="clientsCount">0</span>
+            </div>
+            
+            <div class="clients-list" id="clientsList"></div>
+          </aside>
+
+          <!-- Panel de Detalles (derecha) -->
+          <section class="progreso-details-panel">
+            <div class="details-placeholder" id="detailsPlaceholder">
+              <p>Selecciona un cliente para ver su progreso</p>
+            </div>
+
+            <div class="details-content hidden" id="detailsContent">
+              <div class="client-header">
+                <h2 id="clientName" class="client-name">--</h2>
+                <p id="clientEmail" class="client-email">--</p>
+              </div>
+
+              <div class="measurements-list" id="measurementsList"></div>
+
+              <div class="no-measurements hidden" id="noMeasurements">
+                <p>No hay registros de progreso aún</p>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+    </main>
+
+    <nav class="bottomnav">
+      <a href="entrenador.html" class="bot-link">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Panel">
+        Panel
+      </a>
+      <a href="entrenador-progreso.html" class="bot-link active">
+        <img src="assets/exercise_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Progreso">
+        Progreso
+      </a>
+      <a href="ajustes.html" class="bot-link">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+        Ajustes
+      </a>
+    </nav>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="entrenador-progreso.js"></script>
+</body>
+</html>

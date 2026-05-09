@@ -3,31 +3,108 @@
 (function bootstrapGymApp() {
   const fromStorage = localStorage.getItem("gymApiBase");
   const API_BASE = fromStorage || (window.location.protocol === "file:" ? "http://localhost:3000" : "");
+  const FAVICON_PATH = "assets/favicon.svg";
+  const LEGACY_THEME_KEY = "gym-theme";
+  const THEME_SETTING_KEY = "theme_preference";
 
-  // ── API con interceptor de sesión ──────────────────────────
+  function normalizeTheme(theme) {
+    return theme === "light" ? "light" : "dark";
+  }
+
+  function getThemeCacheKey(username) {
+    return username ? `gym-theme:${username}` : LEGACY_THEME_KEY;
+  }
+
+  function getCachedTheme(username) {
+    return localStorage.getItem(getThemeCacheKey(username));
+  }
+
+  function cacheTheme(theme, username) {
+    const normalizedTheme = normalizeTheme(theme);
+    localStorage.setItem(getThemeCacheKey(username), normalizedTheme);
+
+    if (!username) {
+      localStorage.setItem(LEGACY_THEME_KEY, normalizedTheme);
+    }
+  }
+
+  function getTheme() {
+    const session = getSession();
+    if (!session?.username) {
+      return "dark";
+    }
+
+    return normalizeTheme(getCachedTheme(session.username) || "dark");
+  }
+
+  function applyTheme(theme) {
+    const normalizedTheme = normalizeTheme(theme);
+    document.documentElement.setAttribute("data-theme", normalizedTheme);
+    if (document.body) {
+      document.body.setAttribute("data-theme", normalizedTheme);
+    }
+  }
+
+  function notifyThemeChange(theme) {
+    window.dispatchEvent(new CustomEvent("gym-theme-change", { detail: { theme: normalizeTheme(theme) } }));
+  }
+
+  function setTheme(theme) {
+    const normalizedTheme = normalizeTheme(theme);
+    const session = getSession();
+    cacheTheme(normalizedTheme, session?.username || "");
+    applyTheme(normalizedTheme);
+    notifyThemeChange(normalizedTheme);
+  }
+
+  applyTheme(getTheme());
+
+  function ensureFavicon() {
+    const head = document.head || document.getElementsByTagName("head")[0];
+    if (!head) return;
+
+    let favicon = head.querySelector('link[rel="icon"]');
+    if (!favicon) {
+      favicon = document.createElement("link");
+      favicon.rel = "icon";
+      head.appendChild(favicon);
+    }
+
+    favicon.type = "image/svg+xml";
+    favicon.href = FAVICON_PATH;
+  }
+
+  ensureFavicon();
+
+  function getHomeByRole(role) {
+    const value = String(role || "").trim().toLowerCase();
+    if (value === "admin") return "admin.html";
+    if (value === "recepcionista") return "recepcionista.html";
+    if (value === "entrenador") return "entrenador.html";
+    return "cliente.html";
+  }
+
   async function api(path, options = {}) {
     const session = getSession();
 
-    // Adjunta el token si existe
     if (session?.token) {
       options.headers = {
         ...(options.headers || {}),
-        "Authorization": `Bearer ${session.token}`
+        Authorization: `Bearer ${session.token}`
       };
     }
 
     const url = `${API_BASE}${path}`;
     const response = await fetch(url, options);
 
-    // 401 = sesión expirada o inválida → redirige al login
     if (response.status === 401) {
       clearSession();
       window.location.href = "login.html";
-      throw new Error("Sesión expirada.");
+      throw new Error("Sesion expirada.");
     }
 
     if (!response.ok) {
-      const message = await safeText(response);
+      const message = await safeMessage(response);
       throw new Error(message || `HTTP ${response.status}`);
     }
 
@@ -37,17 +114,37 @@
   }
 
   async function safeText(response) {
-    try { return await response.text(); } catch { return ""; }
+    try {
+      return await response.text();
+    } catch {
+      return "";
+    }
   }
 
-  // ── Sesión ──────────────────────────────────────────────────
+  async function safeMessage(response) {
+    const contentType = response.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      try {
+        const payload = await response.json();
+        return payload.error || payload.message || payload.detail || JSON.stringify(payload);
+      } catch {
+        return "";
+      }
+    }
+
+    return safeText(response);
+  }
+
   function getSession() {
-    try { return JSON.parse(localStorage.getItem("gymSession") || "null"); }
-    catch { return null; }
+    try {
+      return JSON.parse(localStorage.getItem("gymSession") || "null");
+    } catch {
+      return null;
+    }
   }
 
   function setSession(session) {
-    // Guarda la hora de login para detectar expiración en cliente
     session._loginAt = Date.now();
     localStorage.setItem("gymSession", JSON.stringify(session));
   }
@@ -56,37 +153,40 @@
     localStorage.removeItem("gymSession");
   }
 
-  // Devuelve true si la sesión lleva más de 8 horas activa
   function isSessionExpired() {
-    const s = getSession();
-    if (!s) return true;
-    const EIGHT_HOURS = 8 * 60 * 60 * 1000;
-    return s._loginAt && (Date.now() - s._loginAt) > EIGHT_HOURS;
+    const session = getSession();
+    if (!session) return true;
+    const eightHours = 8 * 60 * 60 * 1000;
+    return session._loginAt && (Date.now() - session._loginAt) > eightHours;
   }
 
-  // ── Guardián de ruta ────────────────────────────────────────
-  // Llama esto en cada página protegida.
-  // requiredRole: "admin" | "cliente" | null (cualquiera autenticado)
   function guardRoute(requiredRole) {
     if (isSessionExpired()) {
       clearSession();
       window.location.href = "login.html";
       return false;
     }
+
     const session = getSession();
     if (!session) {
       window.location.href = "login.html";
       return false;
     }
-    if (requiredRole && session.role !== requiredRole) {
-      window.location.href = session.role === "admin" ? "admin.html" : "cliente.html";
+
+    const allowedRoles = Array.isArray(requiredRole)
+      ? requiredRole
+      : requiredRole
+        ? [requiredRole]
+        : [];
+
+    if (allowedRoles.length && !allowedRoles.includes(session.role)) {
+      window.location.href = getHomeByRole(session.role);
       return false;
     }
+
     return true;
   }
 
-  // ── Sistema de Toasts ───────────────────────────────────────
-  // Uso: GymApp.toast("Mensaje", "success" | "error" | "info")
   let toastContainer = null;
 
   function getToastContainer() {
@@ -103,20 +203,38 @@
     const el = document.createElement("div");
     el.className = `gym-toast gym-toast--${type}`;
 
-    const icons = { success: "✔", error: "✖", info: "ℹ" };
-    el.innerHTML = `<span class="gym-toast-icon">${icons[type] || "ℹ"}</span><span>${message}</span>`;
+    const icons = { success: "OK", error: "X", info: "i" };
+    el.innerHTML = `<span class="gym-toast-icon">${icons[type] || "i"}</span><span>${message}</span>`;
 
     container.appendChild(el);
-
-    // Anima entrada
     requestAnimationFrame(() => el.classList.add("gym-toast--show"));
 
-    // Desaparece después de 3.2s
     setTimeout(() => {
       el.classList.remove("gym-toast--show");
       el.classList.add("gym-toast--hide");
       el.addEventListener("transitionend", () => el.remove(), { once: true });
     }, 3200);
+  }
+
+  async function syncThemeFromSettings() {
+    const session = getSession();
+    if (!session?.username || !session?.token) return;
+
+    try {
+      const response = await api(`/api/settings?username=${encodeURIComponent(session.username)}`);
+      const savedTheme = response.settings?.[THEME_SETTING_KEY];
+      if (!savedTheme) return;
+
+      const normalizedTheme = normalizeTheme(savedTheme);
+      cacheTheme(normalizedTheme, session.username);
+
+      if (normalizedTheme !== document.documentElement.getAttribute("data-theme")) {
+        applyTheme(normalizedTheme);
+        notifyThemeChange(normalizedTheme);
+      }
+    } catch {
+      // Si falla la carga remota, usamos el cache local sin interrumpir la app.
+    }
   }
 
   window.GymApp = {
@@ -126,6 +244,13 @@
     clearSession,
     isSessionExpired,
     guardRoute,
+    getHomeByRole,
     toast,
+    getTheme,
+    setTheme,
+    syncThemeFromSettings,
+    THEME_SETTING_KEY
   };
+
+  syncThemeFromSettings();
 })();
