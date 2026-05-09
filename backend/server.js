@@ -3,6 +3,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const fs = require("fs");
 const path = require("path");
 const { pool } = require("./db");
 const {
@@ -15,6 +16,18 @@ const {
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+const OBJECTIVE_MAX_LENGTH = 255;
+const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+const PHOTO_UPLOAD_ROOT = path.join(__dirname, "..", "uploads", "progress");
+const PHOTO_MIME_EXTENSIONS = {
+  "image/jpeg": "jpg",
+  "image/png": "png"
+};
+const OBJECTIVE_PRESETS = [
+  "Bajar de peso",
+  "Ganar masa muscular",
+  "Mejorar resistencia"
+];
 
 const ROLE_FRONTEND_TO_DB = {
   admin: "Administrador",
@@ -34,7 +47,7 @@ const ROLE_DB_TO_FRONTEND = {
 };
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "..")));
 
 function roleToFrontend(role) {
@@ -71,6 +84,23 @@ async function ensureProgressSchema() {
        UNIQUE KEY unique_medida_fecha (id_usuario, fecha)
      )`
   );
+
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS progreso_fotos (
+       id_foto INT AUTO_INCREMENT PRIMARY KEY,
+       id_medida INT NOT NULL,
+       ruta_archivo VARCHAR(255) NOT NULL,
+       nombre_archivo VARCHAR(255) NOT NULL,
+       mime_type VARCHAR(50) NOT NULL,
+       tamano_bytes INT NOT NULL,
+       fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+       CONSTRAINT fk_progreso_fotos_medida
+         FOREIGN KEY (id_medida) REFERENCES medidas_progreso(id_medida) ON DELETE CASCADE,
+       UNIQUE KEY unique_foto_medida (id_medida)
+     )`
+  );
+
+  fs.mkdirSync(PHOTO_UPLOAD_ROOT, { recursive: true });
 }
 
 function getBearerToken(req) {
@@ -137,6 +167,12 @@ function normalizeMember(row) {
         }
       : null
   };
+}
+
+function canManageClientEvolution(auth, client) {
+  if (!auth || !client) return false;
+  if (auth.role === "admin") return true;
+  return auth.role === "entrenador" && client.id_entrenador_asignado === auth.id;
 }
 
 async function getUserByUsername(username, executor = pool) {
@@ -228,7 +264,17 @@ function mapMeasurementRow(row) {
     hips: toNumberOrNull(row.cadera),
     arms: toNumberOrNull(row.brazos),
     legs: toNumberOrNull(row.piernas),
-    registeredAt: row.fecha_registro
+    registeredAt: row.fecha_registro,
+    photo: row.id_foto
+      ? {
+          id: row.id_foto,
+          url: row.ruta_archivo.startsWith("/") ? row.ruta_archivo : `/${row.ruta_archivo}`,
+          name: row.nombre_archivo,
+          mimeType: row.mime_type,
+          sizeBytes: Number(row.tamano_bytes || 0),
+          updatedAt: row.foto_actualizada
+        }
+      : null
   };
 }
 
@@ -270,12 +316,41 @@ async function ensureClientEvolutionAccess(clientId, auth, executor = pool) {
   throw error;
 }
 
+async function ensureClientEvolutionManagementAccess(clientId, auth, executor = pool) {
+  const client = await ensureClientEvolutionAccess(clientId, auth, executor);
+
+  if (canManageClientEvolution(auth, client)) {
+    return client;
+  }
+
+  const error = new Error("No autorizado");
+  error.status = 403;
+  throw error;
+}
+
 async function getClientMeasurements(clientId, executor = pool) {
   const [rows] = await executor.query(
-    `SELECT id_medida, id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro
-     FROM medidas_progreso
-     WHERE id_usuario = ?
-     ORDER BY fecha DESC`,
+    `SELECT
+       mp.id_medida,
+       mp.id_usuario,
+       mp.fecha,
+       mp.peso,
+       mp.pecho,
+       mp.cintura,
+       mp.cadera,
+       mp.brazos,
+       mp.piernas,
+       mp.fecha_registro,
+       pf.id_foto,
+       pf.ruta_archivo,
+       pf.nombre_archivo,
+       pf.mime_type,
+       pf.tamano_bytes,
+       pf.fecha_actualizacion AS foto_actualizada
+     FROM medidas_progreso mp
+     LEFT JOIN progreso_fotos pf ON pf.id_medida = mp.id_medida
+     WHERE mp.id_usuario = ?
+     ORDER BY mp.fecha DESC`,
     [clientId]
   );
 
@@ -309,8 +384,117 @@ async function getClientEvolutionPayload(clientId, auth, executor = pool) {
       email: client.correo
     },
     objective,
+    objectivePresets: OBJECTIVE_PRESETS,
+    canManage: canManageClientEvolution(auth, client),
     measurements,
     total: measurements.length
+  };
+}
+
+function createHttpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+function normalizeObjectiveValue(rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value) {
+    throw createHttpError(400, "Selecciona un objetivo valido");
+  }
+
+  if (value.length > OBJECTIVE_MAX_LENGTH) {
+    throw createHttpError(400, `El objetivo no puede exceder ${OBJECTIVE_MAX_LENGTH} caracteres`);
+  }
+
+  return value;
+}
+
+async function upsertClientObjective(clientId, objective, executor = pool) {
+  await executor.query(
+    `INSERT INTO ajustes (id_usuario, clave, valor)
+     VALUES (?, 'objetivo_personal', ?)
+     ON DUPLICATE KEY UPDATE
+       valor = VALUES(valor),
+       fecha_actualizacion = CURRENT_TIMESTAMP`,
+    [clientId, objective]
+  );
+}
+
+async function getMeasurementForClient(clientId, measurementId, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT
+       mp.id_medida,
+       mp.id_usuario,
+       mp.fecha,
+       pf.id_foto,
+       pf.ruta_archivo
+     FROM medidas_progreso mp
+     LEFT JOIN progreso_fotos pf ON pf.id_medida = mp.id_medida
+     WHERE mp.id_medida = ?
+       AND mp.id_usuario = ?
+     LIMIT 1`,
+    [measurementId, clientId]
+  );
+
+  return rows[0] || null;
+}
+
+function isValidPng(buffer) {
+  const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  return signature.every((value, index) => buffer[index] === value);
+}
+
+function isValidJpeg(buffer) {
+  return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+}
+
+function decodeProgressPhotoUpload(imageDataUrl, fileName) {
+  const match = /^data:(image\/(?:jpeg|png));base64,([a-z0-9+/=\s]+)$/i.exec(String(imageDataUrl || "").trim());
+  if (!match) {
+    throw createHttpError(400, "La fotografia debe enviarse como imagen JPG o PNG valida");
+  }
+
+  const mimeType = match[1].toLowerCase();
+  const extension = PHOTO_MIME_EXTENSIONS[mimeType];
+  if (!extension) {
+    throw createHttpError(400, "Solo se permiten imagenes JPG o PNG");
+  }
+
+  let buffer;
+  try {
+    buffer = Buffer.from(match[2], "base64");
+  } catch {
+    throw createHttpError(400, "No se pudo procesar la imagen enviada");
+  }
+
+  if (!buffer.length) {
+    throw createHttpError(400, "La imagen enviada esta vacia");
+  }
+
+  if (buffer.length > PHOTO_MAX_BYTES) {
+    throw createHttpError(400, "La imagen supera el limite de 5 MB");
+  }
+
+  if (mimeType === "image/png" && !isValidPng(buffer)) {
+    throw createHttpError(400, "El archivo PNG enviado no es valido");
+  }
+
+  if (mimeType === "image/jpeg" && !isValidJpeg(buffer)) {
+    throw createHttpError(400, "El archivo JPG enviado no es valido");
+  }
+
+  const safeBaseName = String(fileName || "progreso")
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .replace(/\.[^.]+$/, "")
+    .slice(0, 60) || "progreso";
+
+  return {
+    buffer,
+    mimeType,
+    extension,
+    originalName: `${safeBaseName}.${extension}`,
+    sizeBytes: buffer.length
   };
 }
 
@@ -1117,6 +1301,29 @@ app.get("/api/client/:clientId/evolution", authenticate, async (req, res) => {
   }
 });
 
+app.put("/api/client/:clientId/objective", authenticate, requireRoles("admin", "entrenador"), async (req, res) => {
+  const clientId = Number(req.params.clientId);
+
+  if (!Number.isFinite(clientId)) {
+    res.status(400).json({ error: "clientId invalido" });
+    return;
+  }
+
+  try {
+    const objective = normalizeObjectiveValue(req.body?.objective);
+    await ensureClientEvolutionManagementAccess(clientId, req.auth);
+    await upsertClientObjective(clientId, objective);
+    res.json({ ok: true, objective });
+  } catch (error) {
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
+    res.status(500).json({ error: "Error guardando objetivo", detail: error.message });
+  }
+});
+
 // Endpoints para medidas de progreso
 app.get("/api/client/:clientId/measurements", authenticate, async (req, res) => {
   const clientId = Number(req.params.clientId);
@@ -1207,6 +1414,79 @@ app.post("/api/client/:clientId/measurements", authenticate, async (req, res) =>
   }
 });
 
+app.post("/api/client/:clientId/measurements/:measurementId/photo", authenticate, requireRoles("admin", "entrenador"), async (req, res) => {
+  const clientId = Number(req.params.clientId);
+  const measurementId = Number(req.params.measurementId);
+
+  if (!Number.isFinite(clientId) || !Number.isFinite(measurementId)) {
+    res.status(400).json({ error: "Parametros invalidos" });
+    return;
+  }
+
+  let savedFilePath = null;
+  let previousFilePath = null;
+
+  try {
+    const upload = decodeProgressPhotoUpload(req.body?.imageDataUrl, req.body?.fileName);
+    await ensureClientEvolutionManagementAccess(clientId, req.auth);
+
+    const measurement = await getMeasurementForClient(clientId, measurementId);
+    if (!measurement) {
+      res.status(404).json({ error: "Registro de seguimiento no encontrado" });
+      return;
+    }
+
+    const clientFolder = path.join(PHOTO_UPLOAD_ROOT, `client-${clientId}`);
+    fs.mkdirSync(clientFolder, { recursive: true });
+
+    const fileName = `measurement-${measurementId}-${Date.now()}.${upload.extension}`;
+    savedFilePath = path.join(clientFolder, fileName);
+    await fs.promises.writeFile(savedFilePath, upload.buffer);
+
+    const relativePath = path.relative(path.join(__dirname, ".."), savedFilePath).split(path.sep).join("/");
+    await pool.query(
+      `INSERT INTO progreso_fotos (id_medida, ruta_archivo, nombre_archivo, mime_type, tamano_bytes)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         ruta_archivo = VALUES(ruta_archivo),
+         nombre_archivo = VALUES(nombre_archivo),
+         mime_type = VALUES(mime_type),
+         tamano_bytes = VALUES(tamano_bytes),
+         fecha_actualizacion = CURRENT_TIMESTAMP`,
+      [measurementId, relativePath, upload.originalName, upload.mimeType, upload.sizeBytes]
+    );
+
+    if (measurement.ruta_archivo) {
+      previousFilePath = path.join(__dirname, "..", String(measurement.ruta_archivo).replace(/^\/+/, ""));
+    }
+
+    res.json({
+      ok: true,
+      photo: {
+        url: `/${relativePath}`,
+        name: upload.originalName,
+        mimeType: upload.mimeType,
+        sizeBytes: upload.sizeBytes
+      }
+    });
+  } catch (error) {
+    if (savedFilePath) {
+      await fs.promises.unlink(savedFilePath).catch(() => {});
+    }
+
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
+    res.status(500).json({ error: "Error guardando fotografia", detail: error.message });
+  }
+
+  if (previousFilePath && previousFilePath !== savedFilePath) {
+    await fs.promises.unlink(previousFilePath).catch(() => {});
+  }
+});
+
 // Endpoint para que el entrenador obtenga medidas de sus clientes
 app.get("/api/trainer/clients/:clientId/measurements", authenticate, requireRoles("entrenador"), async (req, res) => {
   const clientId = Number(req.params.clientId);
@@ -1238,8 +1518,21 @@ app.get("/api/trainer/clients/:clientId/measurements", authenticate, requireRole
 
 ensureProgressSchema()
   .then(() => {
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`API corriendo en http://localhost:${PORT}`);
+    });
+
+    server.on("error", (error) => {
+      if (error.code === "EADDRINUSE") {
+        console.error(`No se pudo iniciar la API porque el puerto ${PORT} ya esta en uso.`);
+        console.error(`Ya hay otra instancia escuchando en http://localhost:${PORT}.`);
+        console.error("Cierra ese proceso o arranca con otro puerto, por ejemplo:");
+        console.error("$env:PORT=3001; npm start");
+      } else {
+        console.error("No se pudo iniciar la API:", error.message);
+      }
+
+      process.exit(1);
     });
   })
   .catch((error) => {
