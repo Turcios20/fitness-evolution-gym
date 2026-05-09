@@ -7,8 +7,23 @@ CREATE TABLE usuarios (
     nombre_completo VARCHAR(100) NOT NULL,
     correo VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    rol ENUM('Administrador', 'Cliente') NOT NULL DEFAULT 'Cliente',
+    rol ENUM('Administrador', 'Cliente', 'Recepcionista', 'Entrenador') NOT NULL DEFAULT 'Cliente',
+    id_entrenador_asignado INT NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE usuarios
+ADD CONSTRAINT fk_usuarios_entrenador
+FOREIGN KEY (id_entrenador_asignado) REFERENCES usuarios(id_usuario) ON DELETE SET NULL;
+
+CREATE TABLE ajustes (
+    id_ajuste INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    clave VARCHAR(100) NOT NULL,
+    valor VARCHAR(255),
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    UNIQUE KEY unique_ajuste (id_usuario, clave)
 );
 
 CREATE TABLE membresias (
@@ -55,9 +70,26 @@ CREATE TABLE inventario (
     estado_equipo ENUM('Bueno', 'Mantenimiento', 'Dañado') DEFAULT 'Bueno'
 );
 
+CREATE TABLE medidas_progreso (
+    id_medida INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    fecha DATE NOT NULL,
+    peso DECIMAL(10,2),
+    pecho DECIMAL(10,2),
+    cintura DECIMAL(10,2),
+    cadera DECIMAL(10,2),
+    brazos DECIMAL(10,2),
+    piernas DECIMAL(10,2),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    UNIQUE KEY unique_medida_fecha (id_usuario, fecha)
+);
+
 INSERT INTO usuarios (nombre_completo, correo, password, rol) VALUES
 ('Victor Administrator', 'admin@victorsgym.com', 'admin123', 'Administrador'),
-('Jhoscar Ochoa', 'jhoscar@correo.com', 'cliente123', 'Cliente');
+('Jhoscar Ochoa', 'jhoscar@correo.com', 'cliente123', 'Cliente'),
+('Maria Recepcion', 'recepcion@fitnessgym.com', 'recep123', 'Recepcionista'),
+('Carlos Entrenador', 'entrenador@fitnessgym.com', 'train123', 'Entrenador');
 
 INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)
 VALUES

@@ -1,0 +1,307 @@
+/* CSS específico para la página de progreso del entrenador */
+
+.entrenador-progreso-content {
+  padding: 30px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 110px;
+}
+
+.progreso-container {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 25px;
+  margin-top: 20px;
+}
+
+/* Panel de Clientes (Lista) */
+.progreso-clients-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  backdrop-filter: blur(15px);
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.clients-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.clients-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin: 0;
+}
+
+.clients-count {
+  background: var(--orange);
+  color: var(--bg-dark);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  min-width: 30px;
+  text-align: center;
+}
+
+.clients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.client-item {
+  padding: 12px;
+  border-radius: var(--radius);
+  background: rgba(232, 124, 42, 0.05);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.client-item:hover {
+  background: rgba(232, 124, 42, 0.1);
+  border-left-color: var(--orange);
+  transform: translateX(4px);
+}
+
+.client-item.active {
+  background: rgba(232, 124, 42, 0.15);
+  border-left-color: var(--orange);
+  border: 1px solid var(--orange);
+}
+
+.client-item-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+  margin: 0 0 4px 0;
+}
+
+.client-item-email {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.client-item-empty {
+  text-align: center;
+  padding: 30px 15px;
+  color: var(--text-dim);
+}
+
+.client-item-empty p {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* Panel de Detalles */
+.progreso-details-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 30px;
+  backdrop-filter: blur(15px);
+  min-height: 500px;
+}
+
+.details-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--text-dim);
+  font-size: 16px;
+  text-align: center;
+}
+
+.details-placeholder p {
+  margin: 0;
+}
+
+.details-content.hidden {
+  display: none;
+}
+
+.client-header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.client-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.client-email {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.measurements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.measurement-card {
+  background: rgba(232, 124, 42, 0.05);
+  border: 1px solid rgba(232, 124, 42, 0.2);
+  border-radius: var(--radius);
+  padding: 15px;
+  transition: all 0.3s ease;
+}
+
+.measurement-card:hover {
+  background: rgba(232, 124, 42, 0.1);
+  border-color: rgba(232, 124, 42, 0.4);
+}
+
+.measurement-date {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.measurement-date-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: var(--orange);
+}
+
+.measurement-date-value {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.measurement-values {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.measure-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.measure-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.measure-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.measure-value.no-data {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.no-measurements {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-dim);
+}
+
+.no-measurements.hidden {
+  display: none;
+}
+
+.no-measurements p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Responsivo para tablets */
+@media (max-width: 768px) {
+  .progreso-container {
+    grid-template-columns: 1fr;
+  }
+
+  .progreso-clients-panel {
+    max-height: 300px;
+  }
+
+  .measurement-values {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .client-name {
+    font-size: 20px;
+  }
+}
+
+/* Responsivo para móviles */
+@media (max-width: 480px) {
+  .entrenador-progreso-content {
+    padding: 15px 15px;
+  }
+
+  .progreso-clients-panel {
+    max-height: 250px;
+    padding: 15px;
+  }
+
+  .progreso-details-panel {
+    padding: 20px;
+    min-height: 400px;
+  }
+
+  .client-header {
+    margin-bottom: 20px;
+  }
+
+  .client-name {
+    font-size: 18px;
+  }
+
+  .measurement-values {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Scroll bar personalizada */
+.progreso-clients-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.progreso-clients-panel::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.progreso-clients-panel::-webkit-scrollbar-thumb {
+  background: rgba(232, 124, 42, 0.3);
+  border-radius: 3px;
+}
+
+.progreso-clients-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 124, 42, 0.5);
+}
