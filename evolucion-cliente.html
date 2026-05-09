@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evolucion - FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="evolucion-cliente.css">
+</head>
+<body class="cliente-page evolucion-page">
+
+  <div class="gym-bg"></div>
+
+  <div class="page">
+
+    <nav class="topnav cliente-topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
+      </div>
+
+      <div class="user-avatar-wrap" id="avatarWrap">
+        <div class="user-avatar" id="userAvatar">--</div>
+      </div>
+    </nav>
+
+    <main class="content evolucion-content">
+
+      <div class="fadein">
+        <p class="welcome-sub">Tu Progreso</p>
+        <h1 class="welcome-title">Historial de Evolucion</h1>
+      </div>
+
+      <div class="objetivo-section fadein-2">
+        <div class="objetivo-card">
+          <h3>Objetivo Personal</h3>
+          <p class="objetivo-texto" id="objetivoPersonal">No hay objetivo configurado</p>
+        </div>
+      </div>
+
+      <div class="comparativa-section fadein-2">
+        <h2>Comparativa: Primer Registro vs Mas Reciente</h2>
+
+        <div class="comparativa-container">
+          <table class="tabla-comparativa">
+            <thead>
+              <tr>
+                <th>Medida</th>
+                <th>Primer Registro</th>
+                <th>Mas Reciente</th>
+                <th>Diferencia</th>
+                <th>Cambio</th>
+              </tr>
+            </thead>
+            <tbody id="tablaComparativa">
+              <tr>
+                <td colspan="5" class="loading-row">Cargando datos...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="historial-section fadein-2">
+        <h2>Historial Completo de Registros</h2>
+
+        <div class="historial-container">
+          <div class="historial-list" id="historialList">
+            <div class="loading-message">Cargando historial...</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <nav class="bottomnav">
+      <a href="cliente.html" class="bot-link">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio">
+        Inicio
+      </a>
+      <a href="calendario-cliente.html" class="bot-link">
+        <img src="assets/calendar_month_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Calendario">
+        Calendario
+      </a>
+      <a href="progreso-cliente.html" class="bot-link">
+        <img src="assets/exercise_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Progreso">
+        Progreso
+      </a>
+      <a href="evolucion-cliente.html" class="bot-link active">
+        <img src="assets/evolution.svg" alt="Evolucion">
+        Evolucion
+      </a>
+      <a href="ajustes-cliente.html" class="bot-link">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+        Ajustes
+      </a>
+    </nav>
+
+  </div>
+
+  <script src="common.js"></script>
+  <script src="evolution-shared.js"></script>
+  <script src="evolucion-cliente.js"></script>
+
+</body>
+</html>

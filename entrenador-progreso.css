@@ -1,0 +1,477 @@
+/* CSS específico para la página de progreso del entrenador */
+
+.entrenador-progreso-content {
+  padding: 30px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 110px;
+}
+
+.progreso-container {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 25px;
+  margin-top: 20px;
+}
+
+/* Panel de Clientes (Lista) */
+.progreso-clients-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  backdrop-filter: blur(15px);
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.clients-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.clients-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin: 0;
+}
+
+.clients-count {
+  background: var(--orange);
+  color: var(--bg-dark);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  min-width: 30px;
+  text-align: center;
+}
+
+.clients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.client-item {
+  padding: 12px;
+  border-radius: var(--radius);
+  background: rgba(232, 124, 42, 0.05);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+  width: 100%;
+  text-align: left;
+  font-family: 'Rajdhani', sans-serif;
+  appearance: none;
+}
+
+.client-item:hover {
+  background: rgba(232, 124, 42, 0.1);
+  border-left-color: var(--orange);
+  transform: translateX(4px);
+}
+
+.client-item.active {
+  background: rgba(232, 124, 42, 0.15);
+  border-left-color: var(--orange);
+  border: 1px solid var(--orange);
+}
+
+.client-item-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+  margin: 0 0 4px 0;
+}
+
+.client-item-email {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.client-item-trainer {
+  font-size: 11px;
+  color: var(--orange);
+  margin: 6px 0 0;
+}
+
+.client-item-empty {
+  text-align: center;
+  padding: 30px 15px;
+  color: var(--text-dim);
+}
+
+.client-item-empty p {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* Panel de Detalles */
+.progreso-details-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 30px;
+  backdrop-filter: blur(15px);
+  min-height: 500px;
+}
+
+.details-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--text-dim);
+  font-size: 16px;
+  text-align: center;
+}
+
+.details-placeholder p {
+  margin: 0;
+}
+
+.details-content.hidden {
+  display: none;
+}
+
+.client-header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.client-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.client-email {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.trainer-objetivo-section {
+  margin-bottom: 24px;
+}
+
+.trainer-objetivo-section .objetivo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.objective-editor-card {
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(232, 124, 42, 0.18);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.objective-editor-card.hidden {
+  display: none;
+}
+
+.objective-editor-header h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.objective-editor-header p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.objective-editor-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.objective-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.objective-editor-field.hidden {
+  display: none;
+}
+
+.objective-editor-field span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.objective-editor-select,
+.objective-editor-input {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid rgba(232, 124, 42, 0.25);
+  background: rgba(7, 7, 7, 0.35);
+  color: var(--text);
+  padding: 10px 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  outline: none;
+}
+
+.objective-editor-select:focus,
+.objective-editor-input:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px rgba(232, 124, 42, 0.2);
+}
+
+.objective-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.objective-editor-hint {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.4;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.objective-editor-button {
+  flex: 0 0 auto;
+  min-width: 170px;
+  min-height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: var(--orange);
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.objective-editor-button:hover:not(:disabled) {
+  background: var(--orange-dark);
+  transform: translateY(-1px);
+}
+
+.objective-editor-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.trainer-comparativa-section,
+.trainer-historial-section {
+  margin-bottom: 28px;
+}
+
+.trainer-comparativa-section h2,
+.trainer-historial-section h2 {
+  font-size: 20px;
+}
+
+.trainer-historial-section .historial-list {
+  max-height: 420px;
+}
+
+.trainer-historial-section .loading-message {
+  padding: 26px 20px;
+}
+
+.trainer-historial-section .historial-item:last-child {
+  border-bottom: none;
+}
+
+.trainer-historial-section .progress-photo-picker {
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
+}
+
+.measurements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.measurement-card {
+  background: rgba(232, 124, 42, 0.05);
+  border: 1px solid rgba(232, 124, 42, 0.2);
+  border-radius: var(--radius);
+  padding: 15px;
+  transition: all 0.3s ease;
+}
+
+.measurement-card:hover {
+  background: rgba(232, 124, 42, 0.1);
+  border-color: rgba(232, 124, 42, 0.4);
+}
+
+.measurement-date {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.measurement-date-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: var(--orange);
+}
+
+.measurement-date-value {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.measurement-values {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.measure-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.measure-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.measure-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.measure-value.no-data {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.no-measurements {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-dim);
+}
+
+.no-measurements.hidden {
+  display: none;
+}
+
+.no-measurements p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Responsivo para tablets */
+@media (max-width: 768px) {
+  .progreso-container {
+    grid-template-columns: 1fr;
+  }
+
+  .progreso-clients-panel {
+    max-height: 300px;
+  }
+
+  .measurement-values {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .client-name {
+    font-size: 20px;
+  }
+
+  .objective-editor-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .objective-editor-button {
+    width: 100%;
+  }
+}
+
+/* Responsivo para móviles */
+@media (max-width: 480px) {
+  .entrenador-progreso-content {
+    padding: 15px 15px;
+  }
+
+  .progreso-clients-panel {
+    max-height: 250px;
+    padding: 15px;
+  }
+
+  .progreso-details-panel {
+    padding: 20px;
+    min-height: 400px;
+  }
+
+  .client-header {
+    margin-bottom: 20px;
+  }
+
+  .client-name {
+    font-size: 18px;
+  }
+
+  .measurement-values {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Scroll bar personalizada */
+.progreso-clients-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.progreso-clients-panel::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.progreso-clients-panel::-webkit-scrollbar-thumb {
+  background: rgba(232, 124, 42, 0.3);
+  border-radius: 3px;
+}
+
+.progreso-clients-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 124, 42, 0.5);
+}

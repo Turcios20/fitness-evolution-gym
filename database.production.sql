@@ -7,6 +7,52 @@ CREATE TABLE IF NOT EXISTS usuarios (
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE usuarios
+MODIFY COLUMN rol ENUM('Administrador', 'Cliente', 'Recepcionista', 'Entrenador')
+NOT NULL DEFAULT 'Cliente';
+
+SET @trainer_col_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'usuarios'
+      AND COLUMN_NAME = 'id_entrenador_asignado'
+);
+SET @trainer_col_sql := IF(
+    @trainer_col_exists = 0,
+    'ALTER TABLE usuarios ADD COLUMN id_entrenador_asignado INT NULL AFTER rol',
+    'SELECT 1'
+);
+PREPARE trainer_col_stmt FROM @trainer_col_sql;
+EXECUTE trainer_col_stmt;
+DEALLOCATE PREPARE trainer_col_stmt;
+
+SET @trainer_fk_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'usuarios'
+      AND CONSTRAINT_NAME = 'fk_usuarios_entrenador'
+);
+SET @trainer_fk_sql := IF(
+    @trainer_fk_exists = 0,
+    'ALTER TABLE usuarios ADD CONSTRAINT fk_usuarios_entrenador FOREIGN KEY (id_entrenador_asignado) REFERENCES usuarios(id_usuario) ON DELETE SET NULL',
+    'SELECT 1'
+);
+PREPARE trainer_fk_stmt FROM @trainer_fk_sql;
+EXECUTE trainer_fk_stmt;
+DEALLOCATE PREPARE trainer_fk_stmt;
+
+CREATE TABLE IF NOT EXISTS ajustes (
+    id_ajuste INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    clave VARCHAR(100) NOT NULL,
+    valor VARCHAR(255),
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    UNIQUE KEY unique_ajuste (id_usuario, clave)
+);
+
 CREATE TABLE IF NOT EXISTS membresias (
     id_membresia INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,
@@ -52,6 +98,55 @@ CREATE TABLE IF NOT EXISTS inventario (
     estado_equipo ENUM('Bueno', 'Mantenimiento', 'Danado') DEFAULT 'Bueno'
 );
 
+CREATE TABLE IF NOT EXISTS clases (
+    id_clase INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    entrenador VARCHAR(100),
+    fecha_hora DATETIME NOT NULL,
+    duracion_min INT DEFAULT 60,
+    capacidad INT DEFAULT 20,
+    disponibles INT DEFAULT 20
+);
+
+CREATE TABLE IF NOT EXISTS reservas (
+    id_reserva INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    id_clase INT NOT NULL,
+    fecha_reserva TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estado ENUM('Confirmada', 'Cancelada') DEFAULT 'Confirmada',
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    FOREIGN KEY (id_clase)   REFERENCES clases(id_clase)   ON DELETE CASCADE,
+    UNIQUE KEY uq_reserva (id_usuario, id_clase)
+);
+
+CREATE TABLE IF NOT EXISTS medidas_progreso (
+    id_medida INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    fecha DATE NOT NULL,
+    peso DECIMAL(10,2),
+    pecho DECIMAL(10,2),
+    cintura DECIMAL(10,2),
+    cadera DECIMAL(10,2),
+    brazos DECIMAL(10,2),
+    piernas DECIMAL(10,2),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    UNIQUE KEY unique_medida_fecha (id_usuario, fecha)
+);
+
+CREATE TABLE IF NOT EXISTS progreso_fotos (
+    id_foto INT AUTO_INCREMENT PRIMARY KEY,
+    id_medida INT NOT NULL,
+    ruta_archivo VARCHAR(255) NOT NULL,
+    nombre_archivo VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(50) NOT NULL,
+    tamano_bytes INT NOT NULL,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_medida) REFERENCES medidas_progreso(id_medida) ON DELETE CASCADE,
+    UNIQUE KEY unique_foto_medida (id_medida)
+);
+
 INSERT INTO usuarios (nombre_completo, correo, password, rol)
 SELECT 'Victor Administrator', 'admin@victorsgym.com', 'admin123', 'Administrador'
 WHERE NOT EXISTS (
@@ -68,6 +163,18 @@ INSERT INTO usuarios (nombre_completo, correo, password, rol)
 SELECT 'Jhoscar Ochoa', 'jhoscar@correo.com', 'cliente123', 'Cliente'
 WHERE NOT EXISTS (
     SELECT 1 FROM usuarios WHERE correo = 'jhoscar@correo.com'
+);
+
+INSERT INTO usuarios (nombre_completo, correo, password, rol)
+SELECT 'Maria Recepcion', 'recepcion@fitnessgym.com', 'recep123', 'Recepcionista'
+WHERE NOT EXISTS (
+    SELECT 1 FROM usuarios WHERE correo = 'recepcion@fitnessgym.com'
+);
+
+INSERT INTO usuarios (nombre_completo, correo, password, rol)
+SELECT 'Carlos Entrenador', 'entrenador@fitnessgym.com', 'train123', 'Entrenador'
+WHERE NOT EXISTS (
+    SELECT 1 FROM usuarios WHERE correo = 'entrenador@fitnessgym.com'
 );
 
 INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)

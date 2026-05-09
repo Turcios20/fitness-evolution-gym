@@ -21,20 +21,18 @@ document.addEventListener("DOMContentLoaded", () => {
     await doLogin();
   });
 
-  // Soporte para Enter en cualquiera de los dos campos
   [usernameInput, passwordInput].forEach((input) => {
-    input.addEventListener("keydown", async (e) => {
-      if (e.key === "Enter") await doLogin();
+    input.addEventListener("keydown", async (event) => {
+      if (event.key === "Enter") await doLogin();
     });
   });
 
   async function doLogin() {
-
     const username = usernameInput.value.trim();
     const password = passwordInput.value.trim();
 
     if (!username || !password) {
-      alert("Completa usuario y contraseña.");
+      alert("Completa usuario y contrasena.");
       return;
     }
 
@@ -49,12 +47,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const displayName = data.name || username;
 
       GymApp.setSession({
+        id: data.id,
         username,
         displayName,
         role,
         token: data.token || null
       });
 
+      window.location.href = GymApp.getHomeByRole(role);
       redirectForRole(role);
       return;
     } catch {
@@ -77,6 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!matchedUser) {
       alert("Credenciales inválidas.");
       return;
+    } catch (error) {
+      alert(error.message || "No se pudo iniciar sesion.");
     }
 
     GymApp.setSession({
@@ -89,7 +91,6 @@ document.addEventListener("DOMContentLoaded", () => {
     redirectForRole(matchedUser.role);
   }
 
-  // ── Sistema de modales (igual al del admin) ──
   function createOverlay() {
     const overlay = document.createElement("div");
     overlay.className = "gym-modal-overlay";
@@ -97,19 +98,20 @@ document.addEventListener("DOMContentLoaded", () => {
     box.className = "gym-modal-box fadein";
     overlay.appendChild(box);
     document.body.appendChild(overlay);
-    overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) overlay.remove();
+    });
     return { overlay, box };
   }
 
-  // Modal de "Olvidé mi contraseña" — campo de correo
   function showForgotModal() {
     const { overlay, box } = createOverlay();
     box.innerHTML = `
-      <h3 class="gm-title">Recuperar contraseña</h3>
-      <p class="gm-body">Ingresa tu correo y el administrador te enviará las instrucciones de recuperación.</p>
+      <h3 class="gm-title">Recuperar contrasena</h3>
+      <p class="gm-body">Ingresa tu correo y el administrador te enviara las instrucciones de recuperacion.</p>
       <div class="gm-form" style="text-align:left;">
         <div class="gm-field">
-          <label>Correo electrónico</label>
+          <label>Correo electronico</label>
           <input id="gmForgotEmail" class="gm-input" type="email" placeholder="tucorreo@ejemplo.com" />
         </div>
         <span class="gm-error" id="gmForgotErr"></span>
@@ -120,38 +122,34 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
     const emailInput = box.querySelector("#gmForgotEmail");
-    const errEl      = box.querySelector("#gmForgotErr");
+    const errEl = box.querySelector("#gmForgotErr");
     box.querySelector("#gmCancel").onclick = () => overlay.remove();
     box.querySelector("#gmSend").onclick = () => {
       const email = emailInput.value.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        errEl.textContent = "Ingresa un correo válido.";
+        errEl.textContent = "Ingresa un correo valido.";
         return;
       }
       overlay.remove();
-      // Confirmación
-      const { overlay: o2, box: b2 } = createOverlay();
-      b2.innerHTML = `
-        <div style="font-size:36px;margin-bottom:12px;">✉️</div>
+      const { overlay: confirmOverlay, box: confirmBox } = createOverlay();
+      confirmBox.innerHTML = `
         <h3 class="gm-title">Solicitud enviada</h3>
-        <p class="gm-body">Se notificará al administrador para restablecer la contraseña de <strong>${email}</strong>.</p>
+        <p class="gm-body">Se notificara al administrador para restablecer la contrasena de <strong>${email}</strong>.</p>
         <div class="gm-actions">
           <button class="gm-btn gm-btn-primary" id="gmOk">Aceptar</button>
         </div>
       `;
-      b2.querySelector("#gmOk").onclick = () => o2.remove();
+      confirmBox.querySelector("#gmOk").onclick = () => confirmOverlay.remove();
     };
   }
 
-  // Modal de "Regístrate" — informa que el registro lo hace el admin
   function showRegisterModal() {
     const { overlay, box } = createOverlay();
     box.innerHTML = `
-      <div style="font-size:36px;margin-bottom:12px;">🏋️</div>
-      <h3 class="gm-title">¿Nuevo miembro?</h3>
+      <h3 class="gm-title">Nuevo miembro</h3>
       <p class="gm-body">
-        El registro de nuevos miembros lo realiza el administrador del gimnasio.<br><br>
-        Visita <strong>FITNESS EVOLUTIONS GYM</strong> y el staff te dará acceso a tu cuenta.
+        El registro de nuevos miembros lo realiza el equipo del gimnasio.<br><br>
+        Visita <strong>FITNESS EVOLUTIONS GYM</strong> y el staff te dara acceso a tu cuenta.
       </p>
       <div class="gm-actions">
         <button class="gm-btn gm-btn-primary" id="gmOk">Entendido</button>
@@ -163,8 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
   helperLinks.forEach((link) => {
     link.addEventListener("click", (event) => {
       event.preventDefault();
-      // Distingue por el texto del link
-      if (link.textContent.toLowerCase().includes("contraseña")) {
+      if (link.textContent.toLowerCase().includes("contras")) {
         showForgotModal();
       } else {
         showRegisterModal();

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progreso de Clientes - FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="entrenador.css">
+  <link rel="stylesheet" href="evolucion-cliente.css">
+  <link rel="stylesheet" href="entrenador-progreso.css">
+</head>
+<body class="entrenador-page entrenador-progreso-page">
+
+  <div class="gym-bg"></div>
+
+  <div class="page">
+    <nav class="topnav trainer-topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
+      </div>
+
+      <div class="trainer-top-actions">
+        <div class="user-avatar-wrap" id="avatarWrap">
+          <span class="role-badge" id="roleBadge">COACH</span>
+          <div class="user-avatar" id="userAvatar">JD</div>
+        </div>
+        <button type="button" class="trainer-logout" id="btnTrainerLogout">Salir</button>
+      </div>
+    </nav>
+
+    <main class="content trainer-content entrenador-progreso-content">
+
+      <div class="fadein">
+        <p class="welcome-sub" id="progressSubtitle">Seguimiento de Clientes</p>
+        <h1 class="welcome-title" id="progressTitle">Progreso de Alumnos</h1>
+      </div>
+
+      <div class="fadein-2">
+        <div class="progreso-container">
+          <aside class="progreso-clients-panel">
+            <div class="clients-header">
+              <span class="clients-title" id="clientsPanelTitle">Mis Clientes</span>
+              <span class="clients-count" id="clientsCount">0</span>
+            </div>
+
+            <div class="clients-list" id="clientsList"></div>
+          </aside>
+
+          <section class="progreso-details-panel">
+            <div class="details-placeholder" id="detailsPlaceholder">
+              <p>Selecciona un cliente para ver su progreso</p>
+            </div>
+
+            <div class="details-content hidden" id="detailsContent">
+              <div class="client-header">
+                <h2 id="clientName" class="client-name">--</h2>
+                <p id="clientEmail" class="client-email">--</p>
+              </div>
+
+              <div class="objetivo-section trainer-objetivo-section">
+                <div class="objetivo-card">
+                  <h3>Objetivo Personal</h3>
+                  <p class="objetivo-texto" id="trainerObjective">No hay objetivo configurado</p>
+                </div>
+
+                <div class="objective-editor-card hidden" id="objectiveEditorCard">
+                  <div class="objective-editor-header">
+                    <h3>Actualizar objetivo</h3>
+                    <p>Selecciona la meta vigente del miembro para su seguimiento.</p>
+                  </div>
+
+                  <div class="objective-editor-fields">
+                    <label class="objective-editor-field">
+                      <span>Objetivo</span>
+                      <select id="trainerObjectiveSelect" class="objective-editor-select">
+                        <option value="">Selecciona una opcion</option>
+                        <option value="Bajar de peso">Bajar de peso</option>
+                        <option value="Ganar masa muscular">Ganar masa muscular</option>
+                        <option value="Mejorar resistencia">Mejorar resistencia</option>
+                        <option value="Otro">Otro</option>
+                      </select>
+                    </label>
+
+                    <label class="objective-editor-field hidden" id="trainerObjectiveCustomWrap">
+                      <span>Objetivo personalizado</span>
+                      <input
+                        id="trainerObjectiveCustom"
+                        class="objective-editor-input"
+                        type="text"
+                        maxlength="255"
+                        placeholder="Describe el objetivo del miembro">
+                    </label>
+                  </div>
+
+                  <div class="objective-editor-actions">
+                    <p class="objective-editor-hint" id="objectiveEditorHint">Solo entrenador o administrador puede modificar este dato.</p>
+                    <button type="button" class="objective-editor-button" id="saveObjectiveButton">Guardar objetivo</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="comparativa-section trainer-comparativa-section">
+                <h2>Comparativa: Primer Registro vs Más Reciente</h2>
+                <div class="comparativa-container">
+                  <table class="tabla-comparativa">
+                    <thead>
+                      <tr>
+                        <th>Medida</th>
+                        <th>Primer Registro</th>
+                        <th>Más Reciente</th>
+                        <th>Diferencia</th>
+                        <th>Cambio</th>
+                      </tr>
+                    </thead>
+                    <tbody id="trainerComparisonBody">
+                      <tr>
+                        <td colspan="5" class="loading-row">Selecciona un cliente</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="historial-section trainer-historial-section">
+                <h2>Historial Completo de Registros</h2>
+                <div class="historial-container">
+                  <div class="historial-list" id="trainerHistoryList">
+                    <div class="loading-message">Selecciona un cliente para ver el historial</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+    </main>
+
+    <nav class="bottomnav">
+      <a href="entrenador.html" class="bot-link" id="progressHomeLink">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Panel">
+        Panel
+      </a>
+      <a href="entrenador-progreso.html" class="bot-link active" id="progressPageLink">
+        <img src="assets/exercise_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Progreso">
+        Seguimiento
+      </a>
+      <a href="ajustes.html" class="bot-link" id="progressSettingsLink">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+        Ajustes
+      </a>
+    </nav>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="evolution-shared.js"></script>
+  <script src="entrenador-progreso.js"></script>
+</body>
+</html>

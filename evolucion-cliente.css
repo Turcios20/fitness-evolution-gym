@@ -1,0 +1,453 @@
+/* Estilos para la página de evolución */
+
+.evolucion-page {
+  --color-improve: #4CAF50;
+  --color-worsen: #F44336;
+  --color-neutral: #9C9C9C;
+}
+
+.evolucion-content {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Sección Objetivo */
+.objetivo-section {
+  margin-bottom: 40px;
+}
+
+.objetivo-card {
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.15), rgba(255, 100, 0, 0.1));
+  border: 2px solid rgba(255, 140, 0, 0.3);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(255, 140, 0, 0.1);
+}
+
+.objetivo-card h3 {
+  color: #FF8C00;
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.objetivo-texto {
+  color: #fff;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* Sección Comparativa */
+.comparativa-section {
+  margin-bottom: 50px;
+}
+
+.comparativa-section h2,
+.historial-section h2 {
+  color: #fff;
+  font-size: 24px;
+  margin-bottom: 25px;
+  border-bottom: 2px solid rgba(255, 140, 0, 0.3);
+  padding-bottom: 12px;
+}
+
+.comparativa-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  background: rgba(20, 20, 20, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.tabla-comparativa {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+.tabla-comparativa thead {
+  background: rgba(255, 140, 0, 0.15);
+  border-bottom: 2px solid rgba(255, 140, 0, 0.3);
+}
+
+.tabla-comparativa th {
+  color: #FF8C00;
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tabla-comparativa td {
+  color: #ddd;
+  padding: 14px 12px;
+  border-bottom: 1px solid rgba(255, 140, 0, 0.1);
+  font-size: 15px;
+}
+
+.tabla-comparativa tbody tr:hover {
+  background: rgba(255, 140, 0, 0.05);
+}
+
+.tabla-comparativa tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.medida-nombre {
+  font-weight: 600;
+  color: #fff;
+  min-width: 100px;
+}
+
+.medida-valor {
+  text-align: right;
+  min-width: 120px;
+}
+
+.diferencia-positiva {
+  color: var(--color-improve);
+  font-weight: 600;
+}
+
+.diferencia-negativa {
+  color: var(--color-worsen);
+  font-weight: 600;
+}
+
+.diferencia-neutra {
+  color: var(--color-neutral);
+}
+
+.cambio-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 24px;
+  font-size: 14px;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.cambio-mejoró {
+  background: rgba(76, 175, 80, 0.2);
+  color: var(--color-improve);
+}
+
+.cambio-empeoró {
+  background: rgba(244, 67, 54, 0.2);
+  color: var(--color-worsen);
+}
+
+.cambio-igual {
+  background: rgba(156, 156, 156, 0.2);
+  color: var(--color-neutral);
+}
+
+.loading-row {
+  text-align: center;
+  color: #FF8C00 !important;
+  padding: 30px !important;
+}
+
+/* Sección Historial */
+.historial-section {
+  margin-bottom: 40px;
+}
+
+.historial-container {
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(20, 20, 20, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.historial-list {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.historial-item {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 140, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.historial-item:hover {
+  background: rgba(255, 140, 0, 0.05);
+}
+
+.historial-item:last-child {
+  border-bottom: none;
+}
+
+.historial-fecha {
+  color: #FF8C00;
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.historial-fecha-badge {
+  display: inline-block;
+  background: rgba(255, 140, 0, 0.2);
+  color: #FF8C00;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.historial-medidas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.medida-card {
+  background: rgba(255, 140, 0, 0.08);
+  border: 1px solid rgba(255, 140, 0, 0.15);
+  border-radius: 6px;
+  padding: 10px;
+  text-align: center;
+}
+
+.medida-card-label {
+  color: #999;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.medida-card-valor {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.medida-card-cambio {
+  color: #999;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.medida-card.mejoró {
+  border-color: rgba(76, 175, 80, 0.3);
+  background: rgba(76, 175, 80, 0.05);
+}
+
+.medida-card.mejoró .medida-card-valor {
+  color: var(--color-improve);
+}
+
+.medida-card.empeoró {
+  border-color: rgba(244, 67, 54, 0.3);
+  background: rgba(244, 67, 54, 0.05);
+}
+
+.medida-card.empeoró .medida-card-valor {
+  color: var(--color-worsen);
+}
+
+.loading-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #FF8C00;
+  font-size: 16px;
+}
+
+.error-message {
+  text-align: center;
+  padding: 20px;
+  color: var(--color-worsen);
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.2);
+  border-radius: 6px;
+  margin: 20px 0;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fadein {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.fadein-2 {
+  animation: fadeIn 0.8s ease-out 0.2s both;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .evolucion-content {
+    padding: 15px;
+  }
+
+  .historial-medidas {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+
+  .tabla-comparativa th,
+  .tabla-comparativa td {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  .comparativa-section h2,
+  .historial-section h2 {
+    font-size: 20px;
+  }
+}
+
+.cambio-mejoro {
+  background: rgba(76, 175, 80, 0.2);
+  color: var(--color-improve);
+}
+
+.cambio-empeoro {
+  background: rgba(244, 67, 54, 0.2);
+  color: var(--color-worsen);
+}
+
+.medida-card.mejoro {
+  border-color: rgba(76, 175, 80, 0.3);
+  background: rgba(76, 175, 80, 0.05);
+}
+
+.medida-card.mejoro .medida-card-valor {
+  color: var(--color-improve);
+}
+
+.medida-card.empeoro {
+  border-color: rgba(244, 67, 54, 0.3);
+  background: rgba(244, 67, 54, 0.05);
+}
+
+.medida-card.empeoro .medida-card-valor {
+  color: var(--color-worsen);
+}
+
+.medida-card-unit {
+  font-size: 11px;
+  color: #999;
+}
+
+.historial-current-tag {
+  color: #ff8c00;
+  font-size: 12px;
+}
+
+.progress-photo-card {
+  margin-top: 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 140, 0, 0.16);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px;
+}
+
+.progress-photo-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.progress-photo-title {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.progress-photo-meta {
+  color: #ffb066;
+  font-size: 11px;
+}
+
+.progress-photo-empty {
+  min-height: 96px;
+  border: 1px dashed rgba(255, 140, 0, 0.24);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #c0b5aa;
+  font-size: 13px;
+  padding: 16px;
+}
+
+.progress-photo-link {
+  display: block;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 140, 0, 0.18);
+}
+
+.progress-photo-preview {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.progress-photo-actions {
+  margin-top: 12px;
+}
+
+.progress-photo-actions.is-uploading {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.progress-photo-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 140, 0, 0.28);
+  background: rgba(255, 140, 0, 0.1);
+  color: #ffb066;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.progress-photo-picker input {
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+.progress-photo-hint {
+  margin-top: 10px;
+  color: #b9b0a7;
+  font-size: 11px;
+}
