@@ -90,6 +90,8 @@ CREATE TABLE reservas (
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
     FOREIGN KEY (id_clase)   REFERENCES clases(id_clase)   ON DELETE CASCADE,
     UNIQUE KEY uq_reserva (id_usuario, id_clase)
+);
+
 CREATE TABLE medidas_progreso (
     id_medida INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL,
