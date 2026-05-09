@@ -70,6 +70,26 @@ CREATE TABLE inventario (
     estado_equipo ENUM('Bueno', 'Mantenimiento', 'Dañado') DEFAULT 'Bueno'
 );
 
+CREATE TABLE clases (
+    id_clase INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    entrenador VARCHAR(100),
+    fecha_hora DATETIME NOT NULL,
+    duracion_min INT DEFAULT 60,
+    capacidad INT DEFAULT 20,
+    disponibles INT DEFAULT 20
+);
+
+CREATE TABLE reservas (
+    id_reserva INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    id_clase INT NOT NULL,
+    fecha_reserva TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estado ENUM('Confirmada', 'Cancelada') DEFAULT 'Confirmada',
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    FOREIGN KEY (id_clase)   REFERENCES clases(id_clase)   ON DELETE CASCADE,
+    UNIQUE KEY uq_reserva (id_usuario, id_clase)
 CREATE TABLE medidas_progreso (
     id_medida INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL,
@@ -94,3 +114,11 @@ INSERT INTO usuarios (nombre_completo, correo, password, rol) VALUES
 INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)
 VALUES
 (2, 'Mensual', 20.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY), 'Activo');
+
+INSERT INTO clases (nombre, descripcion, entrenador, fecha_hora, duracion_min, capacidad, disponibles) VALUES
+('Spinning Matutino',    'Clase de ciclismo indoor de alta intensidad', 'Carlos López',   DATE_ADD(NOW(), INTERVAL 1 DAY),  45, 15, 15),
+('Yoga & Flexibilidad',  'Sesión de yoga y estiramiento para todos los niveles', 'Ana Martínez', DATE_ADD(NOW(), INTERVAL 2 DAY),  60, 12, 12),
+('CrossFit Avanzado',    'Entrenamiento funcional de alta intensidad', 'Pedro Rojas',    DATE_ADD(NOW(), INTERVAL 3 DAY),  60, 10, 10),
+('Zumba Fitness',        'Baile aeróbico al ritmo de la música latina', 'María Torres',  DATE_ADD(NOW(), INTERVAL 4 DAY),  60, 20, 20),
+('Pilates Core',         'Fortalecimiento del núcleo y postura corporal', 'Laura Soto',   DATE_ADD(NOW(), INTERVAL 5 DAY),  50, 10, 10),
+('Boxeo Funcional',      'Entrenamiento con técnicas de boxeo adaptadas', 'Roberto Cruz', DATE_ADD(NOW(), INTERVAL 6 DAY),  45, 12, 12);

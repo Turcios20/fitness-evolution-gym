@@ -98,6 +98,26 @@ CREATE TABLE IF NOT EXISTS inventario (
     estado_equipo ENUM('Bueno', 'Mantenimiento', 'Danado') DEFAULT 'Bueno'
 );
 
+CREATE TABLE IF NOT EXISTS clases (
+    id_clase INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    entrenador VARCHAR(100),
+    fecha_hora DATETIME NOT NULL,
+    duracion_min INT DEFAULT 60,
+    capacidad INT DEFAULT 20,
+    disponibles INT DEFAULT 20
+);
+
+CREATE TABLE IF NOT EXISTS reservas (
+    id_reserva INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    id_clase INT NOT NULL,
+    fecha_reserva TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estado ENUM('Confirmada', 'Cancelada') DEFAULT 'Confirmada',
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    FOREIGN KEY (id_clase)   REFERENCES clases(id_clase)   ON DELETE CASCADE,
+    UNIQUE KEY uq_reserva (id_usuario, id_clase)
 CREATE TABLE IF NOT EXISTS medidas_progreso (
     id_medida INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL,
