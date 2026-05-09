@@ -1051,6 +1051,12 @@ app.post("/api/client/:clientId/measurements", authenticate, async (req, res) =>
     return;
   }
 
+  // Validar que al menos una medida se proporcione
+  if (!peso && !pecho && !cintura && !cadera && !brazos && !piernas) {
+    res.status(400).json({ error: "Debe proporcionar al menos una medida" });
+    return;
+  }
+
   // Solo el cliente puede registrar sus propias medidas
   if (req.auth.role !== "admin" && req.auth.id !== clientId) {
     res.status(403).json({ error: "No autorizado" });
@@ -1061,24 +1067,37 @@ app.post("/api/client/:clientId/measurements", authenticate, async (req, res) =>
   try {
     await connection.beginTransaction();
 
+    // Convertir valores a números válidos o null
+    const pesoVal = peso ? Number(peso) : null;
+    const pechoVal = pecho ? Number(pecho) : null;
+    const cinturaVal = cintura ? Number(cintura) : null;
+    const caderaVal = cadera ? Number(cadera) : null;
+    const brazosVal = brazos ? Number(brazos) : null;
+    const piernasVal = piernas ? Number(piernas) : null;
+
+    // Usar la nueva sintaxis de ON DUPLICATE KEY UPDATE (MySQL 8.0.20+)
     await connection.query(
-      `INSERT INTO medidas_progreso (id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO medidas_progreso (id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
        ON DUPLICATE KEY UPDATE
-         peso = VALUES(peso),
-         pecho = VALUES(pecho),
-         cintura = VALUES(cintura),
-         cadera = VALUES(cadera),
-         brazos = VALUES(brazos),
-         piernas = VALUES(piernas),
+         peso = COALESCE(?, peso),
+         pecho = COALESCE(?, pecho),
+         cintura = COALESCE(?, cintura),
+         cadera = COALESCE(?, cadera),
+         brazos = COALESCE(?, brazos),
+         piernas = COALESCE(?, piernas),
          fecha_registro = CURRENT_TIMESTAMP`,
-      [clientId, fecha, peso || null, pecho || null, cintura || null, cadera || null, brazos || null, piernas || null]
+      [
+        clientId, fecha, pesoVal, pechoVal, cinturaVal, caderaVal, brazosVal, piernasVal,
+        pesoVal, pechoVal, cinturaVal, caderaVal, brazosVal, piernasVal
+      ]
     );
 
     await connection.commit();
-    res.status(201).json({ ok: true, message: "Medidas registradas" });
+    res.status(201).json({ ok: true, message: "Medidas registradas correctamente" });
   } catch (error) {
     await connection.rollback();
+    console.error("Error guardando medidas:", error);
     res.status(500).json({ error: "Error guardando medidas", detail: error.message });
   } finally {
     connection.release();

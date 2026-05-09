@@ -70,6 +70,21 @@ CREATE TABLE inventario (
     estado_equipo ENUM('Bueno', 'Mantenimiento', 'Dañado') DEFAULT 'Bueno'
 );
 
+CREATE TABLE medidas_progreso (
+    id_medida INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    fecha DATE NOT NULL,
+    peso DECIMAL(10,2),
+    pecho DECIMAL(10,2),
+    cintura DECIMAL(10,2),
+    cadera DECIMAL(10,2),
+    brazos DECIMAL(10,2),
+    piernas DECIMAL(10,2),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    UNIQUE KEY unique_medida_fecha (id_usuario, fecha)
+);
+
 INSERT INTO usuarios (nombre_completo, correo, password, rol) VALUES
 ('Victor Administrator', 'admin@victorsgym.com', 'admin123', 'Administrador'),
 ('Jhoscar Ochoa', 'jhoscar@correo.com', 'cliente123', 'Cliente'),

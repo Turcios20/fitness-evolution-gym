@@ -51,10 +51,19 @@ document.addEventListener('DOMContentLoaded', () => {
         ultimaCadera.textContent = lastMeasure.hips ? `${lastMeasure.hips} cm` : '-- cm';
         ultimaBrazos.textContent = lastMeasure.arms ? `${lastMeasure.arms} cm` : '-- cm';
         ultimaPiernas.textContent = lastMeasure.legs ? `${lastMeasure.legs} cm` : '-- cm';
+      } else {
+        // No hay mediciones previas
+        ultimaFecha.textContent = 'Sin registros';
+        ultimaPeso.textContent = '-- kg';
+        ultimaPecho.textContent = '-- cm';
+        ultimaCintura.textContent = '-- cm';
+        ultimaCadera.textContent = '-- cm';
+        ultimaBrazos.textContent = '-- cm';
+        ultimaPiernas.textContent = '-- cm';
       }
     } catch (error) {
       console.error('Error cargando última medición:', error);
-      GymApp.toast(`Error cargando mediciones: ${error.message}`, 'error');
+      // No interrumpir la aplicación si hay error al cargar
     }
   }
 
@@ -66,25 +75,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       // Obtener valores del formulario
-      const measurementData = {
-        fecha: inputFecha.value,
-        peso: inputPeso.value ? Number(inputPeso.value) : null,
-        pecho: inputPecho.value ? Number(inputPecho.value) : null,
-        cintura: inputCintura.value ? Number(inputCintura.value) : null,
-        cadera: inputCadera.value ? Number(inputCadera.value) : null,
-        brazos: inputBrazos.value ? Number(inputBrazos.value) : null,
-        piernas: inputPiernas.value ? Number(inputPiernas.value) : null
-      };
+      const peso = inputPeso.value ? Number(inputPeso.value) : null;
+      const pecho = inputPecho.value ? Number(inputPecho.value) : null;
+      const cintura = inputCintura.value ? Number(inputCintura.value) : null;
+      const cadera = inputCadera.value ? Number(inputCadera.value) : null;
+      const brazos = inputBrazos.value ? Number(inputBrazos.value) : null;
+      const piernas = inputPiernas.value ? Number(inputPiernas.value) : null;
 
       // Validación: al menos una medida además de la fecha
-      if (!measurementData.peso && !measurementData.pecho && !measurementData.cintura && 
-          !measurementData.cadera && !measurementData.brazos && !measurementData.piernas) {
+      if (!peso && !pecho && !cintura && !cadera && !brazos && !piernas) {
         GymApp.toast('Por favor, ingresa al menos una medida.', 'error');
         return;
       }
 
+      const measurementData = {
+        fecha: inputFecha.value,
+        peso,
+        pecho,
+        cintura,
+        cadera,
+        brazos,
+        piernas
+      };
+
+      console.log('Enviando medidas:', measurementData);
+
       // Enviar al servidor usando GymApp.api
-      await GymApp.api(`/api/client/${session.id}/measurements`, {
+      const result = await GymApp.api(`/api/client/${session.id}/measurements`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -92,11 +109,16 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(measurementData)
       });
       
+      console.log('Respuesta del servidor:', result);
+      
       // Mostrar mensaje de éxito
       GymApp.toast('Medidas registradas correctamente.', 'success');
       
       // Limpiar formulario
       formProgreso.reset();
+      
+      // Restablecer la fecha de hoy
+      setTodayDate();
       
       // Recargar últimas mediciones
       await loadLastMeasurement();
