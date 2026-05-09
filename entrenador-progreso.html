@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Progreso de Clientes — FITNESS EVOLUTIONS GYM</title>
+  <title>Progreso de Clientes - FITNESS EVOLUTIONS GYM</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="entrenador-progreso.css">
   <link rel="stylesheet" href="entrenador.css">
+  <link rel="stylesheet" href="evolucion-cliente.css">
 </head>
 <body class="entrenador-page entrenador-progreso-page">
 
@@ -35,21 +36,17 @@
         <h1 class="welcome-title">Progreso de Alumnos</h1>
       </div>
 
-      <!-- Lista de Clientes -->
       <div class="fadein-2">
         <div class="progreso-container">
-          
-          <!-- Panel de Clientes (izquierda) -->
           <aside class="progreso-clients-panel">
             <div class="clients-header">
               <span class="clients-title">Mis Clientes</span>
               <span class="clients-count" id="clientsCount">0</span>
             </div>
-            
+
             <div class="clients-list" id="clientsList"></div>
           </aside>
 
-          <!-- Panel de Detalles (derecha) -->
           <section class="progreso-details-panel">
             <div class="details-placeholder" id="detailsPlaceholder">
               <p>Selecciona un cliente para ver su progreso</p>
@@ -61,14 +58,45 @@
                 <p id="clientEmail" class="client-email">--</p>
               </div>
 
-              <div class="measurements-list" id="measurementsList"></div>
+              <div class="objetivo-section trainer-objetivo-section">
+                <div class="objetivo-card">
+                  <h3>Objetivo Personal</h3>
+                  <p class="objetivo-texto" id="trainerObjective">No hay objetivo configurado</p>
+                </div>
+              </div>
 
-              <div class="no-measurements hidden" id="noMeasurements">
-                <p>No hay registros de progreso aún</p>
+              <div class="comparativa-section trainer-comparativa-section">
+                <h2>Comparativa: Primer Registro vs Más Reciente</h2>
+                <div class="comparativa-container">
+                  <table class="tabla-comparativa">
+                    <thead>
+                      <tr>
+                        <th>Medida</th>
+                        <th>Primer Registro</th>
+                        <th>Más Reciente</th>
+                        <th>Diferencia</th>
+                        <th>Cambio</th>
+                      </tr>
+                    </thead>
+                    <tbody id="trainerComparisonBody">
+                      <tr>
+                        <td colspan="5" class="loading-row">Selecciona un cliente</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="historial-section trainer-historial-section">
+                <h2>Historial Completo de Registros</h2>
+                <div class="historial-container">
+                  <div class="historial-list" id="trainerHistoryList">
+                    <div class="loading-message">Selecciona un cliente para ver el historial</div>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
-
         </div>
       </div>
 
@@ -91,6 +119,7 @@
   </div>
 
   <script src="common.js"></script>
+  <script src="evolution-shared.js"></script>
   <script src="entrenador-progreso.js"></script>
 </body>
 </html>

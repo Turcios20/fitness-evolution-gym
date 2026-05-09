@@ -153,6 +153,32 @@
   margin: 0;
 }
 
+.trainer-objetivo-section {
+  margin-bottom: 24px;
+}
+
+.trainer-comparativa-section,
+.trainer-historial-section {
+  margin-bottom: 28px;
+}
+
+.trainer-comparativa-section h2,
+.trainer-historial-section h2 {
+  font-size: 20px;
+}
+
+.trainer-historial-section .historial-list {
+  max-height: 420px;
+}
+
+.trainer-historial-section .loading-message {
+  padding: 26px 20px;
+}
+
+.trainer-historial-section .historial-item:last-child {
+  border-bottom: none;
+}
+
 .measurements-list {
   display: flex;
   flex-direction: column;
