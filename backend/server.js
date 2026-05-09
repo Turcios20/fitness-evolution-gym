@@ -1350,6 +1350,15 @@ app.get("/api/client/:clientId/measurements", authenticate, async (req, res) => 
 app.post("/api/client/:clientId/measurements", authenticate, async (req, res) => {
   const clientId = Number(req.params.clientId);
   const { fecha, peso, pecho, cintura, cadera, brazos, piernas } = req.body || {};
+  const rawMeasurements = { peso, pecho, cintura, cadera, brazos, piernas };
+  const measurementLabels = {
+    peso: "peso",
+    pecho: "pecho",
+    cintura: "cintura",
+    cadera: "cadera",
+    brazos: "brazos",
+    piernas: "piernas"
+  };
 
   if (!Number.isFinite(clientId)) {
     res.status(400).json({ error: "clientId invalido" });
@@ -1362,7 +1371,7 @@ app.post("/api/client/:clientId/measurements", authenticate, async (req, res) =>
   }
 
   // Validar que al menos una medida se proporcione
-  if (!peso && !pecho && !cintura && !cadera && !brazos && !piernas) {
+  if (!Object.values(rawMeasurements).some((value) => String(value ?? "").trim() !== "")) {
     res.status(400).json({ error: "Debe proporcionar al menos una medida" });
     return;
   }
@@ -1377,13 +1386,29 @@ app.post("/api/client/:clientId/measurements", authenticate, async (req, res) =>
   try {
     await connection.beginTransaction();
 
-    // Convertir valores a números válidos o null
-    const pesoVal = peso ? Number(peso) : null;
-    const pechoVal = pecho ? Number(pecho) : null;
-    const cinturaVal = cintura ? Number(cintura) : null;
-    const caderaVal = cadera ? Number(cadera) : null;
-    const brazosVal = brazos ? Number(brazos) : null;
-    const piernasVal = piernas ? Number(piernas) : null;
+    const parsedMeasurements = Object.fromEntries(
+      Object.entries(rawMeasurements).map(([key, value]) => {
+        const normalized = String(value ?? "").trim();
+
+        if (!normalized) {
+          return [key, null];
+        }
+
+        const numericValue = Number(normalized);
+        if (!Number.isFinite(numericValue)) {
+          throw createHttpError(400, `El valor de ${measurementLabels[key]} no es valido`);
+        }
+
+        return [key, numericValue];
+      })
+    );
+
+    const pesoVal = parsedMeasurements.peso;
+    const pechoVal = parsedMeasurements.pecho;
+    const cinturaVal = parsedMeasurements.cintura;
+    const caderaVal = parsedMeasurements.cadera;
+    const brazosVal = parsedMeasurements.brazos;
+    const piernasVal = parsedMeasurements.piernas;
 
     // Usar la nueva sintaxis de ON DUPLICATE KEY UPDATE (MySQL 8.0.20+)
     await connection.query(
@@ -1407,6 +1432,11 @@ app.post("/api/client/:clientId/measurements", authenticate, async (req, res) =>
     res.status(201).json({ ok: true, message: "Medidas registradas correctamente" });
   } catch (error) {
     await connection.rollback();
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
     console.error("Error guardando medidas:", error);
     res.status(500).json({ error: "Error guardando medidas", detail: error.message });
   } finally {

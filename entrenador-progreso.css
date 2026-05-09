@@ -167,6 +167,12 @@
   margin-bottom: 24px;
 }
 
+.trainer-objetivo-section .objetivo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .objective-editor-card {
   margin-top: 16px;
   background: rgba(255, 255, 255, 0.03);
@@ -238,8 +244,9 @@
 
 .objective-editor-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-end;
   gap: 12px;
   margin-top: 16px;
 }
@@ -249,9 +256,12 @@
   color: var(--text-dim);
   font-size: 12px;
   line-height: 1.4;
+  flex: 1 1 260px;
+  min-width: 0;
 }
 
 .objective-editor-button {
+  flex: 0 0 auto;
   min-width: 170px;
   min-height: 42px;
   border: none;
@@ -295,6 +305,13 @@
 
 .trainer-historial-section .historial-item:last-child {
   border-bottom: none;
+}
+
+.trainer-historial-section .progress-photo-picker {
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
 }
 
 .measurements-list {
