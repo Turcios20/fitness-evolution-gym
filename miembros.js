@@ -305,6 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <td>${badgeHtml(member)}</td>
       <td>
         <div class="td-actions">
+          <button class="td-btn td-btn--track" data-action="track">Seguimiento</button>
           <button class="td-btn td-btn--edit" data-action="edit">Editar</button>
           <button class="td-btn td-btn--renew" data-action="renew">Renovar</button>
           <button class="td-btn td-btn--delete" data-action="del">Eliminar</button>
@@ -370,6 +371,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function handleAction(action, member, rowElement) {
+    if (action === "track") {
+      window.location.href = `entrenador-progreso.html?clientId=${member.id}`;
+      return;
+    }
+
     if (action === "edit") {
       showEditModal(member, async (payload) => {
         try {
