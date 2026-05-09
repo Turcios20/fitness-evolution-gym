@@ -1168,6 +1168,13 @@ body {
 
 
 /* ===== FORMULARIO AGREGAR CLIENTE ===== */
+
+.fadein:has(+ .form-card) {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  margin-bottom: 16px;
+}
 .form-card {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -1177,6 +1184,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 .form-group {
