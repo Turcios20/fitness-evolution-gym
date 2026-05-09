@@ -853,6 +853,276 @@ body {
   color: var(--orange);
 }
 
+/* ===== asistencia ===== */
+
+ /* --- Fila de métricas ------------------------------------ */
+    .att-metrics-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 1.2rem;
+    }
+    .att-metric-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .att-metric-label {
+      font-size: 11px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .att-metric-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #e3e3e3;
+    }
+    .att-metric-value.orange { color: #c45e1a; }
+    .att-metric-value.green  { color: #2ecc71; }
+    .att-metric-value.red    { color: #e74c3c; }
+ 
+    /* --- Tarjeta general ------------------------------------ */
+    .att-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .att-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.9rem;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .att-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e3e3e3;
+    }
+ 
+    /* --- Formulario ----------------------------------------- */
+    .att-form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 520px) {
+      .att-form-row { grid-template-columns: 1fr; }
+    }
+    .att-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .att-form-label {
+      font-size: 12px;
+      color: #aaa;
+    }
+    .att-input,
+    .att-select {
+      padding: 8px 10px;
+      font-size: 13px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: #e3e3e3;
+      outline: none;
+    }
+    .att-input:focus,
+    .att-select:focus {
+      border-color: #c45e1a;
+      box-shadow: 0 0 0 2px rgba(196,94,26,0.2);
+    }
+ 
+    /* --- Chips / filtros ------------------------------------ */
+    .att-filters { display: flex; gap: 6px; }
+    .att-chip {
+      padding: 4px 12px;
+      font-size: 11px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05);
+      color: #aaa;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .att-chip.active {
+      background: #c45e1a;
+      color: #fff;
+      border-color: #a04a12;
+    }
+ 
+    /* --- Buscador ------------------------------------------- */
+    .att-search-wrap { margin-bottom: 10px; }
+    .att-search {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 13px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: #e3e3e3;
+      outline: none;
+    }
+    .att-search:focus { border-color: #c45e1a; }
+ 
+    /* --- Lista de asistencias ------------------------------- */
+    .att-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .att-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+    }
+    .att-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .att-info { flex: 1; min-width: 0; }
+    .att-name-text { font-size: 13px; font-weight: 600; color: #e3e3e3; }
+    .att-detail { font-size: 11px; color: #888; margin-top: 1px; }
+    .att-time-col { text-align: right; font-size: 12px; color: #888; }
+    .att-time-date { font-size: 10px; color: #555; }
+ 
+    /* --- Badges de estado ----------------------------------- */
+    .badge {
+      display: inline-block;
+      font-size: 10px; padding: 2px 7px;
+      border-radius: 20px; font-weight: 600;
+    }
+    .badge-green  { background: rgba(46,204,113,0.15); color: #2ecc71; }
+    .badge-orange { background: rgba(196,94,26,0.15);  color: #c45e1a; }
+    .badge-red    { background: rgba(231,76,60,0.15);  color: #e74c3c; }
+ 
+    /* --- Botón eliminar ------------------------------------ */
+    .btn-del {
+      background: none; border: none; cursor: pointer;
+      color: #555; padding: 4px; line-height: 1;
+      font-size: 14px; transition: color 0.12s;
+    }
+    .btn-del:hover { color: #e74c3c; }
+ 
+    /* --- Estado vacío --------------------------------------- */
+    .att-empty {
+      text-align: center;
+      padding: 1.5rem;
+      color: #555;
+      font-size: 13px;
+    }
+
+    .topnav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .attendance-content {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .att-card-subtitle {
+      font-size: 12px;
+      color: #999;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .att-inline-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .att-action-btn,
+    .att-compact-btn {
+      margin-top: 0;
+      width: auto;
+      padding: 9px 14px;
+      font-size: 13px;
+      letter-spacing: 0.4px;
+    }
+
+    .att-compact-btn {
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .att-item-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .att-list--tall {
+      max-height: 420px;
+    }
+
+    .att-detail-strong {
+      color: #e3e3e3;
+      font-weight: 600;
+    }
+
+    .att-feedback {
+      display: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      border: 1px solid transparent;
+    }
+
+    .att-feedback.is-visible {
+      display: block;
+    }
+
+    .att-feedback--green {
+      background: rgba(46,204,113,0.12);
+      border-color: rgba(46,204,113,0.32);
+      color: #7ee2a9;
+    }
+
+    .att-feedback--orange {
+      background: rgba(196,94,26,0.12);
+      border-color: rgba(196,94,26,0.32);
+      color: #ffb37a;
+    }
+
+    .att-feedback--red {
+      background: rgba(231,76,60,0.12);
+      border-color: rgba(231,76,60,0.32);
+      color: #f09387;
+    }
+
+    /*--- finanzas ---*/
+
+    
+
 /* ===== ANIMACIONES ===== */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(14px); }

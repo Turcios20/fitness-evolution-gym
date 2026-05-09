@@ -18,6 +18,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let filterPlan = "all";
   let filterStatus = "all";
 
+  function formatDateInput(date) {
+    const year = String(date.getFullYear());
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
   if (welcomeTitle)
     welcomeTitle.textContent = `¡Bienvenido, ${session.displayName || "administrador"}!`;
 
@@ -549,10 +556,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function loadAttendanceOverview() {
+    const today = formatDateInput(new Date());
+
+    try {
+      const payload = await GymApp.api(`/api/admin/attendance/report?from=${today}&to=${today}`);
+      if (statsValues[0]) {
+        statsValues[0].textContent = String(payload.summary?.totalCheckins || 0);
+      }
+    } catch {
+      // Deja el valor de fallback del HTML si el reporte no se puede consultar.
+    }
+  }
+
   if (searchInput)   searchInput.addEventListener("input", applyFilters);
   if (memberTemplate) memberTemplate.remove();
 
   initializeSidebar();
   ensureCreateButton();
+  loadAttendanceOverview();
   loadMembers();
 });

@@ -161,6 +161,13 @@
     localStorage.removeItem("gymSession");
   }
 
+  function homeForRole(role) {
+    if (role === "admin") return "admin.html";
+    if (role === "recepcionista") return "recepcion.html";
+    return "cliente.html";
+  }
+
+  // Devuelve true si la sesión lleva más de 8 horas activa
   function isSessionExpired() {
     const session = getSession();
     if (!session) return true;

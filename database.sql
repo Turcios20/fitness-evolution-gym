@@ -9,6 +9,7 @@ CREATE TABLE usuarios (
     password VARCHAR(255) NOT NULL,
     rol ENUM('Administrador', 'Cliente', 'Recepcionista', 'Entrenador') NOT NULL DEFAULT 'Cliente',
     id_entrenador_asignado INT NULL,
+    rol ENUM('Administrador', 'Cliente', 'Recepcionista') NOT NULL DEFAULT 'Cliente',
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -60,6 +61,7 @@ CREATE TABLE asistencia (
     id_asistencia INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,
     fecha_entrada DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_asistencia_usuario_fecha (id_usuario, fecha_entrada),
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
 );
 
@@ -136,3 +138,10 @@ INSERT INTO clases (nombre, descripcion, entrenador, fecha_hora, duracion_min, c
 ('Zumba Fitness',        'Baile aeróbico al ritmo de la música latina', 'María Torres',  DATE_ADD(NOW(), INTERVAL 4 DAY),  60, 20, 20),
 ('Pilates Core',         'Fortalecimiento del núcleo y postura corporal', 'Laura Soto',   DATE_ADD(NOW(), INTERVAL 5 DAY),  50, 10, 10),
 ('Boxeo Funcional',      'Entrenamiento con técnicas de boxeo adaptadas', 'Roberto Cruz', DATE_ADD(NOW(), INTERVAL 6 DAY),  45, 12, 12);
+('Maria Recepcion', 'recepcion@fitnessgym.com', 'recep123', 'Recepcionista'),
+('Jhoscar Ochoa', 'jhoscar@correo.com', 'cliente123', 'Cliente');
+
+INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)
+SELECT u.id_usuario, 'Mensual', 20.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY), 'Activo'
+FROM usuarios u
+WHERE u.correo = 'jhoscar@correo.com';

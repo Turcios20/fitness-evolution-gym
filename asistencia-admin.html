@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte de Asistencia - FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="gym-bg"></div>
+
+  <div class="page">
+    <nav class="topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
+      </div>
+
+      <a href="admin.html" class="nav-link">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio">
+        Inicio
+      </a>
+
+      <a href="miembros.html" class="nav-link">
+        <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros">
+        Miembros
+      </a>
+
+      <a href="asistencia-admin.html" class="nav-link active">
+        <img src="assets/calendar_month_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Asistencia">
+        Asistencia
+      </a>
+
+      <a href="finanzas.html" class="nav-link">
+        <img src="assets/attach_money_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Finanzas">
+        Finanzas
+      </a>
+
+      <a href="ajustes.html" class="nav-link">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+        Ajustes
+      </a>
+    </nav>
+
+    <main class="content attendance-content">
+      <div class="fadein">
+        <p class="welcome-sub">Reporte por periodo</p>
+        <h1 class="welcome-title">Asistencia de miembros</h1>
+      </div>
+
+      <section class="att-card fadein-2">
+        <div class="att-card-header">
+          <div class="att-card-title">Filtros del reporte</div>
+        </div>
+
+        <p class="att-card-subtitle">
+          Visualiza y exporta el reporte de asistencia en el rango que necesites.
+        </p>
+
+        <div class="att-form-row">
+          <div class="att-form-group">
+            <label class="att-form-label" for="reportFrom">Desde</label>
+            <input type="date" class="att-input" id="reportFrom">
+          </div>
+          <div class="att-form-group">
+            <label class="att-form-label" for="reportTo">Hasta</label>
+            <input type="date" class="att-input" id="reportTo">
+          </div>
+        </div>
+
+        <div class="att-inline-actions">
+          <button type="button" class="btn-orange att-action-btn" id="loadReportButton">Visualizar reporte</button>
+          <button type="button" class="btn-orange att-action-btn" id="exportCsvButton">Exportar CSV</button>
+        </div>
+      </section>
+
+      <div class="att-metrics-row fadein-2">
+        <div class="att-metric-card">
+          <span class="att-metric-label">Check-ins</span>
+          <span class="att-metric-value orange" id="reportTotalCheckins">0</span>
+        </div>
+        <div class="att-metric-card">
+          <span class="att-metric-label">Miembros unicos</span>
+          <span class="att-metric-value green" id="reportUniqueMembers">0</span>
+        </div>
+        <div class="att-metric-card">
+          <span class="att-metric-label">Vencidas</span>
+          <span class="att-metric-value red" id="reportExpiredCheckins">0</span>
+        </div>
+      </div>
+
+      <section class="att-card fadein-3">
+        <div class="att-card-header">
+          <div class="att-card-title">Resumen por miembro</div>
+        </div>
+
+        <div class="att-empty" id="reportMembersEmpty">
+          Carga un reporte para ver el resumen por miembro.
+        </div>
+        <div class="att-list att-list--tall" id="reportMembersList"></div>
+      </section>
+
+      <section class="att-card fadein-3">
+        <div class="att-card-header">
+          <div class="att-card-title">Registros del periodo</div>
+        </div>
+
+        <div class="att-empty" id="reportEntriesEmpty">
+          Carga un reporte para ver los registros.
+        </div>
+        <div class="att-list att-list--tall" id="reportEntriesList"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="asistencia-admin.js"></script>
+</body>
+</html>

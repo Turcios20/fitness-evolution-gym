@@ -3,8 +3,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     nombre_completo VARCHAR(100) NOT NULL,
     correo VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    rol ENUM('Administrador', 'Cliente', 'Recepcionista', 'Entrenador') NOT NULL DEFAULT 'Cliente',
-    id_entrenador_asignado INT NULL,
+    rol ENUM('Administrador', 'Cliente', 'Recepcionista') NOT NULL DEFAULT 'Cliente',
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -88,6 +87,7 @@ CREATE TABLE IF NOT EXISTS asistencia (
     id_asistencia INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,
     fecha_entrada DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_asistencia_usuario_fecha (id_usuario, fecha_entrada),
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
 );
 
@@ -151,6 +151,12 @@ INSERT INTO usuarios (nombre_completo, correo, password, rol)
 SELECT 'Victor Administrator', 'admin@victorsgym.com', 'admin123', 'Administrador'
 WHERE NOT EXISTS (
     SELECT 1 FROM usuarios WHERE correo = 'admin@victorsgym.com'
+);
+
+INSERT INTO usuarios (nombre_completo, correo, password, rol)
+SELECT 'Maria Recepcion', 'recepcion@fitnessgym.com', 'recep123', 'Recepcionista'
+WHERE NOT EXISTS (
+    SELECT 1 FROM usuarios WHERE correo = 'recepcion@fitnessgym.com'
 );
 
 INSERT INTO usuarios (nombre_completo, correo, password, rol)
