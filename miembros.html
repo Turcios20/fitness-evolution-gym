@@ -316,6 +316,162 @@
 
       /* En móvil muy pequeño se usa scroll horizontal */
     }
+
+      /* --- Fila de métricas ------------------------------------ */
+    .fin-metrics-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 1.2rem;
+    }
+    .fin-metric-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .fin-metric-label {
+      font-size: 11px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .fin-metric-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #e3e3e3;
+    }
+    .fin-metric-value.orange { color: #c45e1a; }
+    .fin-metric-value.green  { color: #2ecc71; }
+    .fin-metric-value.red    { color: #e74c3c; }
+ 
+    /* --- Tarjeta general ------------------------------------ */
+    .fin-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .fin-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.9rem;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .fin-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e3e3e3;
+    }
+ 
+    /* --- Formulario ----------------------------------------- */
+    .fin-form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 480px) {
+      .fin-form-row { grid-template-columns: 1fr; }
+    }
+    .fin-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .fin-form-label {
+      font-size: 12px;
+      color: #aaa;
+    }
+    .fin-input,
+    .fin-select {
+      padding: 8px 10px;
+      font-size: 13px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: #e3e3e3;
+      outline: none;
+    }
+    .fin-input:focus,
+    .fin-select:focus {
+      border-color: #c45e1a;
+      box-shadow: 0 0 0 2px rgba(196,94,26,0.2);
+    }
+ 
+    /* --- Chips / filtros ------------------------------------ */
+    .fin-filters { display: flex; gap: 6px; }
+    .fin-chip {
+      padding: 4px 12px;
+      font-size: 11px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05);
+      color: #aaa;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .fin-chip.active {
+      background: #c45e1a;
+      color: #fff;
+      border-color: #a04a12;
+    }
+ 
+    /* --- Lista de movimientos ------------------------------- */
+    .fin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .fin-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+    }
+    .fin-icon {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .fin-icon.ingreso { background: rgba(46,204,113,0.15); color: #2ecc71; }
+    .fin-icon.egreso  { background: rgba(231,76,60,0.15);  color: #e74c3c; }
+ 
+    .fin-info { flex: 1; min-width: 0; }
+    .fin-concept { font-size: 13px; font-weight: 600; color: #e3e3e3; }
+    .fin-meta    { font-size: 11px; color: #888; margin-top: 1px; }
+ 
+    .fin-amount { font-size: 14px; font-weight: 700; text-align: right; }
+    .fin-amount.ingreso { color: #2ecc71; }
+    .fin-amount.egreso  { color: #e74c3c; }
+ 
+    /* --- Botón eliminar ------------------------------------ */
+    .fin-btn-del {
+      background: none; border: none; cursor: pointer;
+      color: #555; padding: 4px; font-size: 14px;
+      transition: color 0.12s;
+    }
+    .fin-btn-del:hover { color: #e74c3c; }
+ 
+    /* --- Estado vacío --------------------------------------- */
+    .fin-empty {
+      text-align: center;
+      padding: 1.5rem;
+      color: #555;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -399,6 +555,131 @@
       </div>
 
     </main>
+
+
+      <div class="page">
+ 
+    <!-- BARRA SUPERIOR -->
+    <nav class="topnav cliente-topnav">
+      <div class="logo">FITNESS<span>EVOLUTIONS GYM</span></div>
+      <div class="user-avatar-wrap" id="avatarWrap">
+        <div class="user-avatar" id="userAvatar">--</div>
+        <div class="avatar-dropdown" id="avatarDropdown">
+          <div class="dropdown-name" id="dropdownName">—</div>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item dropdown-logout" id="btnLogout">Cerrar sesión</button>
+        </div>
+      </div>
+    </nav>
+ 
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="content cliente-content">
+      <div class="fadein">
+        <a href="admin.html" class="btn-back">← Volver</a>
+        <p class="welcome-sub">Panel de administración</p>
+        <h1 class="welcome-title">Módulo de Finanzas</h1>
+      </div>
+ 
+      <!-- ======================================================
+           TARJETAS DE MÉTRICAS (ingresos / egresos / balance / movimientos)
+           ====================================================== -->
+      <div class="fadein-2 fin-metrics-row">
+        <div class="fin-metric-card">
+          <span class="fin-metric-label">Ingresos (mes)</span>
+          <span class="fin-metric-value green" id="fin-ingresos">$0.00</span>
+        </div>
+        <div class="fin-metric-card">
+          <span class="fin-metric-label">Egresos (mes)</span>
+          <span class="fin-metric-value red" id="fin-egresos">$0.00</span>
+        </div>
+        <div class="fin-metric-card">
+          <span class="fin-metric-label">Balance</span>
+          <span class="fin-metric-value orange" id="fin-balance">$0.00</span>
+        </div>
+        <div class="fin-metric-card">
+          <span class="fin-metric-label">Movimientos</span>
+          <span class="fin-metric-value" id="fin-count">0</span>
+        </div>
+      </div>
+ 
+      <!-- ======================================================
+           FORMULARIO — REGISTRAR INGRESO / EGRESO
+           ====================================================== -->
+      <div class="fadein-2 fin-card">
+        <div class="fin-card-header">
+          <span class="fin-card-title">Nuevo movimiento</span>
+        </div>
+        <div class="fin-form-row">
+          <div class="fin-form-group">
+            <label class="fin-form-label" for="fin-tipo">Tipo</label>
+            <select id="fin-tipo" class="fin-select">
+              <option value="ingreso">Ingreso</option>
+              <option value="egreso">Egreso</option>
+            </select>
+          </div>
+          <div class="fin-form-group">
+            <label class="fin-form-label" for="fin-cat">Categoría</label>
+            <select id="fin-cat" class="fin-select">
+              <option value="Membresía">Membresía</option>
+              <option value="Clases extra">Clases extra</option>
+              <option value="Suplementos">Suplementos</option>
+              <option value="Equipo">Equipo</option>
+              <option value="Renta">Renta</option>
+              <option value="Servicios">Servicios</option>
+              <option value="Salarios">Salarios</option>
+              <option value="Mantenimiento">Mantenimiento</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="fin-form-row">
+          <div class="fin-form-group">
+            <label class="fin-form-label" for="fin-concepto">Concepto</label>
+            <input type="text" id="fin-concepto" class="fin-input" placeholder="Descripción del movimiento">
+          </div>
+          <div class="fin-form-group">
+            <label class="fin-form-label" for="fin-monto">Monto ($)</label>
+            <input type="number" id="fin-monto" class="fin-input" placeholder="0.00" min="0" step="0.01">
+          </div>
+        </div>
+        <button class="btn-orange" id="btnRegistrarFin">+ Agregar movimiento</button>
+      </div>
+ 
+      <!-- ======================================================
+           LISTA DE MOVIMIENTOS FINANCIEROS
+           ====================================================== -->
+      <div class="fadein-2 fin-card">
+        <div class="fin-card-header">
+          <span class="fin-card-title">Historial de movimientos</span>
+          <!-- Filtros rápidos -->
+          <div class="fin-filters">
+            <span class="fin-chip active" data-filter="todos">Todos</span>
+            <span class="fin-chip" data-filter="ingreso">Ingresos</span>
+            <span class="fin-chip" data-filter="egreso">Egresos</span>
+          </div>
+        </div>
+        <!-- Lista dinámica (se llena desde JS) -->
+        <div class="fin-list" id="finance-list">
+          <p class="fin-empty">Sin movimientos. Agrega el primero arriba.</p>
+        </div>
+      </div>
+    </main>
+ 
+    <!-- BARRA DE NAVEGACIÓN INFERIOR -->
+    <nav class="bottomnav">
+      <a href="admin.html" class="bot-link">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio"> Inicio
+      </a>
+      <a href="asistencia-admin.html" class="bot-link">
+        <img src="assets/calendar_month_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Asistencia"> Asistencia
+      </a>
+      <a href="finanzas-admin.html" class="bot-link active">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Finanzas"> Finanzas
+      </a>
+    </nav>
+ 
+  </div><!-- /page -->
+
   </div>
 
   <script src="common.js"></script>

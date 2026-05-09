@@ -407,3 +407,182 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadMembers();
 });
+
+    /* ----------------------------------------------------------
+       1. SESIÓN Y AVATAR
+       ---------------------------------------------------------- */
+    document.addEventListener("DOMContentLoaded", () => {
+      const session = window.GymApp?.getSession();
+      if (!session) { window.location.href = "login.html"; return; }
+ 
+      const av   = document.getElementById("userAvatar");
+      const dn   = document.getElementById("dropdownName");
+      const wrap = document.getElementById("avatarWrap");
+      const drop = document.getElementById("avatarDropdown");
+      const out  = document.getElementById("btnLogout");
+      const name = session.displayName || "Admin";
+      const ini  = name.trim().split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join("");
+      const pal  = ["#c45e1a","#7b2d8b","#1a6fbf","#1a8f5a","#8a4f0d","#3d5a9e","#8b1a1a","#b0390e"];
+ 
+      av.textContent      = ini;
+      av.style.background = pal[(ini.charCodeAt(0)+(ini.charCodeAt(1)||0)) % pal.length];
+      dn.textContent      = name;
+ 
+      wrap.addEventListener("click", e => { e.stopPropagation(); drop.classList.toggle("open"); });
+      document.addEventListener("click", () => drop.classList.remove("open"));
+      out.addEventListener("click", () => { window.GymApp.clearSession(); window.location.href = "login.html"; });
+ 
+      /* Inicializar módulo después de validar sesión */
+      initFinances();
+    });
+ 
+    /* ----------------------------------------------------------
+       2. ESTADO GLOBAL DEL MÓDULO
+       ---------------------------------------------------------- */
+    let finances  = [];       // Array con todos los movimientos
+    let finFilter = "todos";  // Filtro activo: todos / ingreso / egreso
+ 
+    /* ----------------------------------------------------------
+       3. PERSISTENCIA — guardar y cargar desde localStorage
+       ---------------------------------------------------------- */
+    function saveFin() {
+      localStorage.setItem("gym_fin", JSON.stringify(finances));
+    }
+    function loadFin() {
+      try { finances = JSON.parse(localStorage.getItem("gym_fin") || "[]"); }
+      catch(e) { finances = []; }
+    }
+ 
+    /* ----------------------------------------------------------
+       4. HELPERS — fecha, hora y formato de moneda
+       ---------------------------------------------------------- */
+    function nowTime() {
+      return new Date().toLocaleTimeString("es-SV", { hour: "2-digit", minute: "2-digit" });
+    }
+    function todayStr() {
+      return new Date().toLocaleDateString("es-SV", { day: "2-digit", month: "short", year: "numeric" });
+    }
+    function fmtMoney(n) {
+      return "$" + Number(n).toLocaleString("es-SV", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+ 
+    /* ----------------------------------------------------------
+       5. REGISTRAR NUEVO MOVIMIENTO
+       ---------------------------------------------------------- */
+    function registerFinance() {
+      const concepto = document.getElementById("fin-concepto").value.trim();
+      const monto    = parseFloat(document.getElementById("fin-monto").value);
+      const tipo     = document.getElementById("fin-tipo").value;
+      const cat      = document.getElementById("fin-cat").value;
+ 
+      if (!concepto || isNaN(monto) || monto <= 0) {
+        alert("Por favor completa el concepto y un monto válido.");
+        return;
+      }
+ 
+      finances.unshift({
+        id:      Date.now(),
+        tipo,
+        cat,
+        concepto,
+        monto,
+        date:    todayStr(),
+        time:    nowTime()
+      });
+ 
+      saveFin();
+      document.getElementById("fin-concepto").value = "";
+      document.getElementById("fin-monto").value    = "";
+      renderFinances();
+      updateFinMetrics();
+    }
+ 
+    /* ----------------------------------------------------------
+       6. ELIMINAR UN MOVIMIENTO
+       ---------------------------------------------------------- */
+    function removeFin(id) {
+      finances = finances.filter(f => f.id !== id);
+      saveFin();
+      renderFinances();
+      updateFinMetrics();
+    }
+ 
+    /* ----------------------------------------------------------
+       7. RENDERIZAR LISTA (aplica filtro activo)
+       ---------------------------------------------------------- */
+    function renderFinances() {
+      const list = document.getElementById("finance-list");
+      const filtered = finances.filter(f => finFilter === "todos" || f.tipo === finFilter);
+ 
+      if (!filtered.length) {
+        list.innerHTML = `<p class="fin-empty">Sin movimientos para el filtro seleccionado.</p>`;
+        return;
+      }
+ 
+      list.innerHTML = filtered.map(f => {
+        const signo = f.tipo === "ingreso" ? "+" : "-";
+        const icon  = f.tipo === "ingreso" ? "↑" : "↓";
+        return `
+          <div class="fin-item">
+            <div class="fin-icon ${f.tipo}">${icon}</div>
+            <div class="fin-info">
+              <div class="fin-concept">${f.concepto}</div>
+              <div class="fin-meta">${f.cat} &nbsp;·&nbsp; ${f.date} ${f.time}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="fin-amount ${f.tipo}">${signo}${fmtMoney(f.monto)}</div>
+              <button class="fin-btn-del" onclick="removeFin(${f.id})" title="Eliminar">✕</button>
+            </div>
+          </div>`;
+      }).join("");
+    }
+ 
+    /* ----------------------------------------------------------
+       8. CALCULAR Y MOSTRAR MÉTRICAS
+       ---------------------------------------------------------- */
+    function updateFinMetrics() {
+      const ingresos = finances
+        .filter(f => f.tipo === "ingreso")
+        .reduce((sum, f) => sum + f.monto, 0);
+ 
+      const egresos = finances
+        .filter(f => f.tipo === "egreso")
+        .reduce((sum, f) => sum + f.monto, 0);
+ 
+      const balance = ingresos - egresos;
+ 
+      document.getElementById("fin-ingresos").textContent = fmtMoney(ingresos);
+      document.getElementById("fin-egresos").textContent  = fmtMoney(egresos);
+      document.getElementById("fin-count").textContent    = finances.length;
+ 
+      const balEl = document.getElementById("fin-balance");
+      balEl.textContent = fmtMoney(balance);
+      /* Balance positivo = naranja/verde, negativo = rojo */
+      balEl.className = "fin-metric-value " + (balance >= 0 ? "orange" : "red");
+    }
+ 
+    /* ----------------------------------------------------------
+       9. FILTROS DE CHIPS (Todos / Ingresos / Egresos)
+       ---------------------------------------------------------- */
+    document.querySelectorAll(".fin-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll(".fin-chip").forEach(c => c.classList.remove("active"));
+        chip.classList.add("active");
+        finFilter = chip.dataset.filter;
+        renderFinances();
+      });
+    });
+ 
+    /* ----------------------------------------------------------
+      10. BOTÓN REGISTRAR
+       ---------------------------------------------------------- */
+    document.getElementById("btnRegistrarFin").addEventListener("click", registerFinance);
+ 
+    /* ----------------------------------------------------------
+      11. INICIALIZAR MÓDULO
+       ---------------------------------------------------------- */
+    function initFinances() {
+      loadFin();
+      renderFinances();
+      updateFinMetrics();
+    }
