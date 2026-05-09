@@ -279,6 +279,13 @@ body {
   transition: all 0.2s;
 }
 
+.report-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .report-apply-btn {
   width: 100%;
   padding: 10px 14px;
@@ -2237,6 +2244,15 @@ body {
   .attendance-report-controls,
   .attendance-report-summary {
     grid-template-columns: 1fr;
+  }
+
+  .report-export-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .report-export-btn {
+    flex: 1 1 0;
   }
 
   .attendance-breakdown-row {

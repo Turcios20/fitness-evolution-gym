@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const attendanceToDate = document.getElementById("attendanceToDate");
   const btnLoadAttendanceReport = document.getElementById("btnLoadAttendanceReport");
   const btnAttendanceExport = document.getElementById("btnAttendanceExport");
+  const btnAttendanceExportToday = document.getElementById("btnAttendanceExportToday");
   const attendanceSummaryEntries = document.getElementById("attendanceSummaryEntries");
   const attendanceSummaryMembers = document.getElementById("attendanceSummaryMembers");
   const attendanceSummaryExpired = document.getElementById("attendanceSummaryExpired");
@@ -97,6 +98,35 @@ document.addEventListener("DOMContentLoaded", () => {
     if (days <= 0) return '<span class="member-badge badge-expired">Vencida</span>';
     if (days <= 7) return `<span class="member-badge badge-danger">${days} dias</span>`;
     return `<span class="member-badge badge-ok">${days} dias</span>`;
+  }
+
+  function buildAttendanceCsvRows(entries) {
+    const rows = [["Fecha", "Hora", "Miembro", "Correo", "Plan", "Estado membresia"]];
+    entries.forEach((entry) => {
+      rows.push([
+        formatDate(entry.checkInAt),
+        formatTime(entry.checkInAt),
+        `${entry.member.name} (#${entry.member.id})`,
+        entry.member.email,
+        entry.membership?.plan || "Sin plan",
+        entry.membership?.status || "Sin membresia"
+      ]);
+    });
+    return rows;
+  }
+
+  function downloadCsv(rows, filename) {
+    const csv = rows.map((row) => row.map((value) => `"${value}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+  }
+
+  async function fetchAttendanceReport(from, to) {
+    const query = new URLSearchParams({ from, to });
+    return GymApp.api(`/api/admin/attendance-report?${query.toString()}`);
   }
 
   function initializeSidebar() {
@@ -430,11 +460,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnLoadAttendanceReport) btnLoadAttendanceReport.disabled = true;
 
     try {
-      const query = new URLSearchParams({
-        from: attendanceFromDate.value,
-        to: attendanceToDate.value
-      });
-      const report = await GymApp.api(`/api/admin/attendance-report?${query.toString()}`);
+      const report = await fetchAttendanceReport(attendanceFromDate.value, attendanceToDate.value);
       attendanceEntries = report.entries || [];
 
       if (attendanceSummaryEntries) {
@@ -725,31 +751,58 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   if (btnAttendanceExport) {
-    btnAttendanceExport.addEventListener("click", () => {
-      if (!attendanceEntries.length) {
-        GymApp.toast("Primero carga un reporte con registros para exportar.", "info");
+    btnAttendanceExport.addEventListener("click", async () => {
+      if (!attendanceFromDate?.value || !attendanceToDate?.value) {
+        GymApp.toast("Selecciona un rango de fechas antes de exportar.", "info");
         return;
       }
 
-      const rows = [["Fecha", "Hora", "Miembro", "Correo", "Plan", "Estado membresia"]];
-      attendanceEntries.forEach((entry) => {
-        rows.push([
-          formatDate(entry.checkInAt),
-          formatTime(entry.checkInAt),
-          `${entry.member.name} (#${entry.member.id})`,
-          entry.member.email,
-          entry.membership?.plan || "Sin plan",
-          entry.membership?.status || "Sin membresia"
-        ]);
-      });
+      btnAttendanceExport.disabled = true;
+      try {
+        const report = await fetchAttendanceReport(attendanceFromDate.value, attendanceToDate.value);
+        const entries = report.entries || [];
 
-      const csv = rows.map((row) => row.map((value) => `"${value}"`).join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = `reporte-asistencia-${attendanceFromDate?.value || "inicio"}-${attendanceToDate?.value || "fin"}.csv`;
-      link.click();
-      GymApp.toast("Reporte exportado correctamente.", "success");
+        if (!entries.length) {
+          GymApp.toast("No hay asistencias en el periodo seleccionado.", "info");
+          return;
+        }
+
+        downloadCsv(
+          buildAttendanceCsvRows(entries),
+          `reporte-asistencia-${attendanceFromDate.value}-${attendanceToDate.value}.csv`
+        );
+        GymApp.toast("Reporte del periodo exportado correctamente.", "success");
+      } catch (err) {
+        GymApp.toast(`No se pudo exportar el periodo: ${err.message}`, "error");
+      } finally {
+        btnAttendanceExport.disabled = false;
+      }
+    });
+  }
+  if (btnAttendanceExportToday) {
+    btnAttendanceExportToday.addEventListener("click", async () => {
+      const today = toInputDate(new Date());
+      btnAttendanceExportToday.disabled = true;
+
+      try {
+        const report = await fetchAttendanceReport(today, today);
+        const entries = report.entries || [];
+
+        if (!entries.length) {
+          GymApp.toast("Hoy no hay asistencias registradas para exportar.", "info");
+          return;
+        }
+
+        downloadCsv(
+          buildAttendanceCsvRows(entries),
+          `reporte-asistencia-hoy-${today}.csv`
+        );
+        GymApp.toast("Reporte de hoy exportado correctamente.", "success");
+      } catch (err) {
+        GymApp.toast(`No se pudo exportar el reporte de hoy: ${err.message}`, "error");
+      } finally {
+        btnAttendanceExportToday.disabled = false;
+      }
     });
   }
   if (memberTemplate) memberTemplate.remove();
