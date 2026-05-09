@@ -2263,6 +2263,17 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`API corriendo en http://localhost:${PORT}`);
+});
+
+server.on("error", (error) => {
+  if (error?.code === "EADDRINUSE") {
+    console.error(`El puerto ${PORT} ya esta en uso.`);
+    console.error("Cierra el proceso anterior o arranca con otro puerto.");
+    console.error(`Ejemplo PowerShell: $env:PORT='3102'; npm start`);
+    process.exit(1);
+  }
+
+  throw error;
 });
