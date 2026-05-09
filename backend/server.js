@@ -1417,6 +1417,87 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
   }
 });
 
+// ── PAGOS ────────────────────────────────────────────────────────────────────
+
+app.get("/api/admin/payments", async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+         p.id_pago,
+         p.id_usuario,
+         u.nombre_completo,
+         u.correo,
+         p.monto,
+         p.fecha_pago,
+         p.metodo_pago
+       FROM pagos p
+       JOIN usuarios u ON u.id_usuario = p.id_usuario
+       ORDER BY p.fecha_pago DESC
+       LIMIT 200`
+    );
+    res.json({ payments: rows, total: rows.length });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando pagos", detail: error.message });
+  }
+});
+
+app.post("/api/admin/payments", async (req, res) => {
+  const { userId, monto, metodoPago } = req.body || {};
+  if (!userId || !monto) {
+    res.status(400).json({ error: "userId y monto son requeridos" });
+    return;
+  }
+  const metodos = ["Efectivo", "Tarjeta", "Transferencia"];
+  const metodo = metodos.includes(metodoPago) ? metodoPago : "Efectivo";
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO pagos (id_usuario, monto, metodo_pago) VALUES (?, ?, ?)`,
+      [userId, Number(monto), metodo]
+    );
+    res.status(201).json({ ok: true, id: result.insertId });
+  } catch (error) {
+    res.status(500).json({ error: "Error registrando pago", detail: error.message });
+  }
+});
+
+app.get("/api/admin/finance/summary", async (_req, res) => {
+  try {
+    const [totals] = await pool.query(
+      `SELECT
+         COUNT(*)                                          AS total_pagos,
+         COALESCE(SUM(monto), 0)                          AS ingresos_total,
+         COALESCE(SUM(CASE WHEN DATE(fecha_pago) = CURDATE() THEN monto ELSE 0 END), 0) AS ingresos_hoy,
+         COALESCE(SUM(CASE WHEN YEAR(fecha_pago) = YEAR(CURDATE()) AND MONTH(fecha_pago) = MONTH(CURDATE()) THEN monto ELSE 0 END), 0) AS ingresos_mes
+       FROM pagos`
+    );
+
+    const [byMethod] = await pool.query(
+      `SELECT metodo_pago, COUNT(*) AS cantidad, COALESCE(SUM(monto), 0) AS subtotal
+       FROM pagos
+       GROUP BY metodo_pago`
+    );
+
+    const [monthly] = await pool.query(
+      `SELECT
+         DATE_FORMAT(fecha_pago, '%Y-%m') AS mes,
+         COALESCE(SUM(monto), 0)          AS total
+       FROM pagos
+       WHERE fecha_pago >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+       GROUP BY mes
+       ORDER BY mes ASC`
+    );
+
+    res.json({
+      summary: totals[0],
+      byMethod,
+      monthly
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando resumen financiero", detail: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`API corriendo en http://localhost:${PORT}`);
 });
