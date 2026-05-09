@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recepcion - FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="gym-bg"></div>
+
+  <div class="page">
+
+    <nav class="topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
+      </div>
+
+      <div class="topnav-actions">
+        <a href="recepcion.html" class="nav-link active">
+          <img src="assets/calendar_month_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Asistencia">
+          Asistencia
+        </a>
+        <button type="button" class="nav-link" id="btnReceptionLogout">Salir</button>
+      </div>
+    </nav>
+
+    <main class="content attendance-content">
+      <div class="fadein">
+        <p class="welcome-sub">Control de asistencia</p>
+        <h1 class="welcome-title">Recepcion</h1>
+      </div>
+
+      <div class="att-metrics-row fadein-2">
+        <div class="att-metric-card">
+          <span class="att-metric-label">Entradas hoy</span>
+          <span class="att-metric-value orange" id="metricTodayCheckins">0</span>
+        </div>
+        <div class="att-metric-card">
+          <span class="att-metric-label">Miembros unicos</span>
+          <span class="att-metric-value green" id="metricUniqueMembers">0</span>
+        </div>
+        <div class="att-metric-card">
+          <span class="att-metric-label">Vencidas hoy</span>
+          <span class="att-metric-value red" id="metricExpiredCheckins">0</span>
+        </div>
+      </div>
+
+      <section class="att-card fadein-2">
+        <div class="att-card-header">
+          <div class="att-card-title">Registrar entrada</div>
+        </div>
+
+        <p class="att-card-subtitle">
+          Busca por nombre, correo o identificador del miembro y registra su asistencia diaria.
+        </p>
+
+        <div class="att-feedback" id="checkinFeedback"></div>
+
+        <div class="att-search-wrap">
+          <input
+            type="text"
+            class="att-search"
+            id="memberSearchInput"
+            placeholder="Ej: Jhoscar, jhoscar@correo.com o ID 2">
+        </div>
+
+        <div class="att-empty" id="memberResultsEmpty">
+          Escribe al menos 1 caracter para buscar un miembro.
+        </div>
+        <div class="att-list att-list--tall" id="memberResults"></div>
+      </section>
+
+      <section class="att-card fadein-3">
+        <div class="att-card-header">
+          <div class="att-card-title">Historial de asistencia</div>
+        </div>
+
+        <p class="att-card-subtitle">
+          Consulta la asistencia de cualquier miembro en un rango de fechas.
+        </p>
+
+        <div class="att-form-row">
+          <div class="att-form-group">
+            <label class="att-form-label" for="historyFrom">Desde</label>
+            <input type="date" class="att-input" id="historyFrom">
+          </div>
+          <div class="att-form-group">
+            <label class="att-form-label" for="historyTo">Hasta</label>
+            <input type="date" class="att-input" id="historyTo">
+          </div>
+          <div class="att-form-group">
+            <label class="att-form-label" for="historyQuery">Miembro</label>
+            <input
+              type="text"
+              class="att-input"
+              id="historyQuery"
+              placeholder="Nombre, correo o ID">
+          </div>
+        </div>
+
+        <div class="att-inline-actions">
+          <button type="button" class="btn-orange att-action-btn" id="loadHistoryButton">Consultar historial</button>
+        </div>
+
+        <div class="att-empty" id="historyEmpty">
+          Aun no se ha cargado el historial.
+        </div>
+        <div class="att-list att-list--tall" id="attendanceHistoryList"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="recepcion.js"></script>
+</body>
+</html>

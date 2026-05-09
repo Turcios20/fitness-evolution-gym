@@ -12,6 +12,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const usernameInput = inputs[0];
   const passwordInput = inputs[1];
 
+  function redirectForRole(role) {
+    window.location.href = GymApp.homeForRole(role);
+  }
+
   loginButton.addEventListener("click", async (event) => {
     event.preventDefault();
     await doLogin();
@@ -51,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
         token: data.token || null
       });
 
-      window.location.href = role === "admin" ? "admin.html" : "cliente.html";
+      redirectForRole(role);
       return;
     } catch {
       // Fallback local mientras no exista API activa.
@@ -59,8 +63,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const localUsers = [
       { username: "admin@victorsgym.com", password: "admin123", role: "admin", displayName: "Victor Administrator" },
+      { username: "recepcion@fitnessgym.com", password: "recep123", role: "recepcionista", displayName: "Maria Recepcion" },
       { username: "jhoscar@correo.com", password: "cliente123", role: "cliente", displayName: "Jhoscar Ochoa" },
       { username: "admin", password: "admin123", role: "admin", displayName: "Administrador" },
+      { username: "recepcionista", password: "recep123", role: "recepcionista", displayName: "Recepcion" },
       { username: "cliente", password: "cliente123", role: "cliente", displayName: "Jhoscar" }
     ];
 
@@ -80,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
       token: null
     });
 
-    window.location.href = matchedUser.role === "admin" ? "admin.html" : "cliente.html";
+    redirectForRole(matchedUser.role);
   }
 
   // ── Sistema de modales (igual al del admin) ──

@@ -7,7 +7,7 @@ CREATE TABLE usuarios (
     nombre_completo VARCHAR(100) NOT NULL,
     correo VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    rol ENUM('Administrador', 'Cliente') NOT NULL DEFAULT 'Cliente',
+    rol ENUM('Administrador', 'Cliente', 'Recepcionista') NOT NULL DEFAULT 'Cliente',
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -45,6 +45,7 @@ CREATE TABLE asistencia (
     id_asistencia INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,
     fecha_entrada DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_asistencia_usuario_fecha (id_usuario, fecha_entrada),
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
 );
 
@@ -57,8 +58,10 @@ CREATE TABLE inventario (
 
 INSERT INTO usuarios (nombre_completo, correo, password, rol) VALUES
 ('Victor Administrator', 'admin@victorsgym.com', 'admin123', 'Administrador'),
+('Maria Recepcion', 'recepcion@fitnessgym.com', 'recep123', 'Recepcionista'),
 ('Jhoscar Ochoa', 'jhoscar@correo.com', 'cliente123', 'Cliente');
 
 INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)
-VALUES
-(2, 'Mensual', 20.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY), 'Activo');
+SELECT u.id_usuario, 'Mensual', 20.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY), 'Activo'
+FROM usuarios u
+WHERE u.correo = 'jhoscar@correo.com';

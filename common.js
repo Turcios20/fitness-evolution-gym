@@ -56,6 +56,12 @@
     localStorage.removeItem("gymSession");
   }
 
+  function homeForRole(role) {
+    if (role === "admin") return "admin.html";
+    if (role === "recepcionista") return "recepcion.html";
+    return "cliente.html";
+  }
+
   // Devuelve true si la sesión lleva más de 8 horas activa
   function isSessionExpired() {
     const s = getSession();
@@ -66,7 +72,7 @@
 
   // ── Guardián de ruta ────────────────────────────────────────
   // Llama esto en cada página protegida.
-  // requiredRole: "admin" | "cliente" | null (cualquiera autenticado)
+  // requiredRole: "admin" | "cliente" | "recepcionista" | null
   function guardRoute(requiredRole) {
     if (isSessionExpired()) {
       clearSession();
@@ -78,10 +84,16 @@
       window.location.href = "login.html";
       return false;
     }
-    if (requiredRole && session.role !== requiredRole) {
-      window.location.href = session.role === "admin" ? "admin.html" : "cliente.html";
+
+    const allowedRoles = requiredRole
+      ? (Array.isArray(requiredRole) ? requiredRole : [requiredRole])
+      : [];
+
+    if (allowedRoles.length && !allowedRoles.includes(session.role)) {
+      window.location.href = homeForRole(session.role);
       return false;
     }
+
     return true;
   }
 
@@ -126,6 +138,7 @@
     clearSession,
     isSessionExpired,
     guardRoute,
+    homeForRole,
     toast,
   };
 })();
