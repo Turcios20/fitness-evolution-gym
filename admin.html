@@ -81,6 +81,67 @@
         </div>
 
         <!-- Gestión de miembros -->
+        <div class="fadein-2" id="attendance-report" style="margin-bottom: 28px;">
+          <div class="section-header section-header--wrap">
+            <span class="section-title">Reporte de asistencia</span>
+            <button type="button" class="report-export-btn" id="btnAttendanceExport">Exportar CSV</button>
+          </div>
+
+          <div class="attendance-report-card">
+            <div class="attendance-report-controls">
+              <div class="report-field">
+                <label for="attendanceFromDate">Desde</label>
+                <input type="date" id="attendanceFromDate" class="report-input">
+              </div>
+              <div class="report-field">
+                <label for="attendanceToDate">Hasta</label>
+                <input type="date" id="attendanceToDate" class="report-input">
+              </div>
+              <div class="report-actions">
+                <button type="button" class="report-apply-btn" id="btnLoadAttendanceReport">Actualizar reporte</button>
+              </div>
+            </div>
+
+            <div class="attendance-report-summary">
+              <div class="attendance-report-stat">
+                <span class="attendance-report-label">Entradas</span>
+                <strong id="attendanceSummaryEntries">0</strong>
+              </div>
+              <div class="attendance-report-stat">
+                <span class="attendance-report-label">Miembros unicos</span>
+                <strong id="attendanceSummaryMembers">0</strong>
+              </div>
+              <div class="attendance-report-stat">
+                <span class="attendance-report-label">Membresias vencidas</span>
+                <strong id="attendanceSummaryExpired">0</strong>
+              </div>
+            </div>
+
+            <div class="attendance-breakdown" id="attendanceBreakdown">
+              <div class="attendance-breakdown-empty">Selecciona un periodo para visualizar el comportamiento de asistencia.</div>
+            </div>
+
+            <div class="attendance-report-table">
+              <table class="attendance-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Miembro</th>
+                    <th>Estado</th>
+                    <th>Detalle</th>
+                  </tr>
+                </thead>
+                <tbody id="attendanceReportBody">
+                  <tr>
+                    <td colspan="5" class="attendance-table-empty">Cargando reporte...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div class="fadein-3">
           <div class="section-header">
             <span class="section-title">Gestión de miembros</span>
