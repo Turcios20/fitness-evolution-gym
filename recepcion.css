@@ -270,14 +270,117 @@ body[data-theme="light"] .sidebar {
   margin-bottom: 10px;
 }
 
+.terminal-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  margin-bottom: 10px;
+}
+
 body[data-theme="light"] .terminal-select {
   background: rgba(255, 255, 255, 0.82);
   color: var(--text);
 }
 
+.terminal-input::placeholder {
+  color: var(--text-dim);
+}
+
+body[data-theme="light"] .terminal-input {
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text);
+}
+
+.terminal-input:focus,
 .terminal-select:focus {
   outline: none;
   border-color: var(--orange);
+}
+
+.member-preview {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+body[data-theme="light"] .member-preview {
+  border-color: rgba(88, 60, 35, 0.08);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.member-preview--placeholder {
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.member-preview--ok {
+  border-color: rgba(0, 255, 100, 0.24);
+}
+
+.member-preview--warn {
+  border-color: rgba(232, 124, 42, 0.3);
+}
+
+.member-preview--danger {
+  border-color: rgba(220, 80, 80, 0.3);
+}
+
+.member-preview-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.member-preview-name {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.member-preview-id {
+  display: block;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.member-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.member-preview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.member-preview-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+}
+
+.member-preview-value {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.member-preview-note {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.45;
 }
 
 .terminal-btn,
@@ -304,10 +407,21 @@ body[data-theme="light"] .terminal-select {
   margin-bottom: 25px;
 }
 
+.section-header-stack {
+  align-items: flex-start;
+}
+
 .section-header h2 {
   font-family: "Bebas Neue", sans-serif;
   font-size: 32px;
   letter-spacing: 1.5px;
+}
+
+.section-subtitle {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.4;
 }
 
 .search-bar input {
@@ -417,6 +531,86 @@ body[data-theme="light"] .members-table td {
   cursor: default;
 }
 
+.history-panel {
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+
+.history-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(160px, 1fr)) minmax(200px, auto);
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 20px;
+}
+
+.history-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-field label {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+}
+
+.history-field .terminal-select,
+.history-field .terminal-input {
+  margin-bottom: 0;
+}
+
+.history-actions {
+  display: flex;
+  align-items: end;
+}
+
+.history-actions .terminal-btn {
+  width: 100%;
+}
+
+.history-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.history-stat {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body[data-theme="light"] .history-stat {
+  border-color: rgba(88, 60, 35, 0.08);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.history-stat-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.history-stat strong {
+  font-size: 20px;
+  color: var(--orange);
+}
+
+.history-table td:last-child {
+  color: var(--text-dim);
+}
+
 .settings-widget {
   background: var(--panel);
   border-radius: var(--radius);
@@ -516,5 +710,14 @@ body[data-theme="light"] .setting-item {
 
   .search-bar input {
     width: 100%;
+  }
+
+  .member-preview-grid,
+  .history-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .history-controls {
+    grid-template-columns: 1fr;
   }
 }

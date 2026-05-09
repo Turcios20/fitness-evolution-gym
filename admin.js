@@ -12,11 +12,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const statsValues   = document.querySelectorAll(".stat-card .stat-val");
   const welcomeTitle  = document.querySelector(".welcome-title");
   const btnLogout     = document.getElementById("btnAdminLogout");
+  const attendanceFromDate = document.getElementById("attendanceFromDate");
+  const attendanceToDate = document.getElementById("attendanceToDate");
+  const btnLoadAttendanceReport = document.getElementById("btnLoadAttendanceReport");
+  const btnAttendanceExport = document.getElementById("btnAttendanceExport");
+  const btnAttendanceExportToday = document.getElementById("btnAttendanceExportToday");
+  const attendanceSummaryEntries = document.getElementById("attendanceSummaryEntries");
+  const attendanceSummaryMembers = document.getElementById("attendanceSummaryMembers");
+  const attendanceSummaryExpired = document.getElementById("attendanceSummaryExpired");
+  const attendanceBreakdown = document.getElementById("attendanceBreakdown");
+  const attendanceReportBody = document.getElementById("attendanceReportBody");
 
   let members    = [];
   let trainers   = [];
   let filterPlan = "all";
   let filterStatus = "all";
+  let attendanceEntries = [];
 
   if (welcomeTitle)
     welcomeTitle.textContent = `¡Bienvenido, ${session.displayName || "administrador"}!`;
@@ -39,6 +50,83 @@ document.addEventListener("DOMContentLoaded", () => {
   function avatarColor(initials) {
     const p = ["#c45e1a","#7b2d8b","#1a6fbf","#1a8f5a","#8a4f0d","#3d5a9e","#8b1a1a","#b0390e"];
     return p[(initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % p.length];
+  }
+
+  function toInputDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function shiftDate(date, amount) {
+    const nextDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    nextDate.setDate(nextDate.getDate() + amount);
+    return nextDate;
+  }
+
+  function formatDate(value) {
+    if (!value) return "--";
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(String(value || "").trim())
+      ? (() => {
+          const [year, month, day] = String(value).split("-").map(Number);
+          return new Date(year, month - 1, day);
+        })()
+      : new Date(value);
+    return date.toLocaleDateString("es-SV", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
+  }
+
+  function formatTime(value) {
+    if (!value) return "--";
+    return new Date(value).toLocaleTimeString("es-SV", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  function attendanceBadge(entry) {
+    const membership = entry.membership;
+    const status = membership?.status || "Inactivo";
+    const days = Number(membership?.daysRemaining || 0);
+
+    if (!membership) return '<span class="member-badge badge-inactive">Sin membresia</span>';
+    if (status !== "Activo") return '<span class="member-badge badge-inactive">Inactiva</span>';
+    if (days <= 0) return '<span class="member-badge badge-expired">Vencida</span>';
+    if (days <= 7) return `<span class="member-badge badge-danger">${days} dias</span>`;
+    return `<span class="member-badge badge-ok">${days} dias</span>`;
+  }
+
+  function buildAttendanceCsvRows(entries) {
+    const rows = [["Fecha", "Hora", "Miembro", "Correo", "Plan", "Estado membresia"]];
+    entries.forEach((entry) => {
+      rows.push([
+        formatDate(entry.checkInAt),
+        formatTime(entry.checkInAt),
+        `${entry.member.name} (#${entry.member.id})`,
+        entry.member.email,
+        entry.membership?.plan || "Sin plan",
+        entry.membership?.status || "Sin membresia"
+      ]);
+    });
+    return rows;
+  }
+
+  function downloadCsv(rows, filename) {
+    const csv = rows.map((row) => row.map((value) => `"${value}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+  }
+
+  async function fetchAttendanceReport(from, to) {
+    const query = new URLSearchParams({ from, to });
+    return GymApp.api(`/api/admin/attendance-report?${query.toString()}`);
   }
 
   function initializeSidebar() {
@@ -291,6 +379,109 @@ document.addEventListener("DOMContentLoaded", () => {
     if (monthlyIncomeEl) monthlyIncomeEl.textContent = `$${monthlyIncome}`;
   }
 
+  function renderAttendanceBreakdown(days) {
+    if (!attendanceBreakdown) return;
+
+    if (!days.length) {
+      attendanceBreakdown.innerHTML = `
+        <div class="attendance-breakdown-empty">
+          No hay registros de asistencia en el periodo seleccionado.
+        </div>
+      `;
+      return;
+    }
+
+    const maxValue = Math.max(...days.map((day) => Number(day.total || 0)), 1);
+    attendanceBreakdown.innerHTML = days.map((day) => {
+      const percent = Math.max((Number(day.total || 0) / maxValue) * 100, 6);
+      return `
+        <div class="attendance-breakdown-row">
+          <div class="attendance-breakdown-date">${formatDate(day.date)}</div>
+          <div class="attendance-breakdown-track">
+            <div class="attendance-breakdown-fill" style="width:${percent}%"></div>
+          </div>
+          <div class="attendance-breakdown-total">${day.total}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderAttendanceTable(entries) {
+    if (!attendanceReportBody) return;
+
+    if (!entries.length) {
+      attendanceReportBody.innerHTML = `
+        <tr>
+          <td colspan="5" class="attendance-table-empty">No hay asistencias para mostrar.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    attendanceReportBody.innerHTML = entries.map((entry) => `
+      <tr>
+        <td>${formatDate(entry.checkInAt)}</td>
+        <td>${formatTime(entry.checkInAt)}</td>
+        <td>${entry.member.name}<br><span class="member-trainer">#${entry.member.id}</span></td>
+        <td>${attendanceBadge(entry)}</td>
+        <td>${entry.membership?.plan || "Sin plan"} · ${entry.member.email}</td>
+      </tr>
+    `).join("");
+  }
+
+  async function loadAdminSummary() {
+    try {
+      const [receptionData, financeData] = await Promise.all([
+        GymApp.api("/api/reception/dashboard"),
+        GymApp.api("/api/admin/finance/summary")
+      ]);
+
+      if (statsValues[0]) statsValues[0].textContent = String(receptionData.summary?.entriesToday || 0);
+      if (statsValues[1]) statsValues[1].textContent = `$${Number(financeData.summary?.ingresos_hoy || 0)}`;
+      if (statsValues[2]) statsValues[2].textContent = String(receptionData.summary?.newMembers || 0);
+    } catch (err) {
+      GymApp.toast(`No se pudo cargar el resumen diario: ${err.message}`, "error");
+    }
+  }
+
+  async function loadAttendanceReport() {
+    if (!attendanceFromDate || !attendanceToDate) return;
+
+    if (!attendanceFromDate.value || !attendanceToDate.value) {
+      GymApp.toast("Selecciona un rango de fechas valido.", "info");
+      return;
+    }
+
+    if (attendanceFromDate.value > attendanceToDate.value) {
+      GymApp.toast("La fecha inicial no puede ser mayor que la final.", "info");
+      return;
+    }
+
+    if (btnLoadAttendanceReport) btnLoadAttendanceReport.disabled = true;
+
+    try {
+      const report = await fetchAttendanceReport(attendanceFromDate.value, attendanceToDate.value);
+      attendanceEntries = report.entries || [];
+
+      if (attendanceSummaryEntries) {
+        attendanceSummaryEntries.textContent = String(report.summary?.totalEntries || 0);
+      }
+      if (attendanceSummaryMembers) {
+        attendanceSummaryMembers.textContent = String(report.summary?.uniqueMembers || 0);
+      }
+      if (attendanceSummaryExpired) {
+        attendanceSummaryExpired.textContent = String(report.summary?.entriesWithExpiredMembership || 0);
+      }
+
+      renderAttendanceBreakdown(report.breakdown || []);
+      renderAttendanceTable(attendanceEntries);
+    } catch (err) {
+      GymApp.toast(`No se pudo cargar el reporte: ${err.message}`, "error");
+    } finally {
+      if (btnLoadAttendanceReport) btnLoadAttendanceReport.disabled = false;
+    }
+  }
+
   // ─────────────────────────────────────────────
   // TARJETA DE MIEMBRO
   // ─────────────────────────────────────────────
@@ -538,7 +729,6 @@ document.addEventListener("DOMContentLoaded", () => {
       ]);
       members = memberData.members || [];
       trainers = trainerData.trainers || [];
-      if (statsValues[2]) statsValues[2].textContent = String(memberData.total ?? members.length);
       renderAlerts(members);
       renderSidebarSummary(members);
       buildFilters();
@@ -549,10 +739,77 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  if (attendanceFromDate) attendanceFromDate.value = toInputDate(shiftDate(new Date(), -29));
+  if (attendanceToDate) attendanceToDate.value = toInputDate(new Date());
+
   if (searchInput)   searchInput.addEventListener("input", applyFilters);
+  if (btnLoadAttendanceReport) {
+    btnLoadAttendanceReport.addEventListener("click", () => {
+      loadAttendanceReport().catch((err) => {
+        GymApp.toast(`No se pudo cargar el reporte: ${err.message}`, "error");
+      });
+    });
+  }
+  if (btnAttendanceExport) {
+    btnAttendanceExport.addEventListener("click", async () => {
+      if (!attendanceFromDate?.value || !attendanceToDate?.value) {
+        GymApp.toast("Selecciona un rango de fechas antes de exportar.", "info");
+        return;
+      }
+
+      btnAttendanceExport.disabled = true;
+      try {
+        const report = await fetchAttendanceReport(attendanceFromDate.value, attendanceToDate.value);
+        const entries = report.entries || [];
+
+        if (!entries.length) {
+          GymApp.toast("No hay asistencias en el periodo seleccionado.", "info");
+          return;
+        }
+
+        downloadCsv(
+          buildAttendanceCsvRows(entries),
+          `reporte-asistencia-${attendanceFromDate.value}-${attendanceToDate.value}.csv`
+        );
+        GymApp.toast("Reporte del periodo exportado correctamente.", "success");
+      } catch (err) {
+        GymApp.toast(`No se pudo exportar el periodo: ${err.message}`, "error");
+      } finally {
+        btnAttendanceExport.disabled = false;
+      }
+    });
+  }
+  if (btnAttendanceExportToday) {
+    btnAttendanceExportToday.addEventListener("click", async () => {
+      const today = toInputDate(new Date());
+      btnAttendanceExportToday.disabled = true;
+
+      try {
+        const report = await fetchAttendanceReport(today, today);
+        const entries = report.entries || [];
+
+        if (!entries.length) {
+          GymApp.toast("Hoy no hay asistencias registradas para exportar.", "info");
+          return;
+        }
+
+        downloadCsv(
+          buildAttendanceCsvRows(entries),
+          `reporte-asistencia-hoy-${today}.csv`
+        );
+        GymApp.toast("Reporte de hoy exportado correctamente.", "success");
+      } catch (err) {
+        GymApp.toast(`No se pudo exportar el reporte de hoy: ${err.message}`, "error");
+      } finally {
+        btnAttendanceExportToday.disabled = false;
+      }
+    });
+  }
   if (memberTemplate) memberTemplate.remove();
 
   initializeSidebar();
   ensureCreateButton();
+  loadAdminSummary();
+  loadAttendanceReport();
   loadMembers();
 });

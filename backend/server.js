@@ -48,7 +48,10 @@ const ROLE_DB_TO_FRONTEND = {
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
-app.use(express.static(path.join(__dirname, "..")));
+app.get(["/", "/index.html"], (_req, res) => {
+  res.redirect("/login.html");
+});
+app.use(express.static(path.join(__dirname, ".."), { index: false }));
 
 function roleToFrontend(role) {
   const value = String(role || "").trim().toLowerCase();
@@ -166,6 +169,60 @@ function normalizeMember(row) {
           daysRemaining: Number(row.dias_restantes || 0)
         }
       : null
+  };
+}
+
+function normalizeMembershipSnapshot(row) {
+  if (!row?.id_membresia) {
+    return null;
+  }
+
+  return {
+    id: row.id_membresia,
+    plan: row.tipo_plan || "Sin plan",
+    status: row.membresia_estado || row.estado || "Inactivo",
+    endDate: row.fecha_vencimiento || null,
+    daysRemaining: Number(row.dias_restantes || 0)
+  };
+}
+
+function getMembershipIndicator(membership) {
+  if (!membership) {
+    return {
+      label: "Sin membresia",
+      tone: "danger",
+      expired: true
+    };
+  }
+
+  if (membership.status !== "Activo") {
+    return {
+      label: "Membresia inactiva",
+      tone: "danger",
+      expired: true
+    };
+  }
+
+  if (membership.daysRemaining <= 0) {
+    return {
+      label: "Membresia vencida",
+      tone: "danger",
+      expired: true
+    };
+  }
+
+  if (membership.daysRemaining <= 7) {
+    return {
+      label: `Membresia por vencer (${membership.daysRemaining} dias)`,
+      tone: "warn",
+      expired: false
+    };
+  }
+
+  return {
+    label: `Membresia activa (${membership.daysRemaining} dias)`,
+    tone: "ok",
+    expired: false
   };
 }
 
@@ -395,6 +452,145 @@ function createHttpError(status, message) {
   const error = new Error(message);
   error.status = status;
   return error;
+}
+
+function formatDateOnly(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateOnly(value, label) {
+  const input = String(value || "").trim();
+  if (!input) return null;
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    throw createHttpError(400, `${label} invalida`);
+  }
+
+  const [year, month, day] = input.split("-").map(Number);
+  const parsed = new Date(year, month - 1, day);
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    throw createHttpError(400, `${label} invalida`);
+  }
+
+  return parsed;
+}
+
+function addDays(date, amount) {
+  const nextDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  nextDate.setDate(nextDate.getDate() + amount);
+  return nextDate;
+}
+
+function normalizeAttendanceRange(fromValue, toValue) {
+  const today = new Date();
+  const defaultTo = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const toDate = parseDateOnly(toValue, "Fecha final") || defaultTo;
+  const fromDate = parseDateOnly(fromValue, "Fecha inicial") || addDays(toDate, -29);
+
+  if (fromDate > toDate) {
+    throw createHttpError(400, "El rango de fechas es invalido");
+  }
+
+  return {
+    from: formatDateOnly(fromDate),
+    to: formatDateOnly(toDate)
+  };
+}
+
+function mapAttendanceRow(row) {
+  const membership = normalizeMembershipSnapshot(row);
+  return {
+    id: row.id_asistencia,
+    member: {
+      id: row.id_usuario,
+      name: row.nombre_completo,
+      email: row.correo
+    },
+    checkInAt: row.fecha_entrada,
+    date: row.fecha_registro,
+    time: row.hora_registro,
+    membership,
+    indicator: getMembershipIndicator(membership)
+  };
+}
+
+async function listAttendanceEntries({ from, to, memberId = null, executor = pool }) {
+  const where = [
+    "u.rol = 'Cliente'",
+    "a.fecha_entrada >= ?",
+    "a.fecha_entrada < DATE_ADD(?, INTERVAL 1 DAY)"
+  ];
+  const params = [from, to];
+
+  if (memberId != null) {
+    where.unshift("u.id_usuario = ?");
+    params.unshift(memberId);
+  }
+
+  const [rows] = await executor.query(
+    `SELECT
+       a.id_asistencia,
+       a.id_usuario,
+       u.nombre_completo,
+       u.correo,
+       a.fecha_entrada,
+       DATE_FORMAT(a.fecha_entrada, '%Y-%m-%d') AS fecha_registro,
+       TIME_FORMAT(a.fecha_entrada, '%H:%i:%s') AS hora_registro,
+       m.id_membresia,
+       m.tipo_plan,
+       m.estado AS membresia_estado,
+       m.fecha_vencimiento,
+       GREATEST(DATEDIFF(m.fecha_vencimiento, CURDATE()), 0) AS dias_restantes
+     FROM asistencia a
+     INNER JOIN usuarios u
+       ON u.id_usuario = a.id_usuario
+     LEFT JOIN membresias m ON m.id_membresia = (
+       SELECT m2.id_membresia
+       FROM membresias m2
+       WHERE m2.id_usuario = u.id_usuario
+       ORDER BY m2.fecha_vencimiento DESC
+       LIMIT 1
+     )
+     WHERE ${where.join("\n       AND ")}
+     ORDER BY a.fecha_entrada DESC`,
+    params
+  );
+
+  return rows.map(mapAttendanceRow);
+}
+
+function summarizeAttendance(entries) {
+  const uniqueMembers = new Set(entries.map((entry) => entry.member.id)).size;
+  const entriesWithExpiredMembership = entries.filter((entry) => entry.indicator.expired).length;
+
+  return {
+    totalEntries: entries.length,
+    uniqueMembers,
+    entriesWithExpiredMembership,
+    latestCheckIn: entries[0]?.checkInAt || null,
+    earliestCheckIn: entries.length ? entries[entries.length - 1].checkInAt : null
+  };
+}
+
+function buildAttendanceBreakdown(entries) {
+  const totalsByDate = new Map();
+
+  entries.forEach((entry) => {
+    totalsByDate.set(entry.date, (totalsByDate.get(entry.date) || 0) + 1);
+  });
+
+  return Array.from(totalsByDate.entries())
+    .sort((left, right) => left[0].localeCompare(right[0]))
+    .map(([date, total]) => ({ date, total }));
 }
 
 function normalizeObjectiveValue(rawValue) {
@@ -1112,6 +1308,69 @@ app.get("/api/reception/dashboard", authenticate, requireRoles("admin", "recepci
   }
 });
 
+app.get("/api/reception/history", authenticate, requireRoles("admin", "recepcionista"), async (req, res) => {
+  const memberId = Number(req.query.memberId);
+
+  if (!Number.isFinite(memberId)) {
+    res.status(400).json({ error: "memberId invalido" });
+    return;
+  }
+
+  try {
+    const range = normalizeAttendanceRange(req.query.from, req.query.to);
+    const client = await getClientById(memberId);
+
+    if (!client || client.rol !== "Cliente") {
+      res.status(404).json({ error: "Cliente no encontrado" });
+      return;
+    }
+
+    const entries = await listAttendanceEntries({
+      memberId,
+      from: range.from,
+      to: range.to
+    });
+
+    res.json({
+      member: {
+        id: client.id_usuario,
+        name: client.nombre_completo,
+        email: client.correo
+      },
+      range,
+      summary: summarizeAttendance(entries),
+      entries
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({
+      error: error.status ? error.message : "Error cargando historial de asistencia",
+      detail: error.status ? undefined : error.message
+    });
+  }
+});
+
+app.get("/api/admin/attendance-report", authenticate, requireRoles("admin"), async (req, res) => {
+  try {
+    const range = normalizeAttendanceRange(req.query.from, req.query.to);
+    const entries = await listAttendanceEntries({
+      from: range.from,
+      to: range.to
+    });
+
+    res.json({
+      range,
+      summary: summarizeAttendance(entries),
+      breakdown: buildAttendanceBreakdown(entries),
+      entries
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({
+      error: error.status ? error.message : "Error cargando reporte de asistencia",
+      detail: error.status ? undefined : error.message
+    });
+  }
+});
+
 app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepcionista"), async (req, res) => {
   const memberId = Number(req.body?.memberId);
 
@@ -1125,10 +1384,26 @@ app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepci
     await connection.beginTransaction();
 
     const [memberRows] = await connection.query(
-      `SELECT id_usuario, nombre_completo
+      `SELECT
+         u.id_usuario,
+         u.nombre_completo,
+         u.correo,
+         m.id_membresia,
+         m.tipo_plan,
+         m.estado AS membresia_estado,
+         m.fecha_vencimiento,
+         GREATEST(DATEDIFF(m.fecha_vencimiento, CURDATE()), 0) AS dias_restantes
        FROM usuarios
-       WHERE id_usuario = ?
-         AND rol = 'Cliente'
+       u
+       LEFT JOIN membresias m ON m.id_membresia = (
+         SELECT m2.id_membresia
+         FROM membresias m2
+         WHERE m2.id_usuario = u.id_usuario
+         ORDER BY m2.fecha_vencimiento DESC
+         LIMIT 1
+       )
+       WHERE u.id_usuario = ?
+         AND u.rol = 'Cliente'
        LIMIT 1`,
       [memberId]
     );
@@ -1151,11 +1426,20 @@ app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepci
 
     if (todayRows.length) {
       await connection.commit();
+      const membership = normalizeMembershipSnapshot(memberRows[0]);
+      const indicator = getMembershipIndicator(membership);
       res.json({
         ok: true,
         alreadyRegistered: true,
         message: "La entrada de hoy ya estaba registrada",
-        checkInTime: todayRows[0].fecha_entrada
+        checkInTime: todayRows[0].fecha_entrada,
+        member: {
+          id: memberRows[0].id_usuario,
+          name: memberRows[0].nombre_completo,
+          email: memberRows[0].correo
+        },
+        membership,
+        indicator
       });
       return;
     }
@@ -1174,11 +1458,20 @@ app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepci
     );
 
     await connection.commit();
+    const membership = normalizeMembershipSnapshot(memberRows[0]);
+    const indicator = getMembershipIndicator(membership);
     res.status(201).json({
       ok: true,
       alreadyRegistered: false,
       message: `Entrada registrada para ${memberRows[0].nombre_completo}`,
-      checkInTime: insertedRows[0]?.fecha_entrada || null
+      checkInTime: insertedRows[0]?.fecha_entrada || null,
+      member: {
+        id: memberRows[0].id_usuario,
+        name: memberRows[0].nombre_completo,
+        email: memberRows[0].correo
+      },
+      membership,
+      indicator
     });
   } catch (error) {
     await connection.rollback();
@@ -1973,6 +2266,17 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`API corriendo en http://localhost:${PORT}`);
+});
+
+server.on("error", (error) => {
+  if (error?.code === "EADDRINUSE") {
+    console.error(`El puerto ${PORT} ya esta en uso.`);
+    console.error("Cierra el proceso anterior o arranca con otro puerto.");
+    console.error(`Ejemplo PowerShell: $env:PORT='3102'; npm start`);
+    process.exit(1);
+  }
+
+  throw error;
 });
