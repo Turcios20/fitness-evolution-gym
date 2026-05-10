@@ -63,6 +63,95 @@ function roleToDb(role) {
   return ROLE_FRONTEND_TO_DB[value] || "Cliente";
 }
 
+async function tableExists(executor, tableName) {
+  const [rows] = await executor.query(
+    `SELECT 1
+     FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+     LIMIT 1`,
+    [tableName]
+  );
+
+  return rows.length > 0;
+}
+
+// Keep production databases compatible with the trainer features used by the web app.
+async function ensureTrainerFeatureSchema() {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS planes_entrenamiento (
+        id_plan INT AUTO_INCREMENT PRIMARY KEY,
+        id_entrenador INT NOT NULL,
+        id_cliente INT NOT NULL,
+        nombre_plan VARCHAR(150) NOT NULL,
+        objetivo TEXT,
+        fecha_inicio DATE,
+        fecha_fin DATE,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_planes_entrenamiento_entrenador
+          FOREIGN KEY (id_entrenador)
+          REFERENCES usuarios(id_usuario)
+          ON DELETE CASCADE,
+        CONSTRAINT fk_planes_entrenamiento_cliente
+          FOREIGN KEY (id_cliente)
+          REFERENCES usuarios(id_usuario)
+          ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS rutinas_entrenamiento (
+        id_rutina INT AUTO_INCREMENT PRIMARY KEY,
+        id_usuario INT NOT NULL,
+        nombre_ejercicio VARCHAR(100) NOT NULL,
+        descripcion TEXT,
+        dia_semana VARCHAR(20),
+        series INT,
+        repeticiones INT,
+        duracion INT,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_rutinas_entrenamiento_usuario
+          FOREIGN KEY (id_usuario)
+          REFERENCES usuarios(id_usuario)
+          ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    if (await tableExists(connection, "rutinas")) {
+      await connection.query(
+        `INSERT INTO rutinas_entrenamiento (
+          id_rutina,
+          id_usuario,
+          nombre_ejercicio,
+          descripcion,
+          dia_semana,
+          series,
+          repeticiones,
+          duracion
+        )
+        SELECT
+          legacy.id_rutina,
+          legacy.id_usuario,
+          legacy.nombre_ejercicio,
+          NULL,
+          legacy.dia_semana,
+          legacy.series,
+          legacy.repeticiones,
+          NULL
+        FROM rutinas legacy
+        LEFT JOIN rutinas_entrenamiento current
+          ON current.id_rutina = legacy.id_rutina
+        WHERE current.id_rutina IS NULL`
+      );
+    }
+  } finally {
+    connection.release();
+  }
+}
+
 function serializeSettingValue(value) {
   if (value == null) return null;
   if (typeof value === "object") return JSON.stringify(value);
@@ -2594,6 +2683,16 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
 });
 
 
-app.listen(PORT, () => {
-  console.log(`API corriendo en http://localhost:${PORT}`);
-});
+async function startServer() {
+  try {
+    await ensureTrainerFeatureSchema();
+    app.listen(PORT, () => {
+      console.log(`API corriendo en http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("Error preparando la base de datos:", error.message);
+    process.exit(1);
+  }
+}
+
+startServer();
