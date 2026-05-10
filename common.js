@@ -84,6 +84,14 @@
     return "cliente.html";
   }
 
+  function resolveUrl(resourcePath) {
+    const value = String(resourcePath || "").trim();
+    if (!value) return "";
+    if (/^https?:\/\//i.test(value)) return value;
+    if (!value.startsWith("/")) return `${API_BASE}${value.startsWith(".") ? value.slice(1) : `/${value}`}`;
+    return `${API_BASE}${value}`;
+  }
+
   async function api(path, options = {}) {
     const session = getSession();
 
@@ -245,6 +253,7 @@
     isSessionExpired,
     guardRoute,
     getHomeByRole,
+    resolveUrl,
     toast,
     getTheme,
     setTheme,

@@ -55,11 +55,15 @@
 
         <div class="sidebar-card register-card" id="checkinCard">
           <div class="sidebar-card-title">Registrar entrada</div>
+          <input type="text" id="checkinMemberSearch" class="terminal-input" placeholder="Buscar por nombre, correo o ID">
           <select id="checkinMemberSelect" class="terminal-select">
             <option value="">Selecciona un cliente...</option>
           </select>
+          <div class="member-preview member-preview--placeholder" id="checkinMemberDetails">
+            <p>Selecciona un miembro para ver su estado de membresia antes del registro.</p>
+          </div>
           <button type="button" class="terminal-btn" id="btnRegisterEntry">Registrar ahora</button>
-          <p class="terminal-help">Marca el ingreso del dia para un miembro activo o pendiente de renovar.</p>
+          <p class="terminal-help">Marca el ingreso del dia buscando por nombre, correo o identificador del miembro.</p>
         </div>
 
         <div class="sidebar-card">
@@ -84,7 +88,7 @@
           <div class="section-header">
             <h2>Miembros en el Local</h2>
             <div class="search-bar">
-              <input type="text" id="receptionSearch" placeholder="Buscar miembro por nombre o correo...">
+              <input type="text" id="receptionSearch" placeholder="Buscar miembro por nombre, correo o ID...">
             </div>
           </div>
 
@@ -104,6 +108,70 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <section id="historial" class="dashboard-section fadein-2" style="margin-top: 40px;">
+          <div class="section-header section-header-stack">
+            <div>
+              <h2>Historial de Asistencia</h2>
+              <p class="section-subtitle">Consulta el historial de entradas de cualquier miembro por periodo.</p>
+            </div>
+          </div>
+
+          <div class="history-panel">
+            <div class="history-controls">
+              <div class="history-field history-field--member">
+                <label for="historyMemberSelect">Miembro</label>
+                <select id="historyMemberSelect" class="terminal-select">
+                  <option value="">Selecciona un cliente...</option>
+                </select>
+              </div>
+              <div class="history-field">
+                <label for="historyFromDate">Desde</label>
+                <input type="date" id="historyFromDate" class="terminal-input">
+              </div>
+              <div class="history-field">
+                <label for="historyToDate">Hasta</label>
+                <input type="date" id="historyToDate" class="terminal-input">
+              </div>
+              <div class="history-actions">
+                <button type="button" class="terminal-btn" id="btnLoadHistory">Consultar historial</button>
+              </div>
+            </div>
+
+            <div class="history-summary">
+              <div class="history-stat">
+                <span class="history-stat-label">Registros</span>
+                <strong id="historyTotalEntries">0</strong>
+              </div>
+              <div class="history-stat">
+                <span class="history-stat-label">Ultima entrada</span>
+                <strong id="historyLatestEntry">--</strong>
+              </div>
+              <div class="history-stat">
+                <span class="history-stat-label">Estado actual</span>
+                <strong id="historyCurrentStatus">Sin consulta</strong>
+              </div>
+            </div>
+
+            <div class="members-table-container">
+              <table class="members-table history-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Estado Membresia</th>
+                    <th>Detalle</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                  <tr>
+                    <td colspan="4" class="table-empty">Selecciona un miembro y un rango para consultar.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 

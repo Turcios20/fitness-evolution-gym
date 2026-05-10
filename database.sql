@@ -152,6 +152,18 @@ CREATE TABLE medidas_progreso (
     UNIQUE KEY unique_medida_fecha (id_usuario, fecha)
 );
 
+CREATE TABLE progreso_fotos (
+    id_foto INT AUTO_INCREMENT PRIMARY KEY,
+    id_medida INT NOT NULL,
+    ruta_archivo VARCHAR(255) NOT NULL,
+    nombre_archivo VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(50) NOT NULL,
+    tamano_bytes INT NOT NULL,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_medida) REFERENCES medidas_progreso(id_medida) ON DELETE CASCADE,
+    UNIQUE KEY unique_foto_medida (id_medida)
+);
+
 INSERT INTO usuarios (nombre_completo, correo, password, rol) VALUES
 ('Victor Administrator', 'admin@victorsgym.com', 'admin123', 'Administrador'),
 ('Jhoscar Ochoa', 'jhoscar@correo.com', 'cliente123', 'Cliente'),

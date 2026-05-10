@@ -3,6 +3,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const fs = require("fs");
 const path = require("path");
 const { pool } = require("./db");
 const {
@@ -15,6 +16,18 @@ const {
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+const OBJECTIVE_MAX_LENGTH = 255;
+const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+const PHOTO_UPLOAD_ROOT = path.join(__dirname, "..", "uploads", "progress");
+const PHOTO_MIME_EXTENSIONS = {
+  "image/jpeg": "jpg",
+  "image/png": "png"
+};
+const OBJECTIVE_PRESETS = [
+  "Bajar de peso",
+  "Ganar masa muscular",
+  "Mejorar resistencia"
+];
 
 const ROLE_FRONTEND_TO_DB = {
   admin: "Administrador",
@@ -34,8 +47,11 @@ const ROLE_DB_TO_FRONTEND = {
 };
 
 app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "..")));
+app.use(express.json({ limit: "10mb" }));
+app.get(["/", "/index.html"], (_req, res) => {
+  res.redirect("/login.html");
+});
+app.use(express.static(path.join(__dirname, ".."), { index: false }));
 
 function roleToFrontend(role) {
   const value = String(role || "").trim().toLowerCase();
@@ -455,6 +471,23 @@ async function ensureProgressSchema() {
        UNIQUE KEY unique_medida_fecha (id_usuario, fecha)
      )`
   );
+
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS progreso_fotos (
+       id_foto INT AUTO_INCREMENT PRIMARY KEY,
+       id_medida INT NOT NULL,
+       ruta_archivo VARCHAR(255) NOT NULL,
+       nombre_archivo VARCHAR(255) NOT NULL,
+       mime_type VARCHAR(50) NOT NULL,
+       tamano_bytes INT NOT NULL,
+       fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+       CONSTRAINT fk_progreso_fotos_medida
+         FOREIGN KEY (id_medida) REFERENCES medidas_progreso(id_medida) ON DELETE CASCADE,
+       UNIQUE KEY unique_foto_medida (id_medida)
+     )`
+  );
+
+  fs.mkdirSync(PHOTO_UPLOAD_ROOT, { recursive: true });
 }
 
 function getBearerToken(req) {
@@ -521,6 +554,66 @@ function normalizeMember(row) {
         }
       : null
   };
+}
+
+function normalizeMembershipSnapshot(row) {
+  if (!row?.id_membresia) {
+    return null;
+  }
+
+  return {
+    id: row.id_membresia,
+    plan: row.tipo_plan || "Sin plan",
+    status: row.membresia_estado || row.estado || "Inactivo",
+    endDate: row.fecha_vencimiento || null,
+    daysRemaining: Number(row.dias_restantes || 0)
+  };
+}
+
+function getMembershipIndicator(membership) {
+  if (!membership) {
+    return {
+      label: "Sin membresia",
+      tone: "danger",
+      expired: true
+    };
+  }
+
+  if (membership.status !== "Activo") {
+    return {
+      label: "Membresia inactiva",
+      tone: "danger",
+      expired: true
+    };
+  }
+
+  if (membership.daysRemaining <= 0) {
+    return {
+      label: "Membresia vencida",
+      tone: "danger",
+      expired: true
+    };
+  }
+
+  if (membership.daysRemaining <= 7) {
+    return {
+      label: `Membresia por vencer (${membership.daysRemaining} dias)`,
+      tone: "warn",
+      expired: false
+    };
+  }
+
+  return {
+    label: `Membresia activa (${membership.daysRemaining} dias)`,
+    tone: "ok",
+    expired: false
+  };
+}
+
+function canManageClientEvolution(auth, client) {
+  if (!auth || !client) return false;
+  if (auth.role === "admin") return true;
+  return auth.role === "entrenador" && client.id_entrenador_asignado === auth.id;
 }
 
 async function getUserByUsername(username, executor = pool) {
@@ -612,7 +705,17 @@ function mapMeasurementRow(row) {
     hips: toNumberOrNull(row.cadera),
     arms: toNumberOrNull(row.brazos),
     legs: toNumberOrNull(row.piernas),
-    registeredAt: row.fecha_registro
+    registeredAt: row.fecha_registro,
+    photo: row.id_foto
+      ? {
+          id: row.id_foto,
+          url: row.ruta_archivo.startsWith("/") ? row.ruta_archivo : `/${row.ruta_archivo}`,
+          name: row.nombre_archivo,
+          mimeType: row.mime_type,
+          sizeBytes: Number(row.tamano_bytes || 0),
+          updatedAt: row.foto_actualizada
+        }
+      : null
   };
 }
 
@@ -654,12 +757,41 @@ async function ensureClientEvolutionAccess(clientId, auth, executor = pool) {
   throw error;
 }
 
+async function ensureClientEvolutionManagementAccess(clientId, auth, executor = pool) {
+  const client = await ensureClientEvolutionAccess(clientId, auth, executor);
+
+  if (canManageClientEvolution(auth, client)) {
+    return client;
+  }
+
+  const error = new Error("No autorizado");
+  error.status = 403;
+  throw error;
+}
+
 async function getClientMeasurements(clientId, executor = pool) {
   const [rows] = await executor.query(
-    `SELECT id_medida, id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro
-     FROM medidas_progreso
-     WHERE id_usuario = ?
-     ORDER BY fecha DESC`,
+    `SELECT
+       mp.id_medida,
+       mp.id_usuario,
+       mp.fecha,
+       mp.peso,
+       mp.pecho,
+       mp.cintura,
+       mp.cadera,
+       mp.brazos,
+       mp.piernas,
+       mp.fecha_registro,
+       pf.id_foto,
+       pf.ruta_archivo,
+       pf.nombre_archivo,
+       pf.mime_type,
+       pf.tamano_bytes,
+       pf.fecha_actualizacion AS foto_actualizada
+     FROM medidas_progreso mp
+     LEFT JOIN progreso_fotos pf ON pf.id_medida = mp.id_medida
+     WHERE mp.id_usuario = ?
+     ORDER BY mp.fecha DESC`,
     [clientId]
   );
 
@@ -693,8 +825,256 @@ async function getClientEvolutionPayload(clientId, auth, executor = pool) {
       email: client.correo
     },
     objective,
+    objectivePresets: OBJECTIVE_PRESETS,
+    canManage: canManageClientEvolution(auth, client),
     measurements,
     total: measurements.length
+  };
+}
+
+function createHttpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+function formatDateOnly(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateOnly(value, label) {
+  const input = String(value || "").trim();
+  if (!input) return null;
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    throw createHttpError(400, `${label} invalida`);
+  }
+
+  const [year, month, day] = input.split("-").map(Number);
+  const parsed = new Date(year, month - 1, day);
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    throw createHttpError(400, `${label} invalida`);
+  }
+
+  return parsed;
+}
+
+function addDays(date, amount) {
+  const nextDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  nextDate.setDate(nextDate.getDate() + amount);
+  return nextDate;
+}
+
+function normalizeAttendanceRange(fromValue, toValue) {
+  const today = new Date();
+  const defaultTo = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const toDate = parseDateOnly(toValue, "Fecha final") || defaultTo;
+  const fromDate = parseDateOnly(fromValue, "Fecha inicial") || addDays(toDate, -29);
+
+  if (fromDate > toDate) {
+    throw createHttpError(400, "El rango de fechas es invalido");
+  }
+
+  return {
+    from: formatDateOnly(fromDate),
+    to: formatDateOnly(toDate)
+  };
+}
+
+function mapAttendanceRow(row) {
+  const membership = normalizeMembershipSnapshot(row);
+  return {
+    id: row.id_asistencia,
+    member: {
+      id: row.id_usuario,
+      name: row.nombre_completo,
+      email: row.correo
+    },
+    checkInAt: row.fecha_entrada,
+    date: row.fecha_registro,
+    time: row.hora_registro,
+    membership,
+    indicator: getMembershipIndicator(membership)
+  };
+}
+
+async function listAttendanceEntries({ from, to, memberId = null, executor = pool }) {
+  const where = [
+    "u.rol = 'Cliente'",
+    "a.fecha_entrada >= ?",
+    "a.fecha_entrada < DATE_ADD(?, INTERVAL 1 DAY)"
+  ];
+  const params = [from, to];
+
+  if (memberId != null) {
+    where.unshift("u.id_usuario = ?");
+    params.unshift(memberId);
+  }
+
+  const [rows] = await executor.query(
+    `SELECT
+       a.id_asistencia,
+       a.id_usuario,
+       u.nombre_completo,
+       u.correo,
+       a.fecha_entrada,
+       DATE_FORMAT(a.fecha_entrada, '%Y-%m-%d') AS fecha_registro,
+       TIME_FORMAT(a.fecha_entrada, '%H:%i:%s') AS hora_registro,
+       m.id_membresia,
+       m.tipo_plan,
+       m.estado AS membresia_estado,
+       m.fecha_vencimiento,
+       GREATEST(DATEDIFF(m.fecha_vencimiento, CURDATE()), 0) AS dias_restantes
+     FROM asistencia a
+     INNER JOIN usuarios u
+       ON u.id_usuario = a.id_usuario
+     LEFT JOIN membresias m ON m.id_membresia = (
+       SELECT m2.id_membresia
+       FROM membresias m2
+       WHERE m2.id_usuario = u.id_usuario
+       ORDER BY m2.fecha_vencimiento DESC
+       LIMIT 1
+     )
+     WHERE ${where.join("\n       AND ")}
+     ORDER BY a.fecha_entrada DESC`,
+    params
+  );
+
+  return rows.map(mapAttendanceRow);
+}
+
+function summarizeAttendance(entries) {
+  const uniqueMembers = new Set(entries.map((entry) => entry.member.id)).size;
+  const entriesWithExpiredMembership = entries.filter((entry) => entry.indicator.expired).length;
+
+  return {
+    totalEntries: entries.length,
+    uniqueMembers,
+    entriesWithExpiredMembership,
+    latestCheckIn: entries[0]?.checkInAt || null,
+    earliestCheckIn: entries.length ? entries[entries.length - 1].checkInAt : null
+  };
+}
+
+function buildAttendanceBreakdown(entries) {
+  const totalsByDate = new Map();
+
+  entries.forEach((entry) => {
+    totalsByDate.set(entry.date, (totalsByDate.get(entry.date) || 0) + 1);
+  });
+
+  return Array.from(totalsByDate.entries())
+    .sort((left, right) => left[0].localeCompare(right[0]))
+    .map(([date, total]) => ({ date, total }));
+}
+
+function normalizeObjectiveValue(rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value) {
+    throw createHttpError(400, "Selecciona un objetivo valido");
+  }
+
+  if (value.length > OBJECTIVE_MAX_LENGTH) {
+    throw createHttpError(400, `El objetivo no puede exceder ${OBJECTIVE_MAX_LENGTH} caracteres`);
+  }
+
+  return value;
+}
+
+async function upsertClientObjective(clientId, objective, executor = pool) {
+  await executor.query(
+    `INSERT INTO ajustes (id_usuario, clave, valor)
+     VALUES (?, 'objetivo_personal', ?)
+     ON DUPLICATE KEY UPDATE
+       valor = VALUES(valor),
+       fecha_actualizacion = CURRENT_TIMESTAMP`,
+    [clientId, objective]
+  );
+}
+
+async function getMeasurementForClient(clientId, measurementId, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT
+       mp.id_medida,
+       mp.id_usuario,
+       mp.fecha,
+       pf.id_foto,
+       pf.ruta_archivo
+     FROM medidas_progreso mp
+     LEFT JOIN progreso_fotos pf ON pf.id_medida = mp.id_medida
+     WHERE mp.id_medida = ?
+       AND mp.id_usuario = ?
+     LIMIT 1`,
+    [measurementId, clientId]
+  );
+
+  return rows[0] || null;
+}
+
+function isValidPng(buffer) {
+  const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  return signature.every((value, index) => buffer[index] === value);
+}
+
+function isValidJpeg(buffer) {
+  return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+}
+
+function decodeProgressPhotoUpload(imageDataUrl, fileName) {
+  const match = /^data:(image\/(?:jpeg|png));base64,([a-z0-9+/=\s]+)$/i.exec(String(imageDataUrl || "").trim());
+  if (!match) {
+    throw createHttpError(400, "La fotografia debe enviarse como imagen JPG o PNG valida");
+  }
+
+  const mimeType = match[1].toLowerCase();
+  const extension = PHOTO_MIME_EXTENSIONS[mimeType];
+  if (!extension) {
+    throw createHttpError(400, "Solo se permiten imagenes JPG o PNG");
+  }
+
+  let buffer;
+  try {
+    buffer = Buffer.from(match[2], "base64");
+  } catch {
+    throw createHttpError(400, "No se pudo procesar la imagen enviada");
+  }
+
+  if (!buffer.length) {
+    throw createHttpError(400, "La imagen enviada esta vacia");
+  }
+
+  if (buffer.length > PHOTO_MAX_BYTES) {
+    throw createHttpError(400, "La imagen supera el limite de 5 MB");
+  }
+
+  if (mimeType === "image/png" && !isValidPng(buffer)) {
+    throw createHttpError(400, "El archivo PNG enviado no es valido");
+  }
+
+  if (mimeType === "image/jpeg" && !isValidJpeg(buffer)) {
+    throw createHttpError(400, "El archivo JPG enviado no es valido");
+  }
+
+  const safeBaseName = String(fileName || "progreso")
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .replace(/\.[^.]+$/, "")
+    .slice(0, 60) || "progreso";
+
+  return {
+    buffer,
+    mimeType,
+    extension,
+    originalName: `${safeBaseName}.${extension}`,
+    sizeBytes: buffer.length
   };
 }
 
@@ -872,10 +1252,6 @@ app.get("/api/health", async (_req, res) => {
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message });
   }
-});
-
-app.get("/", (_req, res) => {
-  res.sendFile(path.join(__dirname, "..", "login.html"));
 });
 
 app.post("/api/auth/login", async (req, res) => {
@@ -1312,6 +1688,69 @@ app.get("/api/reception/dashboard", authenticate, requireRoles("admin", "recepci
   }
 });
 
+app.get("/api/reception/history", authenticate, requireRoles("admin", "recepcionista"), async (req, res) => {
+  const memberId = Number(req.query.memberId);
+
+  if (!Number.isFinite(memberId)) {
+    res.status(400).json({ error: "memberId invalido" });
+    return;
+  }
+
+  try {
+    const range = normalizeAttendanceRange(req.query.from, req.query.to);
+    const client = await getClientById(memberId);
+
+    if (!client || client.rol !== "Cliente") {
+      res.status(404).json({ error: "Cliente no encontrado" });
+      return;
+    }
+
+    const entries = await listAttendanceEntries({
+      memberId,
+      from: range.from,
+      to: range.to
+    });
+
+    res.json({
+      member: {
+        id: client.id_usuario,
+        name: client.nombre_completo,
+        email: client.correo
+      },
+      range,
+      summary: summarizeAttendance(entries),
+      entries
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({
+      error: error.status ? error.message : "Error cargando historial de asistencia",
+      detail: error.status ? undefined : error.message
+    });
+  }
+});
+
+app.get("/api/admin/attendance-report", authenticate, requireRoles("admin"), async (req, res) => {
+  try {
+    const range = normalizeAttendanceRange(req.query.from, req.query.to);
+    const entries = await listAttendanceEntries({
+      from: range.from,
+      to: range.to
+    });
+
+    res.json({
+      range,
+      summary: summarizeAttendance(entries),
+      breakdown: buildAttendanceBreakdown(entries),
+      entries
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({
+      error: error.status ? error.message : "Error cargando reporte de asistencia",
+      detail: error.status ? undefined : error.message
+    });
+  }
+});
+
 app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepcionista"), async (req, res) => {
   const memberId = Number(req.body?.memberId);
 
@@ -1325,10 +1764,26 @@ app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepci
     await connection.beginTransaction();
 
     const [memberRows] = await connection.query(
-      `SELECT id_usuario, nombre_completo
+      `SELECT
+         u.id_usuario,
+         u.nombre_completo,
+         u.correo,
+         m.id_membresia,
+         m.tipo_plan,
+         m.estado AS membresia_estado,
+         m.fecha_vencimiento,
+         GREATEST(DATEDIFF(m.fecha_vencimiento, CURDATE()), 0) AS dias_restantes
        FROM usuarios
-       WHERE id_usuario = ?
-         AND rol = 'Cliente'
+       u
+       LEFT JOIN membresias m ON m.id_membresia = (
+         SELECT m2.id_membresia
+         FROM membresias m2
+         WHERE m2.id_usuario = u.id_usuario
+         ORDER BY m2.fecha_vencimiento DESC
+         LIMIT 1
+       )
+       WHERE u.id_usuario = ?
+         AND u.rol = 'Cliente'
        LIMIT 1`,
       [memberId]
     );
@@ -1351,11 +1806,20 @@ app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepci
 
     if (todayRows.length) {
       await connection.commit();
+      const membership = normalizeMembershipSnapshot(memberRows[0]);
+      const indicator = getMembershipIndicator(membership);
       res.json({
         ok: true,
         alreadyRegistered: true,
         message: "La entrada de hoy ya estaba registrada",
-        checkInTime: todayRows[0].fecha_entrada
+        checkInTime: todayRows[0].fecha_entrada,
+        member: {
+          id: memberRows[0].id_usuario,
+          name: memberRows[0].nombre_completo,
+          email: memberRows[0].correo
+        },
+        membership,
+        indicator
       });
       return;
     }
@@ -1374,11 +1838,20 @@ app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepci
     );
 
     await connection.commit();
+    const membership = normalizeMembershipSnapshot(memberRows[0]);
+    const indicator = getMembershipIndicator(membership);
     res.status(201).json({
       ok: true,
       alreadyRegistered: false,
       message: `Entrada registrada para ${memberRows[0].nombre_completo}`,
-      checkInTime: insertedRows[0]?.fecha_entrada || null
+      checkInTime: insertedRows[0]?.fecha_entrada || null,
+      member: {
+        id: memberRows[0].id_usuario,
+        name: memberRows[0].nombre_completo,
+        email: memberRows[0].correo
+      },
+      membership,
+      indicator
     });
   } catch (error) {
     await connection.rollback();
@@ -1501,6 +1974,29 @@ app.get("/api/client/:clientId/evolution", authenticate, async (req, res) => {
   }
 });
 
+app.put("/api/client/:clientId/objective", authenticate, requireRoles("admin", "entrenador"), async (req, res) => {
+  const clientId = Number(req.params.clientId);
+
+  if (!Number.isFinite(clientId)) {
+    res.status(400).json({ error: "clientId invalido" });
+    return;
+  }
+
+  try {
+    const objective = normalizeObjectiveValue(req.body?.objective);
+    await ensureClientEvolutionManagementAccess(clientId, req.auth);
+    await upsertClientObjective(clientId, objective);
+    res.json({ ok: true, objective });
+  } catch (error) {
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
+    res.status(500).json({ error: "Error guardando objetivo", detail: error.message });
+  }
+});
+
 // Endpoints para medidas de progreso
 app.get("/api/client/:clientId/measurements", authenticate, async (req, res) => {
   const clientId = Number(req.params.clientId);
@@ -1527,6 +2023,15 @@ app.get("/api/client/:clientId/measurements", authenticate, async (req, res) => 
 app.post("/api/client/:clientId/measurements", authenticate, async (req, res) => {
   const clientId = Number(req.params.clientId);
   const { fecha, peso, pecho, cintura, cadera, brazos, piernas } = req.body || {};
+  const rawMeasurements = { peso, pecho, cintura, cadera, brazos, piernas };
+  const measurementLabels = {
+    peso: "peso",
+    pecho: "pecho",
+    cintura: "cintura",
+    cadera: "cadera",
+    brazos: "brazos",
+    piernas: "piernas"
+  };
 
   if (!Number.isFinite(clientId)) {
     res.status(400).json({ error: "clientId invalido" });
@@ -1539,7 +2044,7 @@ app.post("/api/client/:clientId/measurements", authenticate, async (req, res) =>
   }
 
   // Validar que al menos una medida se proporcione
-  if (!peso && !pecho && !cintura && !cadera && !brazos && !piernas) {
+  if (!Object.values(rawMeasurements).some((value) => String(value ?? "").trim() !== "")) {
     res.status(400).json({ error: "Debe proporcionar al menos una medida" });
     return;
   }
@@ -1554,13 +2059,29 @@ app.post("/api/client/:clientId/measurements", authenticate, async (req, res) =>
   try {
     await connection.beginTransaction();
 
-    // Convertir valores a números válidos o null
-    const pesoVal = peso ? Number(peso) : null;
-    const pechoVal = pecho ? Number(pecho) : null;
-    const cinturaVal = cintura ? Number(cintura) : null;
-    const caderaVal = cadera ? Number(cadera) : null;
-    const brazosVal = brazos ? Number(brazos) : null;
-    const piernasVal = piernas ? Number(piernas) : null;
+    const parsedMeasurements = Object.fromEntries(
+      Object.entries(rawMeasurements).map(([key, value]) => {
+        const normalized = String(value ?? "").trim();
+
+        if (!normalized) {
+          return [key, null];
+        }
+
+        const numericValue = Number(normalized);
+        if (!Number.isFinite(numericValue)) {
+          throw createHttpError(400, `El valor de ${measurementLabels[key]} no es valido`);
+        }
+
+        return [key, numericValue];
+      })
+    );
+
+    const pesoVal = parsedMeasurements.peso;
+    const pechoVal = parsedMeasurements.pecho;
+    const cinturaVal = parsedMeasurements.cintura;
+    const caderaVal = parsedMeasurements.cadera;
+    const brazosVal = parsedMeasurements.brazos;
+    const piernasVal = parsedMeasurements.piernas;
 
     // Usar la nueva sintaxis de ON DUPLICATE KEY UPDATE (MySQL 8.0.20+)
     await connection.query(
@@ -1584,10 +2105,88 @@ app.post("/api/client/:clientId/measurements", authenticate, async (req, res) =>
     res.status(201).json({ ok: true, message: "Medidas registradas correctamente" });
   } catch (error) {
     await connection.rollback();
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
     console.error("Error guardando medidas:", error);
     res.status(500).json({ error: "Error guardando medidas", detail: error.message });
   } finally {
     connection.release();
+  }
+});
+
+app.post("/api/client/:clientId/measurements/:measurementId/photo", authenticate, requireRoles("admin", "entrenador"), async (req, res) => {
+  const clientId = Number(req.params.clientId);
+  const measurementId = Number(req.params.measurementId);
+
+  if (!Number.isFinite(clientId) || !Number.isFinite(measurementId)) {
+    res.status(400).json({ error: "Parametros invalidos" });
+    return;
+  }
+
+  let savedFilePath = null;
+  let previousFilePath = null;
+
+  try {
+    const upload = decodeProgressPhotoUpload(req.body?.imageDataUrl, req.body?.fileName);
+    await ensureClientEvolutionManagementAccess(clientId, req.auth);
+
+    const measurement = await getMeasurementForClient(clientId, measurementId);
+    if (!measurement) {
+      res.status(404).json({ error: "Registro de seguimiento no encontrado" });
+      return;
+    }
+
+    const clientFolder = path.join(PHOTO_UPLOAD_ROOT, `client-${clientId}`);
+    fs.mkdirSync(clientFolder, { recursive: true });
+
+    const fileName = `measurement-${measurementId}-${Date.now()}.${upload.extension}`;
+    savedFilePath = path.join(clientFolder, fileName);
+    await fs.promises.writeFile(savedFilePath, upload.buffer);
+
+    const relativePath = path.relative(path.join(__dirname, ".."), savedFilePath).split(path.sep).join("/");
+    await pool.query(
+      `INSERT INTO progreso_fotos (id_medida, ruta_archivo, nombre_archivo, mime_type, tamano_bytes)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         ruta_archivo = VALUES(ruta_archivo),
+         nombre_archivo = VALUES(nombre_archivo),
+         mime_type = VALUES(mime_type),
+         tamano_bytes = VALUES(tamano_bytes),
+         fecha_actualizacion = CURRENT_TIMESTAMP`,
+      [measurementId, relativePath, upload.originalName, upload.mimeType, upload.sizeBytes]
+    );
+
+    if (measurement.ruta_archivo) {
+      previousFilePath = path.join(__dirname, "..", String(measurement.ruta_archivo).replace(/^\/+/, ""));
+    }
+
+    res.json({
+      ok: true,
+      photo: {
+        url: `/${relativePath}`,
+        name: upload.originalName,
+        mimeType: upload.mimeType,
+        sizeBytes: upload.sizeBytes
+      }
+    });
+  } catch (error) {
+    if (savedFilePath) {
+      await fs.promises.unlink(savedFilePath).catch(() => {});
+    }
+
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
+    res.status(500).json({ error: "Error guardando fotografia", detail: error.message });
+  }
+
+  if (previousFilePath && previousFilePath !== savedFilePath) {
+    await fs.promises.unlink(previousFilePath).catch(() => {});
   }
 });
 
