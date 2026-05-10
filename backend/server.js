@@ -79,7 +79,7 @@ app.get(
           repeticiones,
           duracion,
           dia_semana
-        FROM rutinas
+        FROM rutinas_entrenamiento
         WHERE id_usuario = ?
         ORDER BY id_rutina DESC`,
         [clientId]
@@ -133,7 +133,7 @@ app.post(
     try {
 
       await pool.query(
-        `INSERT INTO rutinas (
+        `INSERT INTO rutinas_entrenamiento (
           id_usuario,
           nombre_ejercicio,
           descripcion,
@@ -170,6 +170,80 @@ app.post(
   }
 );
 
+// Editar rutina
+app.put(
+  "/api/routines/:routineId",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+
+    const routineId = Number(req.params.routineId);
+
+    const {
+      ejercicio,
+      descripcion,
+      series,
+      repeticiones,
+      duracion,
+      dia
+    } = req.body || {};
+
+    if (!Number.isFinite(routineId)) {
+      return res.status(400).json({
+        error: "routineId invalido"
+      });
+    }
+
+    if (!ejercicio) {
+      return res.status(400).json({
+        error: "Ejercicio requerido"
+      });
+    }
+
+    try {
+
+      const [result] = await pool.query(
+        `UPDATE rutinas_entrenamiento
+        SET nombre_ejercicio = ?,
+            descripcion      = ?,
+            series           = ?,
+            repeticiones     = ?,
+            duracion         = ?,
+            dia_semana       = ?
+        WHERE id_rutina = ?`,
+        [
+          ejercicio,
+          descripcion || null,
+          series || null,
+          repeticiones || null,
+          duracion || null,
+          dia || null,
+          routineId
+        ]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          error: "Rutina no encontrada"
+        });
+      }
+
+      res.json({
+        ok: true,
+        message: "Rutina actualizada correctamente"
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error actualizando rutina",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
 // Eliminar rutina
 app.delete(
   "/api/routines/:routineId",
@@ -188,7 +262,7 @@ app.delete(
     try {
 
       await pool.query(
-        `DELETE FROM rutinas
+        `DELETE FROM rutinas_entrenamiento
         WHERE id_rutina = ?`,
         [routineId]
       );
@@ -230,14 +304,17 @@ app.get(
 
       const [rows] = await pool.query(
         `SELECT
-          id_plan,
-          nombre_plan,
-          objetivo,
-          fecha_inicio,
-          fecha_fin
-        FROM planes_entrenamiento
-        WHERE id_usuario = ?
-        ORDER BY id_plan DESC`,
+          p.id_plan,
+          p.nombre_plan,
+          p.objetivo,
+          p.fecha_inicio,
+          p.fecha_fin,
+          p.id_entrenador,
+          e.nombre_completo AS entrenador_nombre
+        FROM planes_entrenamiento p
+        LEFT JOIN usuarios e ON e.id_usuario = p.id_entrenador
+        WHERE p.id_cliente = ?
+        ORDER BY p.id_plan DESC`,
         [clientId]
       );
 
@@ -288,14 +365,16 @@ app.post(
 
       await pool.query(
         `INSERT INTO planes_entrenamiento (
-          id_usuario,
+          id_entrenador,
+          id_cliente,
           nombre_plan,
           objetivo,
           fecha_inicio,
           fecha_fin
         )
-        VALUES (?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?)`,
         [
+          req.auth.id,
           clientId,
           nombre,
           objetivo || null,
@@ -1661,6 +1740,8 @@ app.get("/api/clases/mis-reservas", async (req, res) => {
          r.id_reserva,
          r.estado,
          r.fecha_reserva,
+         r.asignada_por,
+         a.nombre_completo AS asignada_por_nombre,
          c.id_clase,
          c.nombre,
          c.descripcion,
@@ -1669,6 +1750,7 @@ app.get("/api/clases/mis-reservas", async (req, res) => {
          c.duracion_min
        FROM reservas r
        JOIN clases c ON c.id_clase = r.id_clase
+       LEFT JOIN usuarios a ON a.id_usuario = r.asignada_por
        WHERE r.id_usuario = ?
        ORDER BY c.fecha_hora ASC`,
       [userId]
@@ -1678,6 +1760,117 @@ app.get("/api/clases/mis-reservas", async (req, res) => {
     res.status(500).json({ error: "Error cargando reservas", detail: error.message });
   }
 });
+
+// Entrenador/admin asigna una clase a un cliente
+app.post(
+  "/api/trainer/clientes/:clientId/reservas",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+    const clientId = Number(req.params.clientId);
+    const claseId = Number(req.body?.claseId);
+
+    if (!Number.isFinite(clientId) || !Number.isFinite(claseId)) {
+      return res.status(400).json({ error: "clientId y claseId requeridos" });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      const [userRows] = await connection.query(
+        "SELECT id_usuario FROM usuarios WHERE id_usuario = ? LIMIT 1",
+        [clientId]
+      );
+      if (!userRows.length) {
+        await connection.rollback();
+        return res.status(404).json({ error: "Cliente no encontrado" });
+      }
+
+      const [claseRows] = await connection.query(
+        "SELECT id_clase, disponibles FROM clases WHERE id_clase = ? LIMIT 1 FOR UPDATE",
+        [claseId]
+      );
+      if (!claseRows.length) {
+        await connection.rollback();
+        return res.status(404).json({ error: "Clase no encontrada" });
+      }
+      if (claseRows[0].disponibles <= 0) {
+        await connection.rollback();
+        return res.status(409).json({ error: "No hay cupos disponibles" });
+      }
+
+      await connection.query(
+        `INSERT INTO reservas (id_usuario, id_clase, asignada_por) VALUES (?, ?, ?)`,
+        [clientId, claseId, req.auth.id]
+      );
+      await connection.query(
+        `UPDATE clases SET disponibles = disponibles - 1 WHERE id_clase = ?`,
+        [claseId]
+      );
+
+      await connection.commit();
+      res.status(201).json({ ok: true, message: "Reserva asignada al cliente" });
+    } catch (error) {
+      await connection.rollback();
+      if (error.code === "ER_DUP_ENTRY") {
+        return res.status(409).json({ error: "El cliente ya tiene una reserva para esta clase" });
+      }
+      res.status(500).json({ error: "Error al asignar reserva", detail: error.message });
+    } finally {
+      connection.release();
+    }
+  }
+);
+
+// Entrenador/admin cancela una reserva (puede cancelar las asignadas también)
+app.delete(
+  "/api/trainer/reservas/:id",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+    const reservaId = Number(req.params.id);
+    if (!Number.isFinite(reservaId)) {
+      return res.status(400).json({ error: "id de reserva invalido" });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      const [reservaRows] = await connection.query(
+        "SELECT id_clase, estado FROM reservas WHERE id_reserva = ? LIMIT 1",
+        [reservaId]
+      );
+      if (!reservaRows.length) {
+        await connection.rollback();
+        return res.status(404).json({ error: "Reserva no encontrada" });
+      }
+      if (reservaRows[0].estado === "Cancelada") {
+        await connection.rollback();
+        return res.status(409).json({ error: "La reserva ya estaba cancelada" });
+      }
+
+      const claseId = reservaRows[0].id_clase;
+      await connection.query(
+        "UPDATE reservas SET estado = 'Cancelada' WHERE id_reserva = ?",
+        [reservaId]
+      );
+      await connection.query(
+        "UPDATE clases SET disponibles = disponibles + 1 WHERE id_clase = ?",
+        [claseId]
+      );
+
+      await connection.commit();
+      res.json({ ok: true, message: "Reserva cancelada" });
+    } catch (error) {
+      await connection.rollback();
+      res.status(500).json({ error: "Error cancelando reserva", detail: error.message });
+    } finally {
+      connection.release();
+    }
+  }
+);
 
 app.post("/api/clases/:id/reservar", async (req, res) => {
   const claseId = Number(req.params.id);
@@ -1766,12 +1959,18 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
     const userId = userRows[0].id_usuario;
 
     const [reservaRows] = await connection.query(
-      "SELECT id_clase FROM reservas WHERE id_reserva = ? AND id_usuario = ? LIMIT 1",
+      "SELECT id_clase, asignada_por FROM reservas WHERE id_reserva = ? AND id_usuario = ? LIMIT 1",
       [reservaId, userId]
     );
     if (!reservaRows.length) {
       await connection.rollback();
       res.status(404).json({ error: "Reserva no encontrada" });
+      return;
+    }
+
+    if (reservaRows[0].asignada_por != null) {
+      await connection.rollback();
+      res.status(403).json({ error: "Esta reserva fue asignada por tu entrenador y no puedes cancelarla" });
       return;
     }
 
@@ -1795,178 +1994,6 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
   }
 });
 
-// ── CLASES Y RESERVAS ────────────────────────────────────────────────────────
-
-app.get("/api/clases", async (_req, res) => {
-  try {
-    const [rows] = await pool.query(
-      `SELECT id_clase, nombre, descripcion, entrenador, fecha_hora, duracion_min, capacidad, disponibles
-       FROM clases
-       WHERE fecha_hora >= NOW()
-       ORDER BY fecha_hora ASC`
-    );
-    res.json({ clases: rows });
-  } catch (error) {
-    res.status(500).json({ error: "Error cargando clases", detail: error.message });
-  }
-});
-
-app.get("/api/clases/mis-reservas", async (req, res) => {
-  const username = String(req.query.username || "").trim();
-  if (!username) {
-    res.status(400).json({ error: "username requerido" });
-    return;
-  }
-
-  try {
-    const [userRows] = await pool.query(
-      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
-      [username]
-    );
-    if (!userRows.length) {
-      res.status(404).json({ error: "Usuario no encontrado" });
-      return;
-    }
-    const userId = userRows[0].id_usuario;
-
-    const [rows] = await pool.query(
-      `SELECT
-         r.id_reserva,
-         r.estado,
-         r.fecha_reserva,
-         c.id_clase,
-         c.nombre,
-         c.descripcion,
-         c.entrenador,
-         c.fecha_hora,
-         c.duracion_min
-       FROM reservas r
-       JOIN clases c ON c.id_clase = r.id_clase
-       WHERE r.id_usuario = ?
-       ORDER BY c.fecha_hora ASC`,
-      [userId]
-    );
-    res.json({ reservas: rows });
-  } catch (error) {
-    res.status(500).json({ error: "Error cargando reservas", detail: error.message });
-  }
-});
-
-app.post("/api/clases/:id/reservar", async (req, res) => {
-  const claseId = Number(req.params.id);
-  const { username } = req.body || {};
-
-  if (!Number.isFinite(claseId) || !username) {
-    res.status(400).json({ error: "id de clase y username requeridos" });
-    return;
-  }
-
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    const [userRows] = await connection.query(
-      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
-      [username]
-    );
-    if (!userRows.length) {
-      await connection.rollback();
-      res.status(404).json({ error: "Usuario no encontrado" });
-      return;
-    }
-    const userId = userRows[0].id_usuario;
-
-    const [claseRows] = await connection.query(
-      "SELECT id_clase, disponibles FROM clases WHERE id_clase = ? LIMIT 1 FOR UPDATE",
-      [claseId]
-    );
-    if (!claseRows.length) {
-      await connection.rollback();
-      res.status(404).json({ error: "Clase no encontrada" });
-      return;
-    }
-    if (claseRows[0].disponibles <= 0) {
-      await connection.rollback();
-      res.status(409).json({ error: "No hay cupos disponibles" });
-      return;
-    }
-
-    await connection.query(
-      `INSERT INTO reservas (id_usuario, id_clase) VALUES (?, ?)`,
-      [userId, claseId]
-    );
-    await connection.query(
-      `UPDATE clases SET disponibles = disponibles - 1 WHERE id_clase = ?`,
-      [claseId]
-    );
-
-    await connection.commit();
-    res.status(201).json({ ok: true, message: "Reserva confirmada" });
-  } catch (error) {
-    await connection.rollback();
-    if (error.code === "ER_DUP_ENTRY") {
-      res.status(409).json({ error: "Ya tienes una reserva para esta clase" });
-      return;
-    }
-    res.status(500).json({ error: "Error al reservar", detail: error.message });
-  } finally {
-    connection.release();
-  }
-});
-
-app.delete("/api/clases/reservas/:id", async (req, res) => {
-  const reservaId = Number(req.params.id);
-  const { username } = req.body || {};
-
-  if (!Number.isFinite(reservaId) || !username) {
-    res.status(400).json({ error: "id de reserva y username requeridos" });
-    return;
-  }
-
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    const [userRows] = await connection.query(
-      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
-      [username]
-    );
-    if (!userRows.length) {
-      await connection.rollback();
-      res.status(404).json({ error: "Usuario no encontrado" });
-      return;
-    }
-    const userId = userRows[0].id_usuario;
-
-    const [reservaRows] = await connection.query(
-      "SELECT id_clase FROM reservas WHERE id_reserva = ? AND id_usuario = ? LIMIT 1",
-      [reservaId, userId]
-    );
-    if (!reservaRows.length) {
-      await connection.rollback();
-      res.status(404).json({ error: "Reserva no encontrada" });
-      return;
-    }
-
-    const claseId = reservaRows[0].id_clase;
-    await connection.query(
-      "UPDATE reservas SET estado = 'Cancelada' WHERE id_reserva = ?",
-      [reservaId]
-    );
-    await connection.query(
-      "UPDATE clases SET disponibles = disponibles + 1 WHERE id_clase = ?",
-      [claseId]
-    );
-
-    await connection.commit();
-    res.json({ ok: true, message: "Reserva cancelada" });
-  } catch (error) {
-    await connection.rollback();
-    res.status(500).json({ error: "Error cancelando reserva", detail: error.message });
-  } finally {
-    connection.release();
-  }
-});
 
 app.listen(PORT, () => {
   console.log(`API corriendo en http://localhost:${PORT}`);

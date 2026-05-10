@@ -61,6 +61,7 @@
               <div class="rutinas-tabs">
                 <button type="button" class="tab-btn active" id="tabRutinas">Rutinas</button>
                 <button type="button" class="tab-btn" id="tabPlanes">Planes</button>
+                <button type="button" class="tab-btn" id="tabReservas">Reservas</button>
               </div>
 
               <!-- SECCIÓN RUTINAS -->
@@ -90,6 +91,22 @@
                 <div class="measurements-list" id="listaRutinas"></div>
                 <div class="no-measurements hidden" id="noRutinas">
                   <p>No hay rutinas asignadas aún</p>
+                </div>
+              </div>
+
+              <!-- SECCIÓN RESERVAS -->
+              <div id="seccionReservas" class="hidden">
+                <p class="section-divider">Asignar clase a este cliente</p>
+                <div class="rutina-form">
+                  <select id="selectClase" class="rutina-input">
+                    <option value="">Cargando clases disponibles...</option>
+                  </select>
+                  <button type="button" id="btnAsignarClase" class="btn-guardar">Asignar Clase</button>
+                </div>
+                <p class="section-divider">Reservas Asignadas a este Cliente</p>
+                <div class="measurements-list" id="listaReservas"></div>
+                <div class="no-measurements hidden" id="noReservas">
+                  <p>No hay reservas asignadas aún</p>
                 </div>
               </div>
 
