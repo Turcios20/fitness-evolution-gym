@@ -562,11 +562,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Función central de acciones (la usan tanto desktop como kebab)
     function handleAction(action) {
       if (action === "edit") {
-        showEditModal(member, async ({ name, email, plan, status }) => {
+        showEditModal(member, async ({ name, email, plan, status, trainerId }) => {
           try {
             await GymApp.api(`/api/admin/members/${member.id}`, {
               method: "PUT", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name, email, plan, status })
+              body: JSON.stringify({ name, email, plan, status, trainerId })
             });
             GymApp.toast("Miembro actualizado correctamente.", "success");
             await loadMembers();
