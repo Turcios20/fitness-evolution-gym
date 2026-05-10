@@ -40,6 +40,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     logoutBtn.addEventListener("click", () => { GymApp.clearSession(); window.location.href = "login.html"; });
   })();
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   let todasClases = [];
   let misReservasIds = new Set();
 
@@ -47,9 +56,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const grid = document.getElementById("clasesGrid");
     grid.innerHTML = `<p class="cal-loading">Cargando clases...</p>`;
     try {
-      const [dataClases, dataReservas] = await Promise.all([
+      const [dataClases, dataReservas, dataRutinas] = await Promise.all([
         GymApp.api("/api/clases"),
-        GymApp.api(`/api/clases/mis-reservas?username=${encodeURIComponent(username)}`)
+        GymApp.api(`/api/clases/mis-reservas?username=${encodeURIComponent(username)}`),
+        GymApp.api(`/api/client/${session.id}/routines`)
       ]);
       todasClases = dataClases.clases || [];
       misReservasIds = new Set(
@@ -57,7 +67,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           .filter((r) => r.estado === "Confirmada")
           .map((r) => r.id_clase)
       );
-      renderMisReservas(dataReservas.reservas || []);
+      renderMisRutinas(Array.isArray(dataRutinas?.routines) ? dataRutinas.routines : []);
       renderClases(todasClases);
     } catch (e) {
       grid.innerHTML = `<p class="cal-empty">Error cargando clases. Intenta de nuevo.</p>`;
@@ -120,42 +130,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  function renderMisReservas(reservas) {
+  function renderMisRutinas(rutinas) {
     const wrap = document.getElementById("misReservasWrap");
-    const confirmadas = reservas.filter((r) => r.estado === "Confirmada");
-    if (!confirmadas.length) {
-      wrap.innerHTML = `<p class="cal-empty">Aún no tienes reservas activas.</p>`;
+    if (!rutinas.length) {
+      wrap.innerHTML = `<p class="cal-empty">Tu entrenador aún no te ha asignado rutinas.</p>`;
       return;
     }
-    wrap.innerHTML = confirmadas.map((r) => `
-      <div class="cal-reserva-row">
-        <div class="cal-reserva-info">
-          <span class="cal-reserva-nombre">${r.nombre}</span>
-          <span class="cal-reserva-meta">📅 ${fmtDate(r.fecha_hora)} · ${fmtTime(r.fecha_hora)} · ⏱ ${r.duracion_min} min · 🧑‍🏫 ${r.entrenador}</span>
+    wrap.innerHTML = rutinas.map((r) => {
+      const dia = r.dia_semana || "Sin día";
+      const detalles = [];
+      if (r.series != null) detalles.push(`${r.series} series`);
+      if (r.repeticiones != null) detalles.push(`${r.repeticiones} reps`);
+      if (r.duracion != null) detalles.push(`${r.duracion} min`);
+      const meta = detalles.length ? detalles.join(" · ") : "—";
+      const desc = r.descripcion
+        ? `<span class="cal-reserva-meta" style="display:block;margin-top:4px;">${escapeHtml(r.descripcion)}</span>`
+        : "";
+      return `
+        <div class="cal-reserva-row" style="border-color:rgba(232,124,42,0.35);">
+          <div class="cal-reserva-info">
+            <span class="cal-reserva-nombre">
+              ${escapeHtml(r.nombre_ejercicio)}
+              <span class="cal-badge" style="background:rgba(232,124,42,0.15);color:var(--orange);border:1px solid rgba(232,124,42,0.4);margin-left:8px;">${escapeHtml(dia)}</span>
+            </span>
+            <span class="cal-reserva-meta">💪 ${meta}</span>
+            ${desc}
+          </div>
+          <span style="color:var(--text-dim);font-size:12px;font-style:italic;">Asignada por tu entrenador</span>
         </div>
-        <button class="cal-btn-cancel" data-reserva="${r.id_reserva}" data-clase="${r.id_clase}">Cancelar</button>
-      </div>
-    `).join("");
-
-    wrap.querySelectorAll(".cal-btn-cancel").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const reservaId = Number(btn.dataset.reserva);
-        if (!confirm("¿Cancelar esta reserva?")) return;
-        btn.disabled = true;
-        try {
-          await GymApp.api(`/api/clases/reservas/${reservaId}`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username })
-          });
-          GymApp.toast("Reserva cancelada", "info");
-          loadClases();
-        } catch (e) {
-          GymApp.toast(e.message || "Error al cancelar", "error");
-          btn.disabled = false;
-        }
-      });
-    });
+      `;
+    }).join("");
   }
 
   // Búsqueda en tiempo real
