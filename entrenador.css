@@ -1,14 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap");
 
 :root {
-  --orange: #e87c2a;
-  --orange-dark: #c4621a;
+  --orange: #ff8c3a;
+  --orange-dark: #e87c2a;
   --bg-dark: #0a0a0a;
-  --panel: rgba(15, 15, 15, 0.92);
-  --panel2: rgba(25, 25, 25, 0.88);
-  --border: rgba(232, 124, 42, 0.25);
-  --text: #e3e3e3;
-  --text-dim: #888888;
+  --panel: rgba(20, 20, 20, 0.95);
+  --panel2: rgba(30, 30, 30, 0.92);
+  --border: rgba(255, 140, 58, 0.3);
+  --text: #f5f5f5;
+  --text-dim: #a0a0a0;
   --radius: 12px;
 }
 
@@ -198,8 +198,9 @@ body[data-theme="light"] .user-avatar {
 .ver-todo {
   font-size: 12px;
   color: var(--orange);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  text-shadow: 0 0 8px rgba(255, 140, 58, 0.3);
 }
 
 .sessions-list {
@@ -296,28 +297,36 @@ body[data-theme="light"] .session-meta {
 
 .tool-card {
   background: var(--panel2);
-  border: 1px solid var(--border);
-  padding: 20px;
+  border: 2px solid var(--border);
+  padding: 24px;
   border-radius: var(--radius);
   text-decoration: none;
   text-align: center;
-  transition: transform 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .tool-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   border-color: var(--orange);
+  box-shadow: 0 8px 20px rgba(255, 140, 58, 0.25), 0 0 16px rgba(255, 140, 58, 0.15);
+  background: rgba(40, 40, 40, 0.95);
 }
 
 .tool-icon {
-  font-size: 24px;
-  margin-bottom: 8px;
+  font-size: 32px;
+  margin-bottom: 12px;
+  color: var(--orange);
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(255, 140, 58, 0.4);
 }
 
 .tool-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .bottomnav {
