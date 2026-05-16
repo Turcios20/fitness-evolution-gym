@@ -1090,21 +1090,29 @@ app.post(["/api/members", "/api/admin/members"], authenticate, requireRoles("adm
 
 app.put(["/api/members/:id", "/api/admin/members/:id"], authenticate, requireRoles("admin", "recepcionista"), async (req, res) => {
   const memberId = Number(req.params.id);
+  const payload = req.body || {};
 
   if (!Number.isFinite(memberId)) {
     res.status(400).json({ error: "id invalido" });
     return;
   }
 
-  if (req.auth.role !== "admin" && Object.prototype.hasOwnProperty.call(req.body || {}, "trainerId")) {
-    res.status(403).json({ error: "Solo admin puede asignar entrenador" });
-    return;
+  if (req.auth.role !== "admin") {
+    if (Object.prototype.hasOwnProperty.call(payload, "trainerId")) {
+      res.status(403).json({ error: "Solo admin puede asignar entrenador" });
+      return;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(payload, "role") && roleToDb(payload.role) !== "Cliente") {
+      res.status(403).json({ error: "Solo admin puede cambiar roles" });
+      return;
+    }
   }
 
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    await updateClientMember(connection, memberId, req.body || {});
+    await updateClientMember(connection, memberId, payload);
     await connection.commit();
     res.json({ ok: true });
   } catch (error) {
