@@ -63,11 +63,484 @@ function roleToDb(role) {
   return ROLE_FRONTEND_TO_DB[value] || "Cliente";
 }
 
+async function tableExists(executor, tableName) {
+  const [rows] = await executor.query(
+    `SELECT 1
+     FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+     LIMIT 1`,
+    [tableName]
+  );
+
+  return rows.length > 0;
+}
+
+// Keep production databases compatible with the trainer features used by the web app.
+async function ensureTrainerFeatureSchema() {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS planes_entrenamiento (
+        id_plan INT AUTO_INCREMENT PRIMARY KEY,
+        id_entrenador INT NOT NULL,
+        id_cliente INT NOT NULL,
+        nombre_plan VARCHAR(150) NOT NULL,
+        objetivo TEXT,
+        fecha_inicio DATE,
+        fecha_fin DATE,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_planes_entrenamiento_entrenador
+          FOREIGN KEY (id_entrenador)
+          REFERENCES usuarios(id_usuario)
+          ON DELETE CASCADE,
+        CONSTRAINT fk_planes_entrenamiento_cliente
+          FOREIGN KEY (id_cliente)
+          REFERENCES usuarios(id_usuario)
+          ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS rutinas_entrenamiento (
+        id_rutina INT AUTO_INCREMENT PRIMARY KEY,
+        id_usuario INT NOT NULL,
+        nombre_ejercicio VARCHAR(100) NOT NULL,
+        descripcion TEXT,
+        dia_semana VARCHAR(20),
+        series INT,
+        repeticiones INT,
+        duracion INT,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_rutinas_entrenamiento_usuario
+          FOREIGN KEY (id_usuario)
+          REFERENCES usuarios(id_usuario)
+          ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    if (await tableExists(connection, "rutinas")) {
+      await connection.query(
+        `INSERT INTO rutinas_entrenamiento (
+          id_rutina,
+          id_usuario,
+          nombre_ejercicio,
+          descripcion,
+          dia_semana,
+          series,
+          repeticiones,
+          duracion
+        )
+        SELECT
+          legacy.id_rutina,
+          legacy.id_usuario,
+          legacy.nombre_ejercicio,
+          NULL,
+          legacy.dia_semana,
+          legacy.series,
+          legacy.repeticiones,
+          NULL
+        FROM rutinas legacy
+        LEFT JOIN rutinas_entrenamiento current
+          ON current.id_rutina = legacy.id_rutina
+        WHERE current.id_rutina IS NULL`
+      );
+    }
+  } finally {
+    connection.release();
+  }
+}
+
 function serializeSettingValue(value) {
   if (value == null) return null;
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
+
+// RUTINAS
+// Obtener rutinas de un cliente
+app.get(
+  "/api/client/:clientId/routines",
+  authenticate,
+  async (req, res) => {
+
+    const clientId = Number(req.params.clientId);
+
+    if (!Number.isFinite(clientId)) {
+      return res.status(400).json({
+        error: "clientId invalido"
+      });
+    }
+
+    try {
+
+      const [rows] = await pool.query(
+        `SELECT
+          id_rutina,
+          nombre_ejercicio,
+          descripcion,
+          series,
+          repeticiones,
+          duracion,
+          dia_semana
+        FROM rutinas_entrenamiento
+        WHERE id_usuario = ?
+        ORDER BY id_rutina DESC`,
+        [clientId]
+      );
+
+      res.json({
+        routines: rows
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error cargando rutinas",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
+// Crear rutina
+app.post(
+  "/api/client/:clientId/routines",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+
+    const clientId = Number(req.params.clientId);
+
+    const {
+      ejercicio,
+      descripcion,
+      series,
+      repeticiones,
+      duracion,
+      dia
+    } = req.body || {};
+
+    if (!Number.isFinite(clientId)) {
+      return res.status(400).json({
+        error: "clientId invalido"
+      });
+    }
+
+    if (!ejercicio) {
+      return res.status(400).json({
+        error: "Ejercicio requerido"
+      });
+    }
+
+    try {
+
+      await pool.query(
+        `INSERT INTO rutinas_entrenamiento (
+          id_usuario,
+          nombre_ejercicio,
+          descripcion,
+          series,
+          repeticiones,
+          duracion,
+          dia_semana
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          clientId,
+          ejercicio,
+          descripcion || null,
+          series || null,
+          repeticiones || null,
+          duracion || null,
+          dia || null
+        ]
+      );
+
+      res.status(201).json({
+        ok: true,
+        message: "Rutina creada correctamente"
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error creando rutina",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
+// Editar rutina
+app.put(
+  "/api/routines/:routineId",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+
+    const routineId = Number(req.params.routineId);
+
+    const {
+      ejercicio,
+      descripcion,
+      series,
+      repeticiones,
+      duracion,
+      dia
+    } = req.body || {};
+
+    if (!Number.isFinite(routineId)) {
+      return res.status(400).json({
+        error: "routineId invalido"
+      });
+    }
+
+    if (!ejercicio) {
+      return res.status(400).json({
+        error: "Ejercicio requerido"
+      });
+    }
+
+    try {
+
+      const [result] = await pool.query(
+        `UPDATE rutinas_entrenamiento
+        SET nombre_ejercicio = ?,
+            descripcion      = ?,
+            series           = ?,
+            repeticiones     = ?,
+            duracion         = ?,
+            dia_semana       = ?
+        WHERE id_rutina = ?`,
+        [
+          ejercicio,
+          descripcion || null,
+          series || null,
+          repeticiones || null,
+          duracion || null,
+          dia || null,
+          routineId
+        ]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          error: "Rutina no encontrada"
+        });
+      }
+
+      res.json({
+        ok: true,
+        message: "Rutina actualizada correctamente"
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error actualizando rutina",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
+// Eliminar rutina
+app.delete(
+  "/api/routines/:routineId",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+
+    const routineId = Number(req.params.routineId);
+
+    if (!Number.isFinite(routineId)) {
+      return res.status(400).json({
+        error: "routineId invalido"
+      });
+    }
+
+    try {
+
+      await pool.query(
+        `DELETE FROM rutinas_entrenamiento
+        WHERE id_rutina = ?`,
+        [routineId]
+      );
+
+      res.json({
+        ok: true
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error eliminando rutina",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
+// ===============================
+// PLANES
+// ===============================
+
+// Obtener planes
+app.get(
+  "/api/client/:clientId/plans",
+  authenticate,
+  async (req, res) => {
+
+    const clientId = Number(req.params.clientId);
+
+    if (!Number.isFinite(clientId)) {
+      return res.status(400).json({
+        error: "clientId invalido"
+      });
+    }
+
+    try {
+
+      const [rows] = await pool.query(
+        `SELECT
+          p.id_plan,
+          p.nombre_plan,
+          p.objetivo,
+          p.fecha_inicio,
+          p.fecha_fin,
+          p.id_entrenador,
+          e.nombre_completo AS entrenador_nombre
+        FROM planes_entrenamiento p
+        LEFT JOIN usuarios e ON e.id_usuario = p.id_entrenador
+        WHERE p.id_cliente = ?
+        ORDER BY p.id_plan DESC`,
+        [clientId]
+      );
+
+      res.json({
+        plans: rows
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error cargando planes",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
+// Crear plan
+app.post(
+  "/api/client/:clientId/plans",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+
+    const clientId = Number(req.params.clientId);
+
+    const {
+      nombre,
+      objetivo,
+      fechaInicio,
+      fechaFin
+    } = req.body || {};
+
+    if (!Number.isFinite(clientId)) {
+      return res.status(400).json({
+        error: "clientId invalido"
+      });
+    }
+
+    if (!nombre) {
+      return res.status(400).json({
+        error: "Nombre requerido"
+      });
+    }
+
+    try {
+
+      await pool.query(
+        `INSERT INTO planes_entrenamiento (
+          id_entrenador,
+          id_cliente,
+          nombre_plan,
+          objetivo,
+          fecha_inicio,
+          fecha_fin
+        )
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          req.auth.id,
+          clientId,
+          nombre,
+          objetivo || null,
+          fechaInicio || null,
+          fechaFin || null
+        ]
+      );
+
+      res.status(201).json({
+        ok: true,
+        message: "Plan creado correctamente"
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error creando plan",
+        detail: error.message
+      });
+
+    }
+  }
+);
+
+// Eliminar plan
+app.delete(
+  "/api/plans/:planId",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+
+    const planId = Number(req.params.planId);
+
+    if (!Number.isFinite(planId)) {
+      return res.status(400).json({
+        error: "planId invalido"
+      });
+    }
+
+    try {
+
+      await pool.query(
+        `DELETE FROM planes_entrenamiento
+        WHERE id_plan = ?`,
+        [planId]
+      );
+
+      res.json({
+        ok: true
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        error: "Error eliminando plan",
+        detail: error.message
+      });
+
+    }
+  }
+);
 
 async function ensureProgressSchema() {
   await pool.query(
@@ -1963,6 +2436,8 @@ app.get("/api/clases/mis-reservas", async (req, res) => {
          r.id_reserva,
          r.estado,
          r.fecha_reserva,
+         r.asignada_por,
+         a.nombre_completo AS asignada_por_nombre,
          c.id_clase,
          c.nombre,
          c.descripcion,
@@ -1971,6 +2446,7 @@ app.get("/api/clases/mis-reservas", async (req, res) => {
          c.duracion_min
        FROM reservas r
        JOIN clases c ON c.id_clase = r.id_clase
+       LEFT JOIN usuarios a ON a.id_usuario = r.asignada_por
        WHERE r.id_usuario = ?
        ORDER BY c.fecha_hora ASC`,
       [userId]
@@ -1980,6 +2456,117 @@ app.get("/api/clases/mis-reservas", async (req, res) => {
     res.status(500).json({ error: "Error cargando reservas", detail: error.message });
   }
 });
+
+// Entrenador/admin asigna una clase a un cliente
+app.post(
+  "/api/trainer/clientes/:clientId/reservas",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+    const clientId = Number(req.params.clientId);
+    const claseId = Number(req.body?.claseId);
+
+    if (!Number.isFinite(clientId) || !Number.isFinite(claseId)) {
+      return res.status(400).json({ error: "clientId y claseId requeridos" });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      const [userRows] = await connection.query(
+        "SELECT id_usuario FROM usuarios WHERE id_usuario = ? LIMIT 1",
+        [clientId]
+      );
+      if (!userRows.length) {
+        await connection.rollback();
+        return res.status(404).json({ error: "Cliente no encontrado" });
+      }
+
+      const [claseRows] = await connection.query(
+        "SELECT id_clase, disponibles FROM clases WHERE id_clase = ? LIMIT 1 FOR UPDATE",
+        [claseId]
+      );
+      if (!claseRows.length) {
+        await connection.rollback();
+        return res.status(404).json({ error: "Clase no encontrada" });
+      }
+      if (claseRows[0].disponibles <= 0) {
+        await connection.rollback();
+        return res.status(409).json({ error: "No hay cupos disponibles" });
+      }
+
+      await connection.query(
+        `INSERT INTO reservas (id_usuario, id_clase, asignada_por) VALUES (?, ?, ?)`,
+        [clientId, claseId, req.auth.id]
+      );
+      await connection.query(
+        `UPDATE clases SET disponibles = disponibles - 1 WHERE id_clase = ?`,
+        [claseId]
+      );
+
+      await connection.commit();
+      res.status(201).json({ ok: true, message: "Reserva asignada al cliente" });
+    } catch (error) {
+      await connection.rollback();
+      if (error.code === "ER_DUP_ENTRY") {
+        return res.status(409).json({ error: "El cliente ya tiene una reserva para esta clase" });
+      }
+      res.status(500).json({ error: "Error al asignar reserva", detail: error.message });
+    } finally {
+      connection.release();
+    }
+  }
+);
+
+// Entrenador/admin cancela una reserva (puede cancelar las asignadas también)
+app.delete(
+  "/api/trainer/reservas/:id",
+  authenticate,
+  requireRoles("entrenador", "admin"),
+  async (req, res) => {
+    const reservaId = Number(req.params.id);
+    if (!Number.isFinite(reservaId)) {
+      return res.status(400).json({ error: "id de reserva invalido" });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      const [reservaRows] = await connection.query(
+        "SELECT id_clase, estado FROM reservas WHERE id_reserva = ? LIMIT 1",
+        [reservaId]
+      );
+      if (!reservaRows.length) {
+        await connection.rollback();
+        return res.status(404).json({ error: "Reserva no encontrada" });
+      }
+      if (reservaRows[0].estado === "Cancelada") {
+        await connection.rollback();
+        return res.status(409).json({ error: "La reserva ya estaba cancelada" });
+      }
+
+      const claseId = reservaRows[0].id_clase;
+      await connection.query(
+        "UPDATE reservas SET estado = 'Cancelada' WHERE id_reserva = ?",
+        [reservaId]
+      );
+      await connection.query(
+        "UPDATE clases SET disponibles = disponibles + 1 WHERE id_clase = ?",
+        [claseId]
+      );
+
+      await connection.commit();
+      res.json({ ok: true, message: "Reserva cancelada" });
+    } catch (error) {
+      await connection.rollback();
+      res.status(500).json({ error: "Error cancelando reserva", detail: error.message });
+    } finally {
+      connection.release();
+    }
+  }
+);
 
 app.post("/api/clases/:id/reservar", async (req, res) => {
   const claseId = Number(req.params.id);
@@ -2068,12 +2655,18 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
     const userId = userRows[0].id_usuario;
 
     const [reservaRows] = await connection.query(
-      "SELECT id_clase FROM reservas WHERE id_reserva = ? AND id_usuario = ? LIMIT 1",
+      "SELECT id_clase, asignada_por FROM reservas WHERE id_reserva = ? AND id_usuario = ? LIMIT 1",
       [reservaId, userId]
     );
     if (!reservaRows.length) {
       await connection.rollback();
       res.status(404).json({ error: "Reserva no encontrada" });
+      return;
+    }
+
+    if (reservaRows[0].asignada_por != null) {
+      await connection.rollback();
+      res.status(403).json({ error: "Esta reserva fue asignada por tu entrenador y no puedes cancelarla" });
       return;
     }
 
@@ -2097,201 +2690,17 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
   }
 });
 
-// ── CLASES Y RESERVAS ────────────────────────────────────────────────────────
-
-app.get("/api/clases", async (_req, res) => {
-  try {
-    const [rows] = await pool.query(
-      `SELECT id_clase, nombre, descripcion, entrenador, fecha_hora, duracion_min, capacidad, disponibles
-       FROM clases
-       WHERE fecha_hora >= NOW()
-       ORDER BY fecha_hora ASC`
-    );
-    res.json({ clases: rows });
-  } catch (error) {
-    res.status(500).json({ error: "Error cargando clases", detail: error.message });
-  }
-});
-
-app.get("/api/clases/mis-reservas", async (req, res) => {
-  const username = String(req.query.username || "").trim();
-  if (!username) {
-    res.status(400).json({ error: "username requerido" });
-    return;
-  }
-
-  try {
-    const [userRows] = await pool.query(
-      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
-      [username]
-    );
-    if (!userRows.length) {
-      res.status(404).json({ error: "Usuario no encontrado" });
-      return;
-    }
-    const userId = userRows[0].id_usuario;
-
-    const [rows] = await pool.query(
-      `SELECT
-         r.id_reserva,
-         r.estado,
-         r.fecha_reserva,
-         c.id_clase,
-         c.nombre,
-         c.descripcion,
-         c.entrenador,
-         c.fecha_hora,
-         c.duracion_min
-       FROM reservas r
-       JOIN clases c ON c.id_clase = r.id_clase
-       WHERE r.id_usuario = ?
-       ORDER BY c.fecha_hora ASC`,
-      [userId]
-    );
-    res.json({ reservas: rows });
-  } catch (error) {
-    res.status(500).json({ error: "Error cargando reservas", detail: error.message });
-  }
-});
-
-app.post("/api/clases/:id/reservar", async (req, res) => {
-  const claseId = Number(req.params.id);
-  const { username } = req.body || {};
-
-  if (!Number.isFinite(claseId) || !username) {
-    res.status(400).json({ error: "id de clase y username requeridos" });
-    return;
-  }
-
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    const [userRows] = await connection.query(
-      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
-      [username]
-    );
-    if (!userRows.length) {
-      await connection.rollback();
-      res.status(404).json({ error: "Usuario no encontrado" });
-      return;
-    }
-    const userId = userRows[0].id_usuario;
-
-    const [claseRows] = await connection.query(
-      "SELECT id_clase, disponibles FROM clases WHERE id_clase = ? LIMIT 1 FOR UPDATE",
-      [claseId]
-    );
-    if (!claseRows.length) {
-      await connection.rollback();
-      res.status(404).json({ error: "Clase no encontrada" });
-      return;
-    }
-    if (claseRows[0].disponibles <= 0) {
-      await connection.rollback();
-      res.status(409).json({ error: "No hay cupos disponibles" });
-      return;
-    }
-
-    await connection.query(
-      `INSERT INTO reservas (id_usuario, id_clase) VALUES (?, ?)`,
-      [userId, claseId]
-    );
-    await connection.query(
-      `UPDATE clases SET disponibles = disponibles - 1 WHERE id_clase = ?`,
-      [claseId]
-    );
-
-    await connection.commit();
-    res.status(201).json({ ok: true, message: "Reserva confirmada" });
-  } catch (error) {
-    await connection.rollback();
-    if (error.code === "ER_DUP_ENTRY") {
-      res.status(409).json({ error: "Ya tienes una reserva para esta clase" });
-      return;
-    }
-    res.status(500).json({ error: "Error al reservar", detail: error.message });
-  } finally {
-    connection.release();
-  }
-});
-
-app.delete("/api/clases/reservas/:id", async (req, res) => {
-  const reservaId = Number(req.params.id);
-  const { username } = req.body || {};
-
-  if (!Number.isFinite(reservaId) || !username) {
-    res.status(400).json({ error: "id de reserva y username requeridos" });
-    return;
-  }
-
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    const [userRows] = await connection.query(
-      "SELECT id_usuario FROM usuarios WHERE correo = ? LIMIT 1",
-      [username]
-    );
-    if (!userRows.length) {
-      await connection.rollback();
-      res.status(404).json({ error: "Usuario no encontrado" });
-      return;
-    }
-    const userId = userRows[0].id_usuario;
-
-    const [reservaRows] = await connection.query(
-      "SELECT id_clase FROM reservas WHERE id_reserva = ? AND id_usuario = ? LIMIT 1",
-      [reservaId, userId]
-    );
-    if (!reservaRows.length) {
-      await connection.rollback();
-      res.status(404).json({ error: "Reserva no encontrada" });
-      return;
-    }
-
-    const claseId = reservaRows[0].id_clase;
-    await connection.query(
-      "UPDATE reservas SET estado = 'Cancelada' WHERE id_reserva = ?",
-      [reservaId]
-    );
-    await connection.query(
-      "UPDATE clases SET disponibles = disponibles + 1 WHERE id_clase = ?",
-      [claseId]
-    );
-
-    await connection.commit();
-    res.json({ ok: true, message: "Reserva cancelada" });
-  } catch (error) {
-    await connection.rollback();
-    res.status(500).json({ error: "Error cancelando reserva", detail: error.message });
-  } finally {
-    connection.release();
-  }
-});
 
 async function startServer() {
   try {
-    await ensureProgressSchema();
+    await ensureTrainerFeatureSchema();
+    app.listen(PORT, () => {
+      console.log(`API corriendo en http://localhost:${PORT}`);
+    });
   } catch (error) {
-    console.error("No se pudo inicializar el esquema de progreso:", error.message);
+    console.error("Error preparando la base de datos:", error.message);
     process.exit(1);
   }
-
-  const server = app.listen(PORT, () => {
-    console.log(`API corriendo en http://localhost:${PORT}`);
-  });
-
-  server.on("error", (error) => {
-    if (error?.code === "EADDRINUSE") {
-      console.error(`El puerto ${PORT} ya esta en uso.`);
-      console.error("Cierra el proceso anterior o arranca con otro puerto.");
-      console.error(`Ejemplo PowerShell: $env:PORT='3102'; npm start`);
-      process.exit(1);
-    }
-
-    throw error;
-  });
 }
 
 startServer();

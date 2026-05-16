@@ -75,6 +75,41 @@ CREATE TABLE IF NOT EXISTS rutinas (
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS planes_entrenamiento (
+    id_plan INT AUTO_INCREMENT PRIMARY KEY,
+    id_entrenador INT NOT NULL,
+    id_cliente INT NOT NULL,
+    nombre_plan VARCHAR(150) NOT NULL,
+    objetivo TEXT,
+    fecha_inicio DATE,
+    fecha_fin DATE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_planes_entrenamiento_entrenador
+        FOREIGN KEY (id_entrenador)
+        REFERENCES usuarios(id_usuario)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_planes_entrenamiento_cliente
+        FOREIGN KEY (id_cliente)
+        REFERENCES usuarios(id_usuario)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS rutinas_entrenamiento (
+    id_rutina INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    nombre_ejercicio VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    dia_semana VARCHAR(20),
+    series INT,
+    repeticiones INT,
+    duracion INT,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_rutinas_entrenamiento_usuario
+        FOREIGN KEY (id_usuario)
+        REFERENCES usuarios(id_usuario)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS pagos (
     id_pago INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,

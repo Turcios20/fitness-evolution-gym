@@ -125,5 +125,70 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // ── Cargar rutinas del cliente ──
+  const rutinasContainer = document.getElementById("rutinasContainer");
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function renderRutinas(rutinas) {
+    if (!rutinasContainer) return;
+
+    if (!rutinas.length) {
+      rutinasContainer.innerHTML = `
+        <div class="subs-card" style="text-align:center;">
+          <p style="color:var(--text-dim);margin:0;">
+            Aún no tienes rutinas asignadas.
+          </p>
+        </div>`;
+      return;
+    }
+
+    rutinasContainer.innerHTML = rutinas.map((r) => `
+      <div class="subs-card" style="margin-bottom:14px;">
+        <div class="subs-row">
+          <span class="subs-key">${escapeHtml(r.dia_semana || "Sin día")}</span>
+          <span class="subs-val orange">${escapeHtml(r.nombre_ejercicio)}</span>
+        </div>
+        ${r.descripcion ? `
+          <div class="subs-row">
+            <span class="subs-key">Descripción</span>
+            <span class="subs-val" style="font-size:13px;">${escapeHtml(r.descripcion)}</span>
+          </div>` : ""}
+        <div class="subs-row">
+          <span class="subs-key">Series × Reps</span>
+          <span class="subs-val">${r.series ?? "--"} × ${r.repeticiones ?? "--"}</span>
+        </div>
+        ${r.duracion ? `
+          <div class="subs-row">
+            <span class="subs-key">Duración</span>
+            <span class="subs-val">${escapeHtml(r.duracion)} min</span>
+          </div>` : ""}
+      </div>
+    `).join("");
+  }
+
+  async function loadRutinas() {
+    if (!rutinasContainer || !session?.id) return;
+    try {
+      const data = await GymApp.api(`/api/client/${session.id}/routines`);
+      renderRutinas(Array.isArray(data?.routines) ? data.routines : []);
+    } catch (error) {
+      rutinasContainer.innerHTML = `
+        <div class="subs-card" style="text-align:center;">
+          <p style="color:var(--text-dim);margin:0;">
+            Error cargando rutinas: ${escapeHtml(error.message)}
+          </p>
+        </div>`;
+    }
+  }
+
   loadClientData();
+  loadRutinas();
 });

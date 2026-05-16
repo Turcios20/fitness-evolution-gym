@@ -41,8 +41,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelectorAll(".tool-card").forEach((card) => {
     card.addEventListener("click", (event) => {
-      event.preventDefault();
-      GymApp.toast("Modulo listo para la siguiente HU.", "info");
+      const href = card.getAttribute("href");
+      if (!href || href === "#") {
+        event.preventDefault();
+        GymApp.toast("Modulo listo para la siguiente HU.", "info");
+      }
     });
   });
 
