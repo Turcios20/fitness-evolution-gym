@@ -17,6 +17,7 @@ El sistema tiene 2 roles:
 
 ```text
 fitness-evolution-gym/
+  
   assets/                        # Imagenes e iconos PNG
   backend/
     db.js                        # Conexion MySQL (pool)
@@ -417,27 +418,103 @@ Todas incluyen nav funcional, avatar y boton de cerrar sesion.
 
 ---
 
-## 13. Trabajo en equipo con Git
+## 13. GitHub e integracion del Sprint 3
 
-### 13.1 Subir cambios
+Durante el Sprint 3 se utilizo GitHub como plataforma principal para el control de versiones, la integracion de funcionalidades y el seguimiento del avance tecnico del proyecto. El trabajo se organizo con ramas por historia de usuario y ramas de consolidacion del sprint, lo que permitio aislar cambios, reducir conflictos y mantener trazabilidad entre los desarrollos del equipo.
 
-```bash
-git add .
-git commit -m "mensaje de cambio"
-git push origin main
-```
+### 13.1 Link del repositorio
 
-### 13.2 Actualizar repositorio local
+- Repositorio oficial: `https://github.com/Turcios20/fitness-evolution-gym`
+- Rama principal actual: `main`
+
+`[Evidencia sugerida: captura de la pagina principal del repositorio en GitHub.]`
+
+### 13.2 Ramas utilizadas
+
+Durante el Sprint 3 se trabajaron ramas funcionales y ramas de integracion. Las ramas principales identificadas en el repositorio fueron:
+
+- `main`: rama principal del proyecto.
+- `sprint-3`: rama de integracion general del sprint.
+- `sprint-3.1`: rama de consolidacion y correcciones finales.
+- `deploy_web`: rama usada para ajustes de despliegue.
+- `HU-12`: trabajo relacionado con control de asistencia.
+- `HU-17`: trabajo relacionado con fotografias de progreso y objetivo del miembro.
+- `HU-18`: trabajo relacionado con la visualizacion de evolucion de resultados.
+
+Ademas, en el repositorio quedaron registradas ramas remotas por historias de usuario como `HU-11`, `HU-13`, `HU-14`, `HU-15` y `HU-16`, evidenciando una organizacion del trabajo por modulo o requerimiento.
+
+`[Evidencia sugerida: captura del listado de ramas locales y remotas.]`
+
+### 13.3 Commits destacados
+
+Entre los commits mas representativos del Sprint 3 se identifican los siguientes:
+
+- `457e0e2` - `Send trainer assignment from admin dashboard`
+- `c03379a` - `Fix trainer routines schema on production`
+- `d487f29` - `bug con el deploy web`
+- `e1dedf2` - `se arreglo el bug que no entraba directamente a login`
+- `723eddf` - `mejores mensajes para respaldar los errores con el puerto`
+- `2adae7e` - `agregando vistas y exportancioon csv recepcionista`
+
+Estos commits muestran que durante el sprint no solo se agregaron funcionalidades, sino que tambien se realizaron mejoras de estabilidad, compatibilidad con produccion y correcciones de integracion entre frontend, backend y base de datos.
+
+`[Evidencia sugerida: captura del historial de commits en GitHub.]`
+
+### 13.4 Merges e integracion de cambios
+
+La integracion del trabajo del equipo se realizo mediante merges y pull requests hacia las ramas de consolidacion del sprint y posteriormente hacia `main`. Algunos merges visibles en el historial son:
+
+- `6f28289` - `Merge pull request #30 from Turcios20/HU-18`
+- `8ec01b4` - `Merge pull request #25 from Turcios20/HU-17`
+- `46b00ec` - `Merge pull request #24 from Turcios20/HU-18`
+
+Adicionalmente, los cambios aprobados en `sprint-3.1` fueron consolidados en la rama `main`, dejando la version estable del sprint en la rama principal del repositorio.
+
+`[Evidencia sugerida: captura de pull requests cerrados o del historial con merges.]`
+
+### 13.5 Problemas encontrados durante la integracion
+
+Durante el Sprint 3 se detectaron varios problemas tecnicos y de integracion:
+
+- Diferencias entre el entorno local y el entorno de produccion en el esquema de base de datos del modulo de rutinas del entrenador.
+- Errores en el despliegue web que afectaban algunas vistas publicadas.
+- Fallo en la redireccion inicial al login.
+- Problema en la asignacion de entrenador desde la vista de administrador, donde visualmente parecia guardarse el cambio, pero no se persistia correctamente en todos los flujos.
+- Necesidad de mejorar mensajes de error para facilitar las pruebas y la depuracion.
+
+`[Evidencia sugerida: capturas de errores en la web, consola o incidencias detectadas.]`
+
+### 13.6 Soluciones aplicadas
+
+Para resolver los problemas de integracion del Sprint 3 se aplicaron las siguientes acciones:
+
+- Se corrigio el flujo de asignacion de entrenador desde el panel de administracion, asegurando que el `trainerId` se enviara al backend y se guardara correctamente.
+- Se agrego compatibilidad del backend con el esquema real de produccion para el modulo de rutinas, incluyendo la creacion y migracion automatica de tablas necesarias.
+- Se realizaron ajustes orientados al despliegue para estabilizar la aplicacion publicada.
+- Se corrigio la entrada directa al login y se mejoraron mensajes para diagnosticar errores relacionados con el puerto y el arranque del servidor.
+- Finalmente, los cambios aprobados fueron integrados a `main`, dejando una base mas estable para continuar el proyecto.
+
+`[Evidencia sugerida: capturas del sistema funcionando despues de las correcciones y de los commits asociados.]`
+
+### 13.7 Flujo basico de trabajo con Git
+
+Para mantener consistencia entre los integrantes, el flujo basico recomendado de trabajo es:
 
 ```bash
 git pull origin main
-npm install
+git checkout -b nombre-de-rama
+git add .
+git commit -m "mensaje descriptivo"
+git push origin nombre-de-rama
 ```
 
-### 13.3 Regla importante
+Cuando una funcionalidad ha sido validada, se integra mediante merge o pull request hacia la rama de consolidacion correspondiente y luego hacia `main`.
 
-- `.env` no se versiona (esta en `.gitignore`).
-- Cada integrante usa su propio `.env` local.
+### 13.8 Regla importante
+
+- Como regla del equipo, el archivo `.env` debe mantenerse fuera del control de versiones.
+- Cada integrante debe usar su propio `.env` local con credenciales de su entorno.
+- Si se detectan archivos sensibles o temporales dentro del repositorio, deben limpiarse en la siguiente iteracion tecnica.
 
 ---
 
