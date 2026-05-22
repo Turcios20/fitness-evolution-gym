@@ -1,0 +1,273 @@
+const API_BASE = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3000' 
+  : '';
+
+let selectedClientId = null;
+let selectedClientName = '';
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', () => {
+  initPage();
+  loadClients();
+  setupEventListeners();
+  setTodayDate();
+});
+
+function initPage() {
+  const session = JSON.parse(localStorage.getItem('session') || '{}');
+  if (!session.user || session.user.rol !== 'Entrenador') {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const initials = session.user.nombre_completo
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+  
+  document.getElementById('userAvatar').textContent = initials;
+}
+
+function setupEventListeners() {
+  document.getElementById('btnLogout').addEventListener('click', logout);
+  document.getElementById('btnGuardar').addEventListener('click', guardarMedida);
+  document.getElementById('btnLimpiar').addEventListener('click', limpiarFormulario);
+}
+
+function logout() {
+  localStorage.removeItem('session');
+  window.location.href = 'login.html';
+}
+
+function setTodayDate() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fecha').value = today;
+}
+
+async function loadClients() {
+  try {
+    const session = JSON.parse(localStorage.getItem('session') || '{}');
+    const trainerId = session.user?.id_usuario;
+
+    if (!trainerId) {
+      throw new Error('No se encontró ID de entrenador');
+    }
+
+    const response = await fetch(`${API_BASE}/api/trainer/clients/${trainerId}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Error cargando clientes');
+    }
+
+    renderClients(data.clients || []);
+  } catch (error) {
+    console.error('Error:', error);
+    document.getElementById('clientsList').innerHTML = 
+      `<p class="loading-text" style="color: #ff3232;">Error: ${error.message}</p>`;
+  }
+}
+
+function renderClients(clients) {
+  const container = document.getElementById('clientsList');
+  const countEl = document.getElementById('clientsCount');
+
+  if (!clients || clients.length === 0) {
+    container.innerHTML = '<p class="loading-text">No tienes clientes asignados</p>';
+    countEl.textContent = '0';
+    return;
+  }
+
+  countEl.textContent = clients.length;
+
+  container.innerHTML = clients.map(client => `
+    <div class="client-item" data-id="${client.id_usuario}" data-name="${client.nombre_completo}">
+      <span class="client-name">${client.nombre_completo}</span>
+      <span class="client-email">${client.correo}</span>
+    </div>
+  `).join('');
+
+  // Event listeners para selección de cliente
+  container.querySelectorAll('.client-item').forEach(item => {
+    item.addEventListener('click', () => selectClient(item));
+  });
+}
+
+function selectClient(item) {
+  // Remover selección anterior
+  document.querySelectorAll('.client-item').forEach(el => el.classList.remove('active'));
+  
+  // Marcar como activo
+  item.classList.add('active');
+
+  selectedClientId = parseInt(item.dataset.id);
+  selectedClientName = item.dataset.name;
+
+  // Mostrar formulario y ocultar empty state
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('medidaForm').style.display = 'block';
+  document.getElementById('selectedClientName').textContent = selectedClientName;
+
+  // Cargar historial de medidas
+  loadMedidas(selectedClientId);
+}
+
+async function loadMedidas(userId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/medidas/${userId}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Error cargando medidas');
+    }
+
+    renderMedidas(data.medidas || []);
+  } catch (error) {
+    console.error('Error:', error);
+    document.getElementById('medidasList').innerHTML = 
+      `<p class="loading-text" style="color: #ff3232;">Error: ${error.message}</p>`;
+  }
+}
+
+function renderMedidas(medidas) {
+  const container = document.getElementById('medidasList');
+  const countEl = document.getElementById('historialCount');
+  const historialSection = document.getElementById('historialMedidas');
+
+  if (!medidas || medidas.length === 0) {
+    historialSection.style.display = 'none';
+    return;
+  }
+
+  historialSection.style.display = 'block';
+  countEl.textContent = medidas.length;
+
+  container.innerHTML = medidas.map(medida => {
+    const fecha = new Date(medida.fecha).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    return `
+      <div class="medida-item" data-id="${medida.id_medida}">
+        <div class="medida-fecha">${fecha}</div>
+        <div class="medida-datos">
+          <div class="medida-dato">
+            <span class="medida-label">Peso</span>
+            <span class="medida-valor">${medida.peso || '-'} kg</span>
+          </div>
+          <div class="medida-dato">
+            <span class="medida-label">Pecho</span>
+            <span class="medida-valor">${medida.pecho || '-'} cm</span>
+          </div>
+          <div class="medida-dato">
+            <span class="medida-label">Cintura</span>
+            <span class="medida-valor">${medida.cintura || '-'} cm</span>
+          </div>
+          <div class="medida-dato">
+            <span class="medida-label">Cadera</span>
+            <span class="medida-valor">${medida.cadera || '-'} cm</span>
+          </div>
+          <div class="medida-dato">
+            <span class="medida-label">Brazos</span>
+            <span class="medida-valor">${medida.brazos || '-'} cm</span>
+          </div>
+          <div class="medida-dato">
+            <span class="medida-label">Piernas</span>
+            <span class="medida-valor">${medida.piernas || '-'} cm</span>
+          </div>
+        </div>
+        <div class="medida-actions">
+          <button class="btn-edit" onclick="editarMedida(${medida.id_medida})">Editar</button>
+          <button class="btn-delete" onclick="eliminarMedida(${medida.id_medida})">Eliminar</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function guardarMedida() {
+  if (!selectedClientId) {
+    alert('Selecciona un cliente primero');
+    return;
+  }
+
+  const fecha = document.getElementById('fecha').value;
+  const peso = document.getElementById('peso').value;
+
+  if (!fecha || !peso) {
+    alert('Fecha y peso son obligatorios');
+    return;
+  }
+
+  const medida = {
+    userId: selectedClientId,
+    fecha,
+    peso: parseFloat(peso),
+    pecho: parseFloat(document.getElementById('pecho').value) || null,
+    cintura: parseFloat(document.getElementById('cintura').value) || null,
+    cadera: parseFloat(document.getElementById('cadera').value) || null,
+    brazos: parseFloat(document.getElementById('brazos').value) || null,
+    piernas: parseFloat(document.getElementById('piernas').value) || null
+  };
+
+  try {
+    const response = await fetch(`${API_BASE}/api/medidas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(medida)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Error guardando medida');
+    }
+
+    alert('✅ ' + data.message);
+    limpiarFormulario();
+    loadMedidas(selectedClientId);
+  } catch (error) {
+    alert('❌ ' + error.message);
+  }
+}
+
+function limpiarFormulario() {
+  document.getElementById('peso').value = '';
+  document.getElementById('pecho').value = '';
+  document.getElementById('cintura').value = '';
+  document.getElementById('cadera').value = '';
+  document.getElementById('brazos').value = '';
+  document.getElementById('piernas').value = '';
+  setTodayDate();
+}
+
+async function eliminarMedida(id) {
+  if (!confirm('¿Estás seguro de eliminar esta medida?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/api/medidas/${id}`, {
+      method: 'DELETE'
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Error eliminando medida');
+    }
+
+    alert('✅ ' + data.message);
+    loadMedidas(selectedClientId);
+  } catch (error) {
+    alert('❌ ' + error.message);
+  }
+}
+
+function editarMedida(id) {
+  alert('Función de edición en desarrollo. Por ahora puedes eliminar y crear una nueva medida.');
+}
