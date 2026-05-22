@@ -103,6 +103,12 @@ Endpoints principales:
 - `POST /api/clases/:id/reservar` — reservar clase (`username`)
 - `DELETE /api/clases/reservas/:id` — cancelar reserva (`username`)
 
+**Medidas de progreso — HU-22 (Sprint 4)**
+- `GET /api/medidas/:userId` — obtener medidas de un usuario
+- `POST /api/medidas` — registrar nueva medida (`userId`, `fecha`, `peso`, `pecho`, `cintura`, `cadera`, `brazos`, `piernas`)
+- `PUT /api/medidas/:id` — actualizar medida existente
+- `DELETE /api/medidas/:id` — eliminar medida
+
 Ejemplo de login:
 
 ```json
