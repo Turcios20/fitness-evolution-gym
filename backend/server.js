@@ -2682,6 +2682,105 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
   }
 });
 
+// ── MEDIDAS DE PROGRESO (HU-22) ──────────────────────────────────────────────
+
+app.get("/api/medidas/:userId", async (req, res) => {
+  const userId = Number(req.params.userId);
+  if (!Number.isFinite(userId)) {
+    return res.status(400).json({ error: "userId inválido" });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT id_medida, id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro
+       FROM medidas_progreso
+       WHERE id_usuario = ?
+       ORDER BY fecha DESC`,
+      [userId]
+    );
+    res.json({ medidas: rows });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando medidas", detail: error.message });
+  }
+});
+
+app.post("/api/medidas", async (req, res) => {
+  const { userId, fecha, peso, pecho, cintura, cadera, brazos, piernas } = req.body || {};
+  
+  if (!userId || !fecha) {
+    return res.status(400).json({ error: "userId y fecha son requeridos" });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO medidas_progreso (id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, fecha, peso || null, pecho || null, cintura || null, cadera || null, brazos || null, piernas || null]
+    );
+    res.status(201).json({ ok: true, id: result.insertId, message: "Medida registrada correctamente" });
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ error: "Ya existe un registro para esta fecha" });
+    }
+    res.status(500).json({ error: "Error registrando medida", detail: error.message });
+  }
+});
+
+app.put("/api/medidas/:id", async (req, res) => {
+  const medidaId = Number(req.params.id);
+  const { fecha, peso, pecho, cintura, cadera, brazos, piernas } = req.body || {};
+
+  if (!Number.isFinite(medidaId)) {
+    return res.status(400).json({ error: "id de medida inválido" });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE medidas_progreso
+       SET fecha = COALESCE(?, fecha),
+           peso = COALESCE(?, peso),
+           pecho = COALESCE(?, pecho),
+           cintura = COALESCE(?, cintura),
+           cadera = COALESCE(?, cadera),
+           brazos = COALESCE(?, brazos),
+           piernas = COALESCE(?, piernas)
+       WHERE id_medida = ?`,
+      [fecha, peso, pecho, cintura, cadera, brazos, piernas, medidaId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Medida no encontrada" });
+    }
+
+    res.json({ ok: true, message: "Medida actualizada correctamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error actualizando medida", detail: error.message });
+  }
+});
+
+app.delete("/api/medidas/:id", async (req, res) => {
+  const medidaId = Number(req.params.id);
+
+  if (!Number.isFinite(medidaId)) {
+    return res.status(400).json({ error: "id de medida inválido" });
+  }
+
+  try {
+    const [result] = await pool.query(
+      "DELETE FROM medidas_progreso WHERE id_medida = ?",
+      [medidaId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Medida no encontrada" });
+    }
+
+    res.json({ ok: true, message: "Medida eliminada correctamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error eliminando medida", detail: error.message });
+  }
+});
+
 
 async function startServer() {
   try {
