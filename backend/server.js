@@ -2682,6 +2682,27 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
   }
 });
 
+// ── CLIENTES POR ENTRENADOR (HU-22) ─────────────────────────────────────────
+
+app.get("/api/trainer/:trainerId/clientes", async (req, res) => {
+  const trainerId = Number(req.params.trainerId);
+  if (!Number.isFinite(trainerId)) {
+    return res.status(400).json({ error: "trainerId inválido" });
+  }
+  try {
+    const [rows] = await pool.query(
+      `SELECT id_usuario, nombre_completo, correo
+       FROM usuarios
+       WHERE rol = 'Cliente' AND id_entrenador_asignado = ?
+       ORDER BY nombre_completo ASC`,
+      [trainerId]
+    );
+    res.json({ clients: rows });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando clientes", detail: error.message });
+  }
+});
+
 // ── MEDIDAS DE PROGRESO (HU-22) ──────────────────────────────────────────────
 
 app.get("/api/medidas/:userId", async (req, res) => {
