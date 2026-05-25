@@ -34,6 +34,7 @@ function setupEventListeners() {
   document.getElementById('btnLogout').addEventListener('click', logout);
   document.getElementById('btnGuardar').addEventListener('click', guardarMedida);
   document.getElementById('btnLimpiar').addEventListener('click', limpiarFormulario);
+  document.getElementById('btnGuardarObjetivo').addEventListener('click', guardarObjetivo);
 }
 
 function logout() {
@@ -96,22 +97,19 @@ function renderClients(clients) {
 }
 
 function selectClient(item) {
-  // Remover selección anterior
   document.querySelectorAll('.client-item').forEach(el => el.classList.remove('active'));
-  
-  // Marcar como activo
   item.classList.add('active');
 
   selectedClientId = parseInt(item.dataset.id);
   selectedClientName = item.dataset.name;
 
-  // Mostrar formulario y ocultar empty state
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('medidaForm').style.display = 'block';
+  document.getElementById('objetivoSection').style.display = 'block';
   document.getElementById('selectedClientName').textContent = selectedClientName;
 
-  // Cargar historial de medidas
   loadMedidas(selectedClientId);
+  loadObjetivo(selectedClientId);
 }
 
 async function loadMedidas(userId) {
@@ -146,9 +144,7 @@ function renderMedidas(medidas) {
 
   container.innerHTML = medidas.map(medida => {
     const fecha = new Date(medida.fecha).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+      year: 'numeric', month: 'long', day: 'numeric'
     });
 
     return `
@@ -180,6 +176,12 @@ function renderMedidas(medidas) {
             <span class="medida-valor">${medida.piernas || '-'} cm</span>
           </div>
         </div>
+        <div class="foto-upload">
+          <label class="foto-label">📷 Fotografía de progreso</label>
+          <input type="file" accept="image/jpeg,image/png" id="foto-${medida.id_medida}"
+            onchange="subirFoto(${medida.id_medida}, this)">
+          <span class="foto-status" id="foto-status-${medida.id_medida}"></span>
+        </div>
         <div class="medida-actions">
           <button class="btn-edit" onclick="editarMedida(${medida.id_medida})">Editar</button>
           <button class="btn-delete" onclick="eliminarMedida(${medida.id_medida})">Eliminar</button>
@@ -187,6 +189,8 @@ function renderMedidas(medidas) {
       </div>
     `;
   }).join('');
+
+  medidas.forEach(m => cargarFotoExistente(m.id_medida));
 }
 
 async function guardarMedida() {
@@ -270,4 +274,105 @@ async function eliminarMedida(id) {
 
 function editarMedida(id) {
   alert('Función de edición en desarrollo. Por ahora puedes eliminar y crear una nueva medida.');
+}
+
+// ── OBJETIVO PERSONAL ────────────────────────────────────────────────────────
+
+async function loadObjetivo(userId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/objetivo/${userId}`);
+    const data = await response.json();
+    const el = document.getElementById('objetivoActual');
+    el.textContent = data.objetivo || 'Sin objetivo asignado';
+    if (data.objetivo) {
+      document.getElementById('selectObjetivo').value = data.objetivo;
+    }
+  } catch (error) {
+    console.error('Error cargando objetivo:', error);
+  }
+}
+
+async function guardarObjetivo() {
+  const objetivo = document.getElementById('selectObjetivo').value;
+  if (!objetivo) {
+    alert('Selecciona un objetivo primero');
+    return;
+  }
+
+  const session = JSON.parse(localStorage.getItem('session') || '{}');
+  const rol = session.user?.rol;
+
+  try {
+    const response = await fetch(`${API_BASE}/api/objetivo/${selectedClientId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ objetivo, rol })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    document.getElementById('objetivoActual').textContent = objetivo;
+    alert('✅ ' + data.message);
+  } catch (error) {
+    alert('❌ ' + error.message);
+  }
+}
+
+// ── FOTOGRAFÍAS DE PROGRESO ───────────────────────────────────────────────────
+
+async function cargarFotoExistente(medidaId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/fotos/${medidaId}`);
+    const data = await response.json();
+    const statusEl = document.getElementById(`foto-status-${medidaId}`);
+    if (data.fotos && data.fotos.length > 0) {
+      statusEl.textContent = '✅ ' + data.fotos[0].nombre_archivo;
+      statusEl.style.color = '#4caf50';
+    }
+  } catch (error) {
+    console.error('Error cargando foto:', error);
+  }
+}
+
+async function subirFoto(medidaId, input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const tiposPermitidos = ['image/jpeg', 'image/png'];
+  if (!tiposPermitidos.includes(file.type)) {
+    alert('❌ Solo se permiten archivos JPG o PNG');
+    input.value = '';
+    return;
+  }
+
+  const maxTamano = 5 * 1024 * 1024;
+  if (file.size > maxTamano) {
+    alert('❌ El archivo no puede superar 5 MB');
+    input.value = '';
+    return;
+  }
+
+  const statusEl = document.getElementById(`foto-status-${medidaId}`);
+  statusEl.textContent = 'Subiendo...';
+  statusEl.style.color = 'var(--text-dim)';
+
+  try {
+    const response = await fetch(`${API_BASE}/api/fotos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        medidaId,
+        rutaArchivo: `/uploads/progreso/${selectedClientId}_${medidaId}_${file.name}`,
+        nombreArchivo: file.name,
+        mimeType: file.type,
+        tamanoBytes: file.size
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    statusEl.textContent = '✅ ' + file.name;
+    statusEl.style.color = '#4caf50';
+  } catch (error) {
+    statusEl.textContent = '❌ ' + error.message;
+    statusEl.style.color = '#ff3232';
+  }
 }
