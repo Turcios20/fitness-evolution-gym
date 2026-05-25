@@ -94,8 +94,9 @@
 
   async function api(path, options = {}) {
     const session = getSession();
+    const hasSessionToken = Boolean(session?.token);
 
-    if (session?.token) {
+    if (hasSessionToken) {
       options.headers = {
         ...(options.headers || {}),
         Authorization: `Bearer ${session.token}`
@@ -106,9 +107,15 @@
     const response = await fetch(url, options);
 
     if (response.status === 401) {
-      clearSession();
-      window.location.href = "login.html";
-      throw new Error("Sesion expirada.");
+      const message = await safeMessage(response);
+
+      if (hasSessionToken) {
+        clearSession();
+        window.location.href = "login.html";
+        throw new Error(message || "Sesion expirada.");
+      }
+
+      throw new Error(message || "No autorizado.");
     }
 
     if (!response.ok) {
