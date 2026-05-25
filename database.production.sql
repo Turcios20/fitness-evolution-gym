@@ -44,6 +44,22 @@ PREPARE trainer_fk_stmt FROM @trainer_fk_sql;
 EXECUTE trainer_fk_stmt;
 DEALLOCATE PREPARE trainer_fk_stmt;
 
+SET @objetivo_col_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'usuarios'
+      AND COLUMN_NAME = 'objetivo_personal'
+);
+SET @objetivo_col_sql := IF(
+    @objetivo_col_exists = 0,
+    "ALTER TABLE usuarios ADD COLUMN objetivo_personal ENUM('Bajar de peso','Ganar masa muscular','Mejorar resistencia','Otro') NULL AFTER id_entrenador_asignado",
+    'SELECT 1'
+);
+PREPARE objetivo_col_stmt FROM @objetivo_col_sql;
+EXECUTE objetivo_col_stmt;
+DEALLOCATE PREPARE objetivo_col_stmt;
+
 CREATE TABLE IF NOT EXISTS ajustes (
     id_ajuste INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL,
