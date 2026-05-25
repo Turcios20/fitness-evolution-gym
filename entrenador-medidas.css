@@ -331,6 +331,81 @@
   color: var(--orange);
 }
 
+.objetivo-section {
+  background: var(--panel2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.objetivo-actual {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--orange);
+  padding: 10px 0;
+}
+
+.form-group select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'Rajdhani', sans-serif;
+  width: 100%;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: var(--orange);
+}
+
+.form-group select option {
+  background: #1a1a1a;
+  color: var(--text);
+}
+
+.foto-upload {
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 12px;
+}
+
+.foto-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.foto-upload input[type="file"] {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-dim);
+  font-size: 13px;
+  width: 100%;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.foto-upload input[type="file"]:hover {
+  border-color: var(--orange);
+}
+
+.foto-status {
+  display: block;
+  font-size: 12px;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   .medidas-container {
     grid-template-columns: 1fr;
