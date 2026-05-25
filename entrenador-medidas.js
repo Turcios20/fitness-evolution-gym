@@ -14,13 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initPage() {
-  const session = JSON.parse(localStorage.getItem('session') || '{}');
-  if (!session.user || session.user.rol !== 'Entrenador') {
+  const session = window.GymApp ? window.GymApp.getSession() : JSON.parse(localStorage.getItem('gymSession') || 'null');
+  if (!session || session.role?.toLowerCase() !== 'entrenador') {
     window.location.href = 'login.html';
     return;
   }
 
-  const initials = session.user.nombre_completo
+  const name = session.nombre_completo || session.username || 'E';
+  const initials = name
     .split(' ')
     .map(n => n[0])
     .join('')
@@ -49,14 +50,14 @@ function setTodayDate() {
 
 async function loadClients() {
   try {
-    const session = JSON.parse(localStorage.getItem('session') || '{}');
-    const trainerId = session.user?.id_usuario;
+    const session = window.GymApp ? window.GymApp.getSession() : JSON.parse(localStorage.getItem('gymSession') || 'null');
+    const trainerId = session?.id;
 
     if (!trainerId) {
       throw new Error('No se encontró ID de entrenador');
     }
 
-    const response = await fetch(`${API_BASE}/api/trainer/clients/${trainerId}`);
+    const response = await fetch(`${API_BASE}/api/trainer/${trainerId}/clientes`);
     const data = await response.json();
 
     if (!response.ok) {
@@ -299,8 +300,9 @@ async function guardarObjetivo() {
     return;
   }
 
-  const session = JSON.parse(localStorage.getItem('session') || '{}');
-  const rol = session.user?.rol;
+  const session = window.GymApp ? window.GymApp.getSession() : JSON.parse(localStorage.getItem('gymSession') || 'null');
+  const rolRaw = session?.role || '';
+  const rol = rolRaw.charAt(0).toUpperCase() + rolRaw.slice(1).toLowerCase();
 
   try {
     const response = await fetch(`${API_BASE}/api/objetivo/${selectedClientId}`, {
