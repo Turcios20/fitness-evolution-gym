@@ -1062,6 +1062,35 @@ async function getClientObjective(clientId, executor = pool) {
   return rows[0]?.valor || null;
 }
 
+
+function evaluateMeasurementStatus(current, previous, objective) {
+  if (previous === null || current === null || current === previous) return null;
+  
+  const isIncrease = current > previous;
+  const isDecrease = current < previous;
+
+  if (objective === "Ganar masa muscular") {
+    return isIncrease ? "mejoró" : "empeoró";
+  }
+
+  if (objective === "Bajar de peso" || objective === "Mejorar resistencia") {
+    return isDecrease ? "mejoró" : "empeoró";
+  }
+
+  return isDecrease ? "mejoró" : "empeoró";
+}
+
+function analyzeMeasurementsProgress(measurements, objective) {
+  return measurements.map((m, idx) => {
+    const prev = measurements[idx + 1]; 
+    const status = {};
+    ["weight", "chest", "waist", "hips", "arms", "legs"].forEach(key => {
+      status[key] = evaluateMeasurementStatus(m[key], prev ? prev[key] : null, objective);
+    });
+    return { ...m, status };
+  });
+}
+
 async function getClientEvolutionPayload(clientId, auth, executor = pool) {
   const client = await ensureClientEvolutionAccess(clientId, auth, executor);
   const [measurements, objective] = await Promise.all([
@@ -1078,7 +1107,7 @@ async function getClientEvolutionPayload(clientId, auth, executor = pool) {
     objective,
     objectivePresets: OBJECTIVE_PRESETS,
     canManage: canManageClientEvolution(auth, client),
-    measurements,
+    measurements: analyzeMeasurementsProgress(measurements, objective),
     total: measurements.length
   };
 }

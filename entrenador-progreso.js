@@ -342,5 +342,6 @@ document.addEventListener("DOMContentLoaded", () => {
   renderAvatar();
   loadClients().catch((error) => {
     GymApp.toast(`Error inicial: ${error.message}`, "error");
+  }); 
   });
 });

@@ -667,6 +667,10 @@ body[data-theme="light"] .setting-item {
   color: var(--orange);
 }
 
+[data-theme="light"] .nav-link img {
+  filter: invert(1);
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
