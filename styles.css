@@ -560,6 +560,11 @@ body {
   background: rgba(232, 124, 42, 0.12);
 }
 
+[data-theme="light"] .nav-link img,
+[data-theme="light"] .bot-link img {
+  filter: invert(1);
+}
+
 [data-theme="light"] .topnav-logout,
 [data-theme="light"] .theme-toggle-btn,
 [data-theme="light"] .mobile-theme-btn {

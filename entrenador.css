@@ -267,6 +267,10 @@ body[data-theme="light"] .session-meta {
   background: rgba(127, 103, 83, 0.12);
 }
 
+body[data-theme="light"] .bot-link img {
+  filter: invert(1);
+}
+
 .session-meta--ok {
   background: rgba(26, 143, 90, 0.15);
   color: #78d4a7;
