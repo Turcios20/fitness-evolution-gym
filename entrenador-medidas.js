@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     emptyState: document.getElementById("emptyState"),
     medidaForm: document.getElementById("medidaForm"),
     objetivoSection: document.getElementById("objetivoSection"),
+    trainerAccountHint: document.getElementById("trainerAccountHint"),
     selectedClientName: document.getElementById("selectedClientName"),
     medidasList: document.getElementById("medidasList"),
     historialCount: document.getElementById("historialCount"),
@@ -91,6 +92,10 @@ document.addEventListener("DOMContentLoaded", () => {
     refs.userAvatar.style.background = palette[
       (initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % palette.length
     ];
+
+    if (refs.trainerAccountHint) {
+      refs.trainerAccountHint.textContent = `Cuenta activa: ${session.username || "sin correo"}`;
+    }
   }
 
   function resetForm() {

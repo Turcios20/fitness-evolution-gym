@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const clientsPanelTitle = document.getElementById("clientsPanelTitle");
   const progressSubtitle = document.getElementById("progressSubtitle");
   const progressTitle = document.getElementById("progressTitle");
+  const trainerAccountHint = document.getElementById("trainerAccountHint");
   const progressHomeLink = document.getElementById("progressHomeLink");
   const progressSettingsLink = document.getElementById("progressSettingsLink");
   const detailsPlaceholder = document.getElementById("detailsPlaceholder");
@@ -31,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const initialClientId = Number(new URLSearchParams(window.location.search).get("clientId"));
   const isAdminView = session.role === "admin";
   const OBJECTIVE_OTHER = "Otro";
+  const activeAccount = session.username || "sin correo";
 
   let selectedClientId = Number.isFinite(initialClientId) ? initialClientId : null;
   let objectivePresets = [];
@@ -57,6 +59,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function configurePageByRole() {
+    if (trainerAccountHint) {
+      trainerAccountHint.textContent = `Cuenta activa: ${activeAccount}`;
+    }
+
     if (isAdminView) {
       roleBadge.textContent = "ADMIN";
       progressSubtitle.textContent = "Seguimiento Fisico";
@@ -337,3 +343,4 @@ document.addEventListener("DOMContentLoaded", () => {
   loadClients().catch((error) => {
     GymApp.toast(`Error inicial: ${error.message}`, "error");
   });
+});

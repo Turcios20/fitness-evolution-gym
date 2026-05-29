@@ -152,6 +152,18 @@ body[data-theme="light"] .user-avatar {
   margin-bottom: 25px;
 }
 
+.trainer-account-hint {
+  color: var(--text-dim);
+  font-size: 12px;
+  letter-spacing: 0.4px;
+  margin: -14px 0 22px;
+}
+
+.trainer-account-hint strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
 .trainer-stats-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

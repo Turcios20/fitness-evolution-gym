@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const listaPlanes        = document.getElementById("listaPlanes");
   const noPlanes           = document.getElementById("noPlanes");
   const btnCrearPlan       = document.getElementById("btnCrearPlan");
+  const trainerAccountHint = document.getElementById("trainerAccountHint");
   const selectClase        = document.getElementById("selectClase");
   const btnAsignarClase    = document.getElementById("btnAsignarClase");
   const listaReservas      = document.getElementById("listaReservas");
@@ -44,6 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const displayName = session.name || session.displayName || "Coach";
   userAvatar.textContent      = getInitials(displayName);
   userAvatar.style.background = avatarColor(getInitials(displayName));
+  if (trainerAccountHint) {
+    trainerAccountHint.textContent = `Cuenta activa: ${session.username || "sin correo"}`;
+  }
 
   // ── Logout ──
   btnLogout.addEventListener("click", () => {
