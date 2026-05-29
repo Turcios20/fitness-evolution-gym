@@ -717,6 +717,28 @@ async function getUserByUsername(username, executor = pool) {
   return rows[0] || null;
 }
 
+async function resolveSettingsTargetUser(auth, rawUsername, executor = pool) {
+  const username = String(rawUsername || "").trim();
+
+  if (!username) {
+    return {
+      id_usuario: auth.id,
+      correo: auth.username
+    };
+  }
+
+  if (auth.role !== "admin" && auth.username !== username) {
+    throw createHttpError(403, "No autorizado");
+  }
+
+  const user = await getUserByUsername(username, executor);
+  if (!user) {
+    throw createHttpError(404, "Usuario no encontrado");
+  }
+
+  return user;
+}
+
 async function getTrainerById(trainerId, executor = pool) {
   if (trainerId == null) return null;
 
@@ -1959,25 +1981,8 @@ app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepci
 });
 
 app.get("/api/settings", authenticate, async (req, res) => {
-  const username = String(req.query.username || "").trim();
-
-  if (!username) {
-    res.status(400).json({ error: "username requerido" });
-    return;
-  }
-
-  if (req.auth.role !== "admin" && req.auth.username !== username) {
-    res.status(403).json({ error: "No autorizado" });
-    return;
-  }
-
   try {
-    const user = await getUserByUsername(username);
-
-    if (!user) {
-      res.status(404).json({ error: "Usuario no encontrado" });
-      return;
-    }
+    const user = await resolveSettingsTargetUser(req.auth, req.query.username);
 
     const [rows] = await pool.query(
       `SELECT clave, valor
@@ -1998,16 +2003,10 @@ app.get("/api/settings", authenticate, async (req, res) => {
 });
 
 app.put("/api/settings", authenticate, async (req, res) => {
-  const username = String(req.body?.username || "").trim();
   const settings = req.body?.settings;
 
-  if (!username || !settings || typeof settings !== "object") {
-    res.status(400).json({ error: "username y settings requeridos" });
-    return;
-  }
-
-  if (req.auth.role !== "admin" && req.auth.username !== username) {
-    res.status(403).json({ error: "No autorizado" });
+  if (!settings || typeof settings !== "object") {
+    res.status(400).json({ error: "settings requeridos" });
     return;
   }
 
@@ -2021,13 +2020,7 @@ app.put("/api/settings", authenticate, async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const user = await getUserByUsername(username, connection);
-
-    if (!user) {
-      await connection.rollback();
-      res.status(404).json({ error: "Usuario no encontrado" });
-      return;
-    }
+    const user = await resolveSettingsTargetUser(req.auth, req.body?.username, connection);
 
     for (const [key, value] of entries) {
       await connection.query(
@@ -2318,7 +2311,7 @@ app.get("/api/trainer/clients/:clientId/measurements", authenticate, requireRole
 
 // ── PAGOS ────────────────────────────────────────────────────────────────────
 
-app.get("/api/admin/payments", async (_req, res) => {
+app.get("/api/admin/payments", authenticate, requireRoles("admin"), async (_req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT
@@ -2340,7 +2333,7 @@ app.get("/api/admin/payments", async (_req, res) => {
   }
 });
 
-app.post("/api/admin/payments", async (req, res) => {
+app.post("/api/admin/payments", authenticate, requireRoles("admin"), async (req, res) => {
   const { userId, monto, metodoPago } = req.body || {};
   if (!userId || !monto) {
     res.status(400).json({ error: "userId y monto son requeridos" });
@@ -2360,7 +2353,7 @@ app.post("/api/admin/payments", async (req, res) => {
   }
 });
 
-app.get("/api/admin/finance/summary", async (_req, res) => {
+app.get("/api/admin/finance/summary", authenticate, requireRoles("admin"), async (_req, res) => {
   try {
     const [totals] = await pool.query(
       `SELECT

@@ -1,7 +1,11 @@
 "use strict";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const session = window.GymApp?.getSession();
+  if (!window.GymApp?.guardRoute()) {
+    return;
+  }
+
+  const session = window.GymApp.getSession();
   const sidebar = document.getElementById("sidebar");
   const sidebarOverlay = document.getElementById("sidebarOverlay");
   const hamburgerBtn = document.getElementById("hamburgerBtn");
@@ -108,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadUserThemePreference() {
     try {
-      const response = await window.GymApp.api(`/api/settings?username=${encodeURIComponent(session.username)}`);
+      const response = await window.GymApp.api("/api/settings");
       const savedTheme = response.settings?.[window.GymApp.THEME_SETTING_KEY];
       if (!savedTheme) {
         applyThemeToPage(window.GymApp.getTheme());
@@ -130,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: session.username,
           settings: {
             [window.GymApp.THEME_SETTING_KEY]: nextTheme
           }

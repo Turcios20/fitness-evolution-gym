@@ -229,7 +229,7 @@
     if (!session?.username || !session?.token) return;
 
     try {
-      const response = await api(`/api/settings?username=${encodeURIComponent(session.username)}`);
+      const response = await api("/api/settings");
       const savedTheme = response.settings?.[THEME_SETTING_KEY];
       if (!savedTheme) return;
 
