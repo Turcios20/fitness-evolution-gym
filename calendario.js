@@ -1,10 +1,11 @@
 "use strict";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const session = window.GymApp?.getSession();
-  if (!session) { window.location.href = "login.html"; return; }
+  if (!window.GymApp?.guardRoute("cliente")) {
+    return;
+  }
 
-  const username = session.username;
+  const session = window.GymApp.getSession();
 
   const fmtDate = (d) => {
     if (!d) return "—";
@@ -58,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       const [dataClases, dataReservas, dataRutinas] = await Promise.all([
         GymApp.api("/api/clases"),
-        GymApp.api(`/api/clases/mis-reservas?username=${encodeURIComponent(username)}`),
+        GymApp.api("/api/clases/mis-reservas"),
         GymApp.api(`/api/client/${session.id}/routines`)
       ]);
       todasClases = dataClases.clases || [];
@@ -115,9 +116,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.textContent = "Reservando...";
         try {
           await GymApp.api(`/api/clases/${claseId}/reservar`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username })
+            method: "POST"
           });
           GymApp.toast("¡Reserva confirmada!", "success");
           loadClases();
