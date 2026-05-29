@@ -9,6 +9,7 @@ CREATE TABLE usuarios (
     password VARCHAR(255) NOT NULL,
     rol ENUM('Administrador', 'Cliente', 'Recepcionista', 'Entrenador') NOT NULL DEFAULT 'Cliente',
     id_entrenador_asignado INT NULL,
+    objetivo_personal ENUM('Bajar de peso', 'Ganar masa muscular', 'Mejorar resistencia', 'Otro') NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

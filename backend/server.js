@@ -2690,6 +2690,232 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
   }
 });
 
+// ── CLIENTES POR ENTRENADOR (HU-22) ─────────────────────────────────────────
+
+app.get("/api/trainer/:trainerId/clientes", async (req, res) => {
+  const trainerId = Number(req.params.trainerId);
+  if (!Number.isFinite(trainerId)) {
+    return res.status(400).json({ error: "trainerId inválido" });
+  }
+  try {
+    const [rows] = await pool.query(
+      `SELECT id_usuario, nombre_completo, correo
+       FROM usuarios
+       WHERE rol = 'Cliente' AND id_entrenador_asignado = ?
+       ORDER BY nombre_completo ASC`,
+      [trainerId]
+    );
+    res.json({ clients: rows });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando clientes", detail: error.message });
+  }
+});
+
+// ── MEDIDAS DE PROGRESO (HU-22) ──────────────────────────────────────────────
+
+app.get("/api/medidas/:userId", async (req, res) => {
+  const userId = Number(req.params.userId);
+  if (!Number.isFinite(userId)) {
+    return res.status(400).json({ error: "userId inválido" });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT id_medida, id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro
+       FROM medidas_progreso
+       WHERE id_usuario = ?
+       ORDER BY fecha DESC`,
+      [userId]
+    );
+    res.json({ medidas: rows });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando medidas", detail: error.message });
+  }
+});
+
+app.post("/api/medidas", async (req, res) => {
+  const { userId, fecha, peso, pecho, cintura, cadera, brazos, piernas } = req.body || {};
+  
+  if (!userId || !fecha) {
+    return res.status(400).json({ error: "userId y fecha son requeridos" });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO medidas_progreso (id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, fecha, peso || null, pecho || null, cintura || null, cadera || null, brazos || null, piernas || null]
+    );
+    res.status(201).json({ ok: true, id: result.insertId, message: "Medida registrada correctamente" });
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ error: "Ya existe un registro para esta fecha" });
+    }
+    res.status(500).json({ error: "Error registrando medida", detail: error.message });
+  }
+});
+
+app.put("/api/medidas/:id", async (req, res) => {
+  const medidaId = Number(req.params.id);
+  const { fecha, peso, pecho, cintura, cadera, brazos, piernas } = req.body || {};
+
+  if (!Number.isFinite(medidaId)) {
+    return res.status(400).json({ error: "id de medida inválido" });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE medidas_progreso
+       SET fecha = COALESCE(?, fecha),
+           peso = COALESCE(?, peso),
+           pecho = COALESCE(?, pecho),
+           cintura = COALESCE(?, cintura),
+           cadera = COALESCE(?, cadera),
+           brazos = COALESCE(?, brazos),
+           piernas = COALESCE(?, piernas)
+       WHERE id_medida = ?`,
+      [fecha, peso, pecho, cintura, cadera, brazos, piernas, medidaId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Medida no encontrada" });
+    }
+
+    res.json({ ok: true, message: "Medida actualizada correctamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error actualizando medida", detail: error.message });
+  }
+});
+
+app.delete("/api/medidas/:id", async (req, res) => {
+  const medidaId = Number(req.params.id);
+
+  if (!Number.isFinite(medidaId)) {
+    return res.status(400).json({ error: "id de medida inválido" });
+  }
+
+  try {
+    const [result] = await pool.query(
+      "DELETE FROM medidas_progreso WHERE id_medida = ?",
+      [medidaId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Medida no encontrada" });
+    }
+
+    res.json({ ok: true, message: "Medida eliminada correctamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error eliminando medida", detail: error.message });
+  }
+});
+
+
+// ── OBJETIVO PERSONAL (HU-23) ────────────────────────────────────────────────
+
+app.get("/api/objetivo/:userId", async (req, res) => {
+  const userId = Number(req.params.userId);
+  if (!Number.isFinite(userId)) {
+    return res.status(400).json({ error: "userId inválido" });
+  }
+  try {
+    const [rows] = await pool.query(
+      "SELECT objetivo_personal FROM usuarios WHERE id_usuario = ?",
+      [userId]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+    res.json({ objetivo: rows[0].objetivo_personal });
+  } catch (error) {
+    res.status(500).json({ error: "Error obteniendo objetivo", detail: error.message });
+  }
+});
+
+app.put("/api/objetivo/:userId", async (req, res) => {
+  const userId = Number(req.params.userId);
+  const { objetivo, rol } = req.body || {};
+
+  if (!Number.isFinite(userId)) {
+    return res.status(400).json({ error: "userId inválido" });
+  }
+
+  const rolesPermitidos = ["Entrenador", "Administrador"];
+  if (rol && !rolesPermitidos.includes(rol)) {
+    return res.status(403).json({ error: "Solo Entrenador o Administrador pueden modificar el objetivo personal" });
+  }
+
+  const objetivosValidos = ["Bajar de peso", "Ganar masa muscular", "Mejorar resistencia", "Otro"];
+  if (objetivo && !objetivosValidos.includes(objetivo)) {
+    return res.status(400).json({ error: "Objetivo inválido", validos: objetivosValidos });
+  }
+
+  try {
+    const [result] = await pool.query(
+      "UPDATE usuarios SET objetivo_personal = ? WHERE id_usuario = ?",
+      [objetivo || null, userId]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+    res.json({ ok: true, message: "Objetivo personal actualizado correctamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error actualizando objetivo", detail: error.message });
+  }
+});
+
+// ── FOTOGRAFÍAS DE PROGRESO (HU-23) ──────────────────────────────────────────
+
+app.get("/api/fotos/:medidaId", async (req, res) => {
+  const medidaId = Number(req.params.medidaId);
+  if (!Number.isFinite(medidaId)) {
+    return res.status(400).json({ error: "medidaId inválido" });
+  }
+  try {
+    const [rows] = await pool.query(
+      `SELECT id_foto, id_medida, ruta_archivo, nombre_archivo, mime_type, tamano_bytes, fecha_actualizacion
+       FROM progreso_fotos WHERE id_medida = ?`,
+      [medidaId]
+    );
+    res.json({ fotos: rows });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando fotografías", detail: error.message });
+  }
+});
+
+app.post("/api/fotos", async (req, res) => {
+  const { medidaId, rutaArchivo, nombreArchivo, mimeType, tamanoBytes } = req.body || {};
+
+  if (!medidaId || !rutaArchivo || !nombreArchivo) {
+    return res.status(400).json({ error: "medidaId, rutaArchivo y nombreArchivo son requeridos" });
+  }
+
+  const tiposPermitidos = ["image/jpeg", "image/png"];
+  if (mimeType && !tiposPermitidos.includes(mimeType)) {
+    return res.status(400).json({ error: "Solo se permiten archivos JPG o PNG" });
+  }
+
+  const maxTamano = 5 * 1024 * 1024;
+  if (tamanoBytes && tamanoBytes > maxTamano) {
+    return res.status(400).json({ error: "El archivo no puede superar 5 MB" });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO progreso_fotos (id_medida, ruta_archivo, nombre_archivo, mime_type, tamano_bytes)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         ruta_archivo = VALUES(ruta_archivo),
+         nombre_archivo = VALUES(nombre_archivo),
+         mime_type = VALUES(mime_type),
+         tamano_bytes = VALUES(tamano_bytes)`,
+      [medidaId, rutaArchivo, nombreArchivo, mimeType || "image/jpeg", tamanoBytes || 0]
+    );
+    res.status(201).json({ ok: true, id: result.insertId, message: "Fotografía registrada correctamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error registrando fotografía", detail: error.message });
+  }
+});
 
 async function startServer() {
   try {

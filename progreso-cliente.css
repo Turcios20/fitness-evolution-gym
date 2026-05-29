@@ -221,6 +221,108 @@
 .fadein { animation: fadeInUp 0.5s ease both; }
 .fadein-2 { animation: fadeInUp 0.5s 0.2s ease both; }
 
+/* ── Objetivo personal banner (HU-23) ── */
+.objetivo-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 140, 58, 0.12);
+  border: 1px solid rgba(255, 140, 58, 0.3);
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin-bottom: 20px;
+}
+
+.objetivo-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.objetivo-valor {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--orange);
+}
+
+/* ── Fotografías de progreso (HU-23) ── */
+.fotos-section {
+  margin-top: 30px;
+}
+
+.section-header-progreso {
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title-progreso {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.fotos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.fotos-empty {
+  color: var(--text-dim);
+  font-size: 14px;
+  text-align: center;
+  padding: 20px;
+}
+
+.foto-card {
+  background: var(--panel2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.foto-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--orange);
+}
+
+.foto-placeholder {
+  height: 120px;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  opacity: 0.4;
+}
+
+.foto-info {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.foto-nombre {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.foto-fecha {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
 /* Desktop */
 @media (min-width: 768px) {
   .progreso-wrapper {

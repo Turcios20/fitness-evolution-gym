@@ -236,12 +236,71 @@
     }
   }
 
+  async function loadObjetivo() {
+    try {
+      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+      const response = await fetch(`${API_BASE}/api/objetivo/${session.id}`);
+      const data = await response.json();
+      if (data.objetivo) {
+        document.getElementById('objetivoBanner').style.display = 'flex';
+        document.getElementById('objetivoValor').textContent = data.objetivo;
+      }
+    } catch (error) {
+      console.error('Error cargando objetivo:', error);
+    }
+  }
+
+  async function loadFotos() {
+    try {
+      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+      const medResponse = await fetch(`${API_BASE}/api/medidas/${session.id}`);
+      const medData = await medResponse.json();
+      const medidas = medData.medidas || [];
+
+      if (medidas.length === 0) return;
+
+      const fotosPromises = medidas.map(m =>
+        fetch(`${API_BASE}/api/fotos/${m.id_medida}`).then(r => r.json())
+      );
+      const resultados = await Promise.all(fotosPromises);
+
+      const todasFotos = resultados
+        .flatMap((r, i) => (r.fotos || []).map(f => ({ ...f, fecha: medidas[i].fecha })))
+        .filter(f => f.ruta_archivo);
+
+      if (todasFotos.length === 0) return;
+
+      const grid = document.getElementById('fotosGrid');
+      const section = document.getElementById('fotosSection');
+      section.style.display = 'block';
+
+      grid.innerHTML = todasFotos.map(foto => {
+        const fecha = new Date(foto.fecha).toLocaleDateString('es-ES', {
+          year: 'numeric', month: 'short', day: 'numeric'
+        });
+        return `
+          <div class="foto-card">
+            <div class="foto-placeholder">🖼</div>
+            <div class="foto-info">
+              <span class="foto-nombre">${foto.nombre_archivo}</span>
+              <span class="foto-fecha">${fecha}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (error) {
+      console.error('Error cargando fotos:', error);
+    }
+  }
+
   async function initialize() {
     setTodayDate();
 
     try {
       await loadMeasurements();
       hydrateFormForDate(dateInput.value);
+      await loadObjetivo();
+      await loadFotos();
     } catch (error) {
       setPrefillHint("No se pudieron cargar las medidas previas en este momento.");
       window.GymApp.toast(error.message || "No se pudo cargar tu progreso.", "error");
