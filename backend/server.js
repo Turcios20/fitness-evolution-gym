@@ -1271,6 +1271,221 @@ async function getMeasurementForClient(clientId, measurementId, executor = pool)
   return rows[0] || null;
 }
 
+async function getMeasurementById(measurementId, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT
+       mp.id_medida,
+       mp.id_usuario,
+       mp.fecha,
+       mp.peso,
+       mp.pecho,
+       mp.cintura,
+       mp.cadera,
+       mp.brazos,
+       mp.piernas,
+       pf.id_foto,
+       pf.ruta_archivo,
+       pf.nombre_archivo,
+       pf.mime_type,
+       pf.tamano_bytes,
+       pf.fecha_actualizacion
+     FROM medidas_progreso mp
+     LEFT JOIN progreso_fotos pf ON pf.id_medida = mp.id_medida
+     WHERE mp.id_medida = ?
+     LIMIT 1`,
+    [measurementId]
+  );
+
+  return rows[0] || null;
+}
+
+function normalizeMeasurementDate(rawValue) {
+  const parsedDate = parseDateOnly(rawValue, "Fecha");
+  if (!parsedDate) {
+    throw createHttpError(400, "fecha requerida");
+  }
+
+  return formatDateOnly(parsedDate);
+}
+
+function normalizeMeasurementValues(rawMeasurements, { requireAtLeastOne = true } = {}) {
+  const labels = {
+    peso: "peso",
+    pecho: "pecho",
+    cintura: "cintura",
+    cadera: "cadera",
+    brazos: "brazos",
+    piernas: "piernas"
+  };
+  const values = {};
+  let hasAtLeastOne = false;
+
+  for (const [key, label] of Object.entries(labels)) {
+    const normalized = String(rawMeasurements?.[key] ?? "").trim();
+
+    if (!normalized) {
+      values[key] = null;
+      continue;
+    }
+
+    const numericValue = Number(normalized);
+    if (!Number.isFinite(numericValue)) {
+      throw createHttpError(400, `El valor de ${label} no es valido`);
+    }
+
+    values[key] = numericValue;
+    hasAtLeastOne = true;
+  }
+
+  if (requireAtLeastOne && !hasAtLeastOne) {
+    throw createHttpError(400, "Debe proporcionar al menos una medida");
+  }
+
+  return values;
+}
+
+function buildMeasurementPayload(existingMeasurement = null, rawPayload = {}) {
+  const measurementKeys = ["peso", "pecho", "cintura", "cadera", "brazos", "piernas"];
+  const payload = {
+    fecha: String(rawPayload.fecha || "").trim() || existingMeasurement?.fecha || ""
+  };
+
+  measurementKeys.forEach((key) => {
+    const hasOwnValue = Object.prototype.hasOwnProperty.call(rawPayload, key);
+    const rawValue = hasOwnValue ? rawPayload[key] : existingMeasurement?.[key];
+    payload[key] = rawValue == null ? "" : rawValue;
+  });
+
+  return payload;
+}
+
+async function upsertClientMeasurement(clientId, rawPayload, executor = pool) {
+  const payload = buildMeasurementPayload(null, rawPayload);
+  const date = normalizeMeasurementDate(payload.fecha);
+  const values = normalizeMeasurementValues(payload);
+
+  await executor.query(
+    `INSERT INTO medidas_progreso (id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+     ON DUPLICATE KEY UPDATE
+       peso = COALESCE(?, peso),
+       pecho = COALESCE(?, pecho),
+       cintura = COALESCE(?, cintura),
+       cadera = COALESCE(?, cadera),
+       brazos = COALESCE(?, brazos),
+       piernas = COALESCE(?, piernas),
+       fecha_registro = CURRENT_TIMESTAMP`,
+    [
+      clientId,
+      date,
+      values.peso,
+      values.pecho,
+      values.cintura,
+      values.cadera,
+      values.brazos,
+      values.piernas,
+      values.peso,
+      values.pecho,
+      values.cintura,
+      values.cadera,
+      values.brazos,
+      values.piernas
+    ]
+  );
+
+  return { date, values };
+}
+
+async function updateClientMeasurement(clientId, measurementId, existingMeasurement, rawPayload, executor = pool) {
+  const payload = buildMeasurementPayload(existingMeasurement, rawPayload);
+  const date = normalizeMeasurementDate(payload.fecha);
+  const values = normalizeMeasurementValues(payload);
+
+  const [result] = await executor.query(
+    `UPDATE medidas_progreso
+     SET fecha = ?,
+         peso = ?,
+         pecho = ?,
+         cintura = ?,
+         cadera = ?,
+         brazos = ?,
+         piernas = ?,
+         fecha_registro = CURRENT_TIMESTAMP
+     WHERE id_medida = ?
+       AND id_usuario = ?`,
+    [
+      date,
+      values.peso,
+      values.pecho,
+      values.cintura,
+      values.cadera,
+      values.brazos,
+      values.piernas,
+      measurementId,
+      clientId
+    ]
+  );
+
+  if (result.affectedRows === 0) {
+    throw createHttpError(404, "Medida no encontrada");
+  }
+
+  return { date, values };
+}
+
+async function saveProgressPhotoUpload(clientId, measurementId, upload) {
+  const measurement = await getMeasurementForClient(clientId, measurementId);
+  if (!measurement) {
+    throw createHttpError(404, "Registro de seguimiento no encontrado");
+  }
+
+  let savedFilePath = null;
+  let previousFilePath = null;
+
+  try {
+    const clientFolder = path.join(PHOTO_UPLOAD_ROOT, `client-${clientId}`);
+    fs.mkdirSync(clientFolder, { recursive: true });
+
+    const fileName = `measurement-${measurementId}-${Date.now()}.${upload.extension}`;
+    savedFilePath = path.join(clientFolder, fileName);
+    await fs.promises.writeFile(savedFilePath, upload.buffer);
+
+    const relativePath = path.relative(path.join(__dirname, ".."), savedFilePath).split(path.sep).join("/");
+    await pool.query(
+      `INSERT INTO progreso_fotos (id_medida, ruta_archivo, nombre_archivo, mime_type, tamano_bytes)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         ruta_archivo = VALUES(ruta_archivo),
+         nombre_archivo = VALUES(nombre_archivo),
+         mime_type = VALUES(mime_type),
+         tamano_bytes = VALUES(tamano_bytes),
+         fecha_actualizacion = CURRENT_TIMESTAMP`,
+      [measurementId, relativePath, upload.originalName, upload.mimeType, upload.sizeBytes]
+    );
+
+    if (measurement.ruta_archivo) {
+      previousFilePath = path.join(__dirname, "..", String(measurement.ruta_archivo).replace(/^\/+/, ""));
+    }
+
+    if (previousFilePath && previousFilePath !== savedFilePath) {
+      await fs.promises.unlink(previousFilePath).catch(() => {});
+    }
+
+    return {
+      url: `/${relativePath}`,
+      name: upload.originalName,
+      mimeType: upload.mimeType,
+      sizeBytes: upload.sizeBytes
+    };
+  } catch (error) {
+    if (savedFilePath) {
+      await fs.promises.unlink(savedFilePath).catch(() => {});
+    }
+
+    throw error;
+  }
+}
+
 function isValidPng(buffer) {
   const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
   return signature.every((value, index) => buffer[index] === value);
@@ -1784,12 +1999,10 @@ app.post(["/api/members/:id/renew", "/api/admin/members/:id/renew"], authenticat
 
 app.delete(["/api/members/:id", "/api/admin/members/:id"], authenticate, requireRoles("admin"), async (req, res) => {
   const memberId = Number(req.params.id);
-
   if (!Number.isFinite(memberId)) {
     res.status(400).json({ error: "id invalido" });
     return;
   }
-
   try {
     const [result] = await pool.query(
       `DELETE FROM usuarios
@@ -1797,12 +2010,10 @@ app.delete(["/api/members/:id", "/api/admin/members/:id"], authenticate, require
          AND rol = 'Cliente'`,
       [memberId]
     );
-
     if (result.affectedRows === 0) {
       res.status(404).json({ error: "Cliente no encontrado" });
       return;
     }
-
     res.json({ ok: true });
   } catch (error) {
     res.status(500).json({ error: "Error eliminando miembro", detail: error.message });
@@ -2123,7 +2334,6 @@ app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepci
 app.get("/api/settings", authenticate, async (req, res) => {
   try {
     const user = await resolveSettingsTargetUser(req.auth, req.query.username);
-
     const [rows] = await pool.query(
       `SELECT clave, valor
        FROM ajustes
@@ -2138,6 +2348,11 @@ app.get("/api/settings", authenticate, async (req, res) => {
 
     res.json({ settings });
   } catch (error) {
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
     res.status(500).json({ error: "Error cargando ajustes", detail: error.message });
   }
 });
@@ -2177,6 +2392,11 @@ app.put("/api/settings", authenticate, async (req, res) => {
     res.json({ ok: true });
   } catch (error) {
     await connection.rollback();
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
     res.status(500).json({ error: "Error guardando ajustes", detail: error.message });
   } finally {
     connection.release();
@@ -2252,84 +2472,17 @@ app.get("/api/client/:clientId/measurements", authenticate, async (req, res) => 
 
 app.post("/api/client/:clientId/measurements", authenticate, async (req, res) => {
   const clientId = Number(req.params.clientId);
-  const { fecha, peso, pecho, cintura, cadera, brazos, piernas } = req.body || {};
-  const rawMeasurements = { peso, pecho, cintura, cadera, brazos, piernas };
-  const measurementLabels = {
-    peso: "peso",
-    pecho: "pecho",
-    cintura: "cintura",
-    cadera: "cadera",
-    brazos: "brazos",
-    piernas: "piernas"
-  };
 
   if (!Number.isFinite(clientId)) {
     res.status(400).json({ error: "clientId invalido" });
     return;
   }
 
-  if (!fecha) {
-    res.status(400).json({ error: "fecha requerida" });
-    return;
-  }
-
-  // Validar que al menos una medida se proporcione
-  if (!Object.values(rawMeasurements).some((value) => String(value ?? "").trim() !== "")) {
-    res.status(400).json({ error: "Debe proporcionar al menos una medida" });
-    return;
-  }
-
-  // Solo el cliente puede registrar sus propias medidas
-  if (req.auth.role !== "admin" && req.auth.id !== clientId) {
-    res.status(403).json({ error: "No autorizado" });
-    return;
-  }
-
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-
-    const parsedMeasurements = Object.fromEntries(
-      Object.entries(rawMeasurements).map(([key, value]) => {
-        const normalized = String(value ?? "").trim();
-
-        if (!normalized) {
-          return [key, null];
-        }
-
-        const numericValue = Number(normalized);
-        if (!Number.isFinite(numericValue)) {
-          throw createHttpError(400, `El valor de ${measurementLabels[key]} no es valido`);
-        }
-
-        return [key, numericValue];
-      })
-    );
-
-    const pesoVal = parsedMeasurements.peso;
-    const pechoVal = parsedMeasurements.pecho;
-    const cinturaVal = parsedMeasurements.cintura;
-    const caderaVal = parsedMeasurements.cadera;
-    const brazosVal = parsedMeasurements.brazos;
-    const piernasVal = parsedMeasurements.piernas;
-
-    // Usar la nueva sintaxis de ON DUPLICATE KEY UPDATE (MySQL 8.0.20+)
-    await connection.query(
-      `INSERT INTO medidas_progreso (id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-       ON DUPLICATE KEY UPDATE
-         peso = COALESCE(?, peso),
-         pecho = COALESCE(?, pecho),
-         cintura = COALESCE(?, cintura),
-         cadera = COALESCE(?, cadera),
-         brazos = COALESCE(?, brazos),
-         piernas = COALESCE(?, piernas),
-         fecha_registro = CURRENT_TIMESTAMP`,
-      [
-        clientId, fecha, pesoVal, pechoVal, cinturaVal, caderaVal, brazosVal, piernasVal,
-        pesoVal, pechoVal, cinturaVal, caderaVal, brazosVal, piernasVal
-      ]
-    );
+    await ensureClientEvolutionAccess(clientId, req.auth, connection);
+    await upsertClientMeasurement(clientId, req.body || {}, connection);
 
     await connection.commit();
     res.status(201).json({ ok: true, message: "Medidas registradas correctamente" });
@@ -2347,6 +2500,91 @@ app.post("/api/client/:clientId/measurements", authenticate, async (req, res) =>
   }
 });
 
+app.put("/api/client/:clientId/measurements/:measurementId", authenticate, async (req, res) => {
+  const clientId = Number(req.params.clientId);
+  const measurementId = Number(req.params.measurementId);
+
+  if (!Number.isFinite(clientId) || !Number.isFinite(measurementId)) {
+    res.status(400).json({ error: "Parametros invalidos" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    await ensureClientEvolutionAccess(clientId, req.auth, connection);
+    const measurement = await getMeasurementById(measurementId, connection);
+    if (!measurement || measurement.id_usuario !== clientId) {
+      await connection.rollback();
+      res.status(404).json({ error: "Medida no encontrada" });
+      return;
+    }
+
+    await updateClientMeasurement(clientId, measurementId, measurement, req.body || {}, connection);
+
+    await connection.commit();
+    res.json({ ok: true, message: "Medida actualizada correctamente" });
+  } catch (error) {
+    await connection.rollback();
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
+    if (error.code === "ER_DUP_ENTRY") {
+      res.status(409).json({ error: "Ya existe un registro para esta fecha" });
+      return;
+    }
+
+    res.status(500).json({ error: "Error actualizando medida", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+app.delete("/api/client/:clientId/measurements/:measurementId", authenticate, async (req, res) => {
+  const clientId = Number(req.params.clientId);
+  const measurementId = Number(req.params.measurementId);
+
+  if (!Number.isFinite(clientId) || !Number.isFinite(measurementId)) {
+    res.status(400).json({ error: "Parametros invalidos" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    await ensureClientEvolutionAccess(clientId, req.auth, connection);
+    const [result] = await connection.query(
+      `DELETE FROM medidas_progreso
+       WHERE id_medida = ?
+         AND id_usuario = ?`,
+      [measurementId, clientId]
+    );
+
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      res.status(404).json({ error: "Medida no encontrada" });
+      return;
+    }
+
+    await connection.commit();
+    res.json({ ok: true, message: "Medida eliminada correctamente" });
+  } catch (error) {
+    await connection.rollback();
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
+    res.status(500).json({ error: "Error eliminando medida", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
 app.post("/api/client/:clientId/measurements/:measurementId/photo", authenticate, requireRoles("admin", "entrenador"), async (req, res) => {
   const clientId = Number(req.params.clientId);
   const measurementId = Number(req.params.measurementId);
@@ -2356,67 +2594,22 @@ app.post("/api/client/:clientId/measurements/:measurementId/photo", authenticate
     return;
   }
 
-  let savedFilePath = null;
-  let previousFilePath = null;
-
   try {
     const upload = decodeProgressPhotoUpload(req.body?.imageDataUrl, req.body?.fileName);
     await ensureClientEvolutionManagementAccess(clientId, req.auth);
-
-    const measurement = await getMeasurementForClient(clientId, measurementId);
-    if (!measurement) {
-      res.status(404).json({ error: "Registro de seguimiento no encontrado" });
-      return;
-    }
-
-    const clientFolder = path.join(PHOTO_UPLOAD_ROOT, `client-${clientId}`);
-    fs.mkdirSync(clientFolder, { recursive: true });
-
-    const fileName = `measurement-${measurementId}-${Date.now()}.${upload.extension}`;
-    savedFilePath = path.join(clientFolder, fileName);
-    await fs.promises.writeFile(savedFilePath, upload.buffer);
-
-    const relativePath = path.relative(path.join(__dirname, ".."), savedFilePath).split(path.sep).join("/");
-    await pool.query(
-      `INSERT INTO progreso_fotos (id_medida, ruta_archivo, nombre_archivo, mime_type, tamano_bytes)
-       VALUES (?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         ruta_archivo = VALUES(ruta_archivo),
-         nombre_archivo = VALUES(nombre_archivo),
-         mime_type = VALUES(mime_type),
-         tamano_bytes = VALUES(tamano_bytes),
-         fecha_actualizacion = CURRENT_TIMESTAMP`,
-      [measurementId, relativePath, upload.originalName, upload.mimeType, upload.sizeBytes]
-    );
-
-    if (measurement.ruta_archivo) {
-      previousFilePath = path.join(__dirname, "..", String(measurement.ruta_archivo).replace(/^\/+/, ""));
-    }
+    const photo = await saveProgressPhotoUpload(clientId, measurementId, upload);
 
     res.json({
       ok: true,
-      photo: {
-        url: `/${relativePath}`,
-        name: upload.originalName,
-        mimeType: upload.mimeType,
-        sizeBytes: upload.sizeBytes
-      }
+      photo
     });
   } catch (error) {
-    if (savedFilePath) {
-      await fs.promises.unlink(savedFilePath).catch(() => {});
-    }
-
     if (error.status) {
       res.status(error.status).json({ error: error.message });
       return;
     }
 
     res.status(500).json({ error: "Error guardando fotografia", detail: error.message });
-  }
-
-  if (previousFilePath && previousFilePath !== savedFilePath) {
-    await fs.promises.unlink(previousFilePath).catch(() => {});
   }
 });
 
@@ -2449,7 +2642,7 @@ app.get("/api/trainer/clients/:clientId/measurements", authenticate, requireRole
   }
 });
 
-// ── PAGOS ────────────────────────────────────────────────────────────────────
+// â”€â”€ PAGOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.get("/api/admin/payments", authenticate, requireRoles("admin"), async (_req, res) => {
   try {
@@ -2530,7 +2723,7 @@ app.get("/api/admin/finance/summary", authenticate, requireRoles("admin"), async
   }
 });
 
-// ── CLASES Y RESERVAS ────────────────────────────────────────────────────────
+// â”€â”€ CLASES Y RESERVAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.get("/api/clases", authenticate, async (_req, res) => {
   try {
@@ -2644,7 +2837,7 @@ app.post(
   }
 );
 
-// Entrenador/admin cancela una reserva (puede cancelar las asignadas también)
+// Entrenador/admin cancela una reserva (puede cancelar las asignadas tambiÃ©n)
 app.delete(
   "/api/trainer/reservas/:id",
   authenticate,
@@ -2804,13 +2997,18 @@ app.delete("/api/clases/reservas/:id", authenticate, requireRoles("cliente"), as
   }
 });
 
-// ── CLIENTES POR ENTRENADOR (HU-22) ─────────────────────────────────────────
+// â”€â”€ CLIENTES POR ENTRENADOR (HU-22) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-app.get("/api/trainer/:trainerId/clientes", async (req, res) => {
+app.get("/api/trainer/:trainerId/clientes", authenticate, requireRoles("entrenador", "admin"), async (req, res) => {
   const trainerId = Number(req.params.trainerId);
   if (!Number.isFinite(trainerId)) {
-    return res.status(400).json({ error: "trainerId inválido" });
+    return res.status(400).json({ error: "trainerId invÃ¡lido" });
   }
+
+  if (req.auth.role === "entrenador" && req.auth.id !== trainerId) {
+    return res.status(403).json({ error: "No autorizado" });
+  }
+
   try {
     const [rows] = await pool.query(
       `SELECT id_usuario, nombre_completo, correo
@@ -2825,15 +3023,17 @@ app.get("/api/trainer/:trainerId/clientes", async (req, res) => {
   }
 });
 
-// ── MEDIDAS DE PROGRESO (HU-22) ──────────────────────────────────────────────
+// â”€â”€ MEDIDAS DE PROGRESO (HU-22) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-app.get("/api/medidas/:userId", async (req, res) => {
+app.get("/api/medidas/:userId", authenticate, async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isFinite(userId)) {
-    return res.status(400).json({ error: "userId inválido" });
+    return res.status(400).json({ error: "userId invÃ¡lido" });
   }
 
   try {
+    await ensureClientEvolutionAccess(userId, req.auth);
+
     const [rows] = await pool.query(
       `SELECT id_medida, id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas, fecha_registro
        FROM medidas_progreso
@@ -2843,191 +3043,205 @@ app.get("/api/medidas/:userId", async (req, res) => {
     );
     res.json({ medidas: rows });
   } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
     res.status(500).json({ error: "Error cargando medidas", detail: error.message });
   }
 });
 
-app.post("/api/medidas", async (req, res) => {
-  const { userId, fecha, peso, pecho, cintura, cadera, brazos, piernas } = req.body || {};
-  
-  if (!userId || !fecha) {
+app.post("/api/medidas", authenticate, async (req, res) => {
+  const userId = Number(req.body?.userId);
+
+  if (!Number.isFinite(userId) || !req.body?.fecha) {
     return res.status(400).json({ error: "userId y fecha son requeridos" });
   }
 
+  const connection = await pool.getConnection();
   try {
-    const [result] = await pool.query(
-      `INSERT INTO medidas_progreso (id_usuario, fecha, peso, pecho, cintura, cadera, brazos, piernas)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, fecha, peso || null, pecho || null, cintura || null, cadera || null, brazos || null, piernas || null]
-    );
-    res.status(201).json({ ok: true, id: result.insertId, message: "Medida registrada correctamente" });
+    await connection.beginTransaction();
+    await ensureClientEvolutionAccess(userId, req.auth, connection);
+    await upsertClientMeasurement(userId, req.body || {}, connection);
+    await connection.commit();
+    res.status(201).json({ ok: true, message: "Medida registrada correctamente" });
   } catch (error) {
+    await connection.rollback();
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
     if (error.code === "ER_DUP_ENTRY") {
       return res.status(409).json({ error: "Ya existe un registro para esta fecha" });
     }
     res.status(500).json({ error: "Error registrando medida", detail: error.message });
+  } finally {
+    connection.release();
   }
 });
 
-app.put("/api/medidas/:id", async (req, res) => {
+app.put("/api/medidas/:id", authenticate, async (req, res) => {
   const medidaId = Number(req.params.id);
-  const { fecha, peso, pecho, cintura, cadera, brazos, piernas } = req.body || {};
 
   if (!Number.isFinite(medidaId)) {
-    return res.status(400).json({ error: "id de medida inválido" });
+    return res.status(400).json({ error: "id de medida invÃ¡lido" });
   }
 
+  const connection = await pool.getConnection();
   try {
-    const [result] = await pool.query(
-      `UPDATE medidas_progreso
-       SET fecha = COALESCE(?, fecha),
-           peso = COALESCE(?, peso),
-           pecho = COALESCE(?, pecho),
-           cintura = COALESCE(?, cintura),
-           cadera = COALESCE(?, cadera),
-           brazos = COALESCE(?, brazos),
-           piernas = COALESCE(?, piernas)
-       WHERE id_medida = ?`,
-      [fecha, peso, pecho, cintura, cadera, brazos, piernas, medidaId]
-    );
-
-    if (result.affectedRows === 0) {
+    await connection.beginTransaction();
+    const measurement = await getMeasurementById(medidaId, connection);
+    if (!measurement) {
+      await connection.rollback();
       return res.status(404).json({ error: "Medida no encontrada" });
     }
 
+    await ensureClientEvolutionAccess(measurement.id_usuario, req.auth, connection);
+    await updateClientMeasurement(measurement.id_usuario, medidaId, measurement, req.body || {}, connection);
+
+    await connection.commit();
     res.json({ ok: true, message: "Medida actualizada correctamente" });
   } catch (error) {
+    await connection.rollback();
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ error: "Ya existe un registro para esta fecha" });
+    }
+
     res.status(500).json({ error: "Error actualizando medida", detail: error.message });
+  } finally {
+    connection.release();
   }
 });
 
-app.delete("/api/medidas/:id", async (req, res) => {
+app.delete("/api/medidas/:id", authenticate, async (req, res) => {
   const medidaId = Number(req.params.id);
 
   if (!Number.isFinite(medidaId)) {
-    return res.status(400).json({ error: "id de medida inválido" });
+    return res.status(400).json({ error: "id de medida invÃ¡lido" });
   }
 
+  const connection = await pool.getConnection();
   try {
-    const [result] = await pool.query(
+    await connection.beginTransaction();
+    const measurement = await getMeasurementById(medidaId, connection);
+    if (!measurement) {
+      await connection.rollback();
+      return res.status(404).json({ error: "Medida no encontrada" });
+    }
+
+    await ensureClientEvolutionAccess(measurement.id_usuario, req.auth, connection);
+    await connection.query(
       "DELETE FROM medidas_progreso WHERE id_medida = ?",
       [medidaId]
     );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Medida no encontrada" });
-    }
-
+    await connection.commit();
     res.json({ ok: true, message: "Medida eliminada correctamente" });
   } catch (error) {
+    await connection.rollback();
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
     res.status(500).json({ error: "Error eliminando medida", detail: error.message });
+  } finally {
+    connection.release();
   }
 });
 
 
-// ── OBJETIVO PERSONAL (HU-23) ────────────────────────────────────────────────
+// â”€â”€ OBJETIVO PERSONAL (HU-23) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-app.get("/api/objetivo/:userId", async (req, res) => {
+app.get("/api/objetivo/:userId", authenticate, async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isFinite(userId)) {
-    return res.status(400).json({ error: "userId inválido" });
+    return res.status(400).json({ error: "userId invalido" });
   }
   try {
-    const [rows] = await pool.query(
-      "SELECT objetivo_personal FROM usuarios WHERE id_usuario = ?",
-      [userId]
-    );
-    if (rows.length === 0) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
-    }
-    res.json({ objetivo: rows[0].objetivo_personal });
+    await ensureClientEvolutionAccess(userId, req.auth);
+    const objective = await getClientObjective(userId);
+    res.json({ objetivo: objective });
   } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
     res.status(500).json({ error: "Error obteniendo objetivo", detail: error.message });
   }
 });
 
-app.put("/api/objetivo/:userId", async (req, res) => {
+app.put("/api/objetivo/:userId", authenticate, requireRoles("admin", "entrenador"), async (req, res) => {
   const userId = Number(req.params.userId);
-  const { objetivo, rol } = req.body || {};
-
   if (!Number.isFinite(userId)) {
-    return res.status(400).json({ error: "userId inválido" });
+    return res.status(400).json({ error: "userId invalido" });
   }
-
-  const rolesPermitidos = ["Entrenador", "Administrador"];
-  if (rol && !rolesPermitidos.includes(rol)) {
-    return res.status(403).json({ error: "Solo Entrenador o Administrador pueden modificar el objetivo personal" });
-  }
-
-  const objetivosValidos = ["Bajar de peso", "Ganar masa muscular", "Mejorar resistencia", "Otro"];
-  if (objetivo && !objetivosValidos.includes(objetivo)) {
-    return res.status(400).json({ error: "Objetivo inválido", validos: objetivosValidos });
-  }
-
   try {
-    const [result] = await pool.query(
-      "UPDATE usuarios SET objetivo_personal = ? WHERE id_usuario = ?",
-      [objetivo || null, userId]
-    );
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
-    }
-    res.json({ ok: true, message: "Objetivo personal actualizado correctamente" });
+    const objective = normalizeObjectiveValue(req.body?.objetivo ?? req.body?.objective);
+    await ensureClientEvolutionManagementAccess(userId, req.auth);
+    await upsertClientObjective(userId, objective);
+    res.json({ ok: true, objective, message: "Objetivo personal actualizado correctamente" });
   } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
     res.status(500).json({ error: "Error actualizando objetivo", detail: error.message });
   }
 });
 
-// ── FOTOGRAFÍAS DE PROGRESO (HU-23) ──────────────────────────────────────────
-
-app.get("/api/fotos/:medidaId", async (req, res) => {
+app.get("/api/fotos/:medidaId", authenticate, async (req, res) => {
   const medidaId = Number(req.params.medidaId);
   if (!Number.isFinite(medidaId)) {
-    return res.status(400).json({ error: "medidaId inválido" });
+    return res.status(400).json({ error: "medidaId invÃ¡lido" });
   }
   try {
+    const measurement = await getMeasurementById(medidaId);
+    if (!measurement) {
+      return res.status(404).json({ error: "Medida no encontrada" });
+    }
+
+    await ensureClientEvolutionAccess(measurement.id_usuario, req.auth);
     const [rows] = await pool.query(
       `SELECT id_foto, id_medida, ruta_archivo, nombre_archivo, mime_type, tamano_bytes, fecha_actualizacion
        FROM progreso_fotos WHERE id_medida = ?`,
       [medidaId]
     );
-    res.json({ fotos: rows });
+    return res.json({
+      fotos: rows.map((row) => ({
+        ...row,
+        ruta_archivo: row.ruta_archivo?.startsWith("/") ? row.ruta_archivo : `/${row.ruta_archivo}`
+      }))
+    });
   } catch (error) {
-    res.status(500).json({ error: "Error cargando fotografías", detail: error.message });
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
+    res.status(500).json({ error: "Error cargando fotografÃ­as", detail: error.message });
   }
 });
 
-app.post("/api/fotos", async (req, res) => {
-  const { medidaId, rutaArchivo, nombreArchivo, mimeType, tamanoBytes } = req.body || {};
-
-  if (!medidaId || !rutaArchivo || !nombreArchivo) {
-    return res.status(400).json({ error: "medidaId, rutaArchivo y nombreArchivo son requeridos" });
+app.post("/api/fotos", authenticate, requireRoles("admin", "entrenador"), async (req, res) => {
+  const medidaId = Number(req.body?.medidaId);
+  if (!Number.isFinite(medidaId)) {
+    return res.status(400).json({ error: "medidaId invalido" });
   }
-
-  const tiposPermitidos = ["image/jpeg", "image/png"];
-  if (mimeType && !tiposPermitidos.includes(mimeType)) {
-    return res.status(400).json({ error: "Solo se permiten archivos JPG o PNG" });
-  }
-
-  const maxTamano = 5 * 1024 * 1024;
-  if (tamanoBytes && tamanoBytes > maxTamano) {
-    return res.status(400).json({ error: "El archivo no puede superar 5 MB" });
-  }
-
   try {
-    const [result] = await pool.query(
-      `INSERT INTO progreso_fotos (id_medida, ruta_archivo, nombre_archivo, mime_type, tamano_bytes)
-       VALUES (?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         ruta_archivo = VALUES(ruta_archivo),
-         nombre_archivo = VALUES(nombre_archivo),
-         mime_type = VALUES(mime_type),
-         tamano_bytes = VALUES(tamano_bytes)`,
-      [medidaId, rutaArchivo, nombreArchivo, mimeType || "image/jpeg", tamanoBytes || 0]
-    );
-    res.status(201).json({ ok: true, id: result.insertId, message: "Fotografía registrada correctamente" });
+    const measurement = await getMeasurementById(medidaId);
+    if (!measurement) {
+      return res.status(404).json({ error: "Medida no encontrada" });
+    }
+    await ensureClientEvolutionManagementAccess(measurement.id_usuario, req.auth);
+    const upload = decodeProgressPhotoUpload(req.body?.imageDataUrl, req.body?.fileName);
+    const photo = await saveProgressPhotoUpload(measurement.id_usuario, medidaId, upload);
+    res.status(201).json({ ok: true, photo, message: "Fotografia registrada correctamente" });
   } catch (error) {
-    res.status(500).json({ error: "Error registrando fotografía", detail: error.message });
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    res.status(500).json({ error: "Error registrando fotografia", detail: error.message });
   }
 });
 

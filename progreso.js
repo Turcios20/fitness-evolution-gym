@@ -80,6 +80,15 @@
     return hasValue(value) ? `${formatMeasureNumber(value)} ${unit}` : `-- ${unit}`;
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function setPrefillHint(message, state = "") {
     if (!prefillHint) return;
 
@@ -175,10 +184,66 @@
     setPrefillHint("No hay medidas previas para autocompletar. Ingresa tu primera medicion.");
   }
 
-  async function loadMeasurements() {
-    const response = await window.GymApp.api(`/api/client/${session.id}/measurements`);
+  function renderObjectiveBanner(objective) {
+    const banner = document.getElementById("objetivoBanner");
+    const value = document.getElementById("objetivoValor");
+    if (!banner || !value) return;
+
+    if (!objective) {
+      banner.style.display = "none";
+      value.textContent = "";
+      return;
+    }
+
+    banner.style.display = "flex";
+    value.textContent = objective;
+  }
+
+  function renderPhotos(measurements) {
+    const section = document.getElementById("fotosSection");
+    const grid = document.getElementById("fotosGrid");
+    if (!section || !grid) return;
+
+    const photos = measurements
+      .filter((measurement) => measurement.photo?.url)
+      .map((measurement) => ({
+        date: measurement.date,
+        photo: measurement.photo
+      }));
+
+    if (!photos.length) {
+      section.style.display = "none";
+      grid.innerHTML = "";
+      return;
+    }
+
+    section.style.display = "block";
+    grid.innerHTML = photos.map(({ date, photo }) => {
+      const formattedDate = new Date(date).toLocaleDateString("es-ES", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      });
+      const imageUrl = window.GymApp.resolveUrl(photo.url);
+
+      return `
+        <div class="foto-card">
+          <img class="foto-placeholder" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(photo.name)}">
+          <div class="foto-info">
+            <span class="foto-nombre">${escapeHtml(photo.name)}</span>
+            <span class="foto-fecha">${escapeHtml(formattedDate)}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  async function loadEvolution() {
+    const response = await window.GymApp.api(`/api/client/${session.id}/evolution`);
     measurementsCache = Array.isArray(response.measurements) ? response.measurements : [];
     updateLatestMeasurementCard();
+    renderObjectiveBanner(response.objective || "");
+    renderPhotos(measurementsCache);
   }
 
   function setTodayDate() {
@@ -229,67 +294,10 @@
       });
 
       window.GymApp.toast("Registro guardado correctamente.", "success");
-      await loadMeasurements();
+      await loadEvolution();
       hydrateFormForDate(dateInput.value);
     } catch (error) {
       window.GymApp.toast(error.message || "No se pudo guardar el registro.", "error");
-    }
-  }
-
-  async function loadObjetivo() {
-    try {
-      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
-      const response = await fetch(`${API_BASE}/api/objetivo/${session.id}`);
-      const data = await response.json();
-      if (data.objetivo) {
-        document.getElementById('objetivoBanner').style.display = 'flex';
-        document.getElementById('objetivoValor').textContent = data.objetivo;
-      }
-    } catch (error) {
-      console.error('Error cargando objetivo:', error);
-    }
-  }
-
-  async function loadFotos() {
-    try {
-      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
-      const medResponse = await fetch(`${API_BASE}/api/medidas/${session.id}`);
-      const medData = await medResponse.json();
-      const medidas = medData.medidas || [];
-
-      if (medidas.length === 0) return;
-
-      const fotosPromises = medidas.map(m =>
-        fetch(`${API_BASE}/api/fotos/${m.id_medida}`).then(r => r.json())
-      );
-      const resultados = await Promise.all(fotosPromises);
-
-      const todasFotos = resultados
-        .flatMap((r, i) => (r.fotos || []).map(f => ({ ...f, fecha: medidas[i].fecha })))
-        .filter(f => f.ruta_archivo);
-
-      if (todasFotos.length === 0) return;
-
-      const grid = document.getElementById('fotosGrid');
-      const section = document.getElementById('fotosSection');
-      section.style.display = 'block';
-
-      grid.innerHTML = todasFotos.map(foto => {
-        const fecha = new Date(foto.fecha).toLocaleDateString('es-ES', {
-          year: 'numeric', month: 'short', day: 'numeric'
-        });
-        return `
-          <div class="foto-card">
-            <div class="foto-placeholder">🖼</div>
-            <div class="foto-info">
-              <span class="foto-nombre">${foto.nombre_archivo}</span>
-              <span class="foto-fecha">${fecha}</span>
-            </div>
-          </div>
-        `;
-      }).join('');
-    } catch (error) {
-      console.error('Error cargando fotos:', error);
     }
   }
 
@@ -297,10 +305,8 @@
     setTodayDate();
 
     try {
-      await loadMeasurements();
+      await loadEvolution();
       hydrateFormForDate(dateInput.value);
-      await loadObjetivo();
-      await loadFotos();
     } catch (error) {
       setPrefillHint("No se pudieron cargar las medidas previas en este momento.");
       window.GymApp.toast(error.message || "No se pudo cargar tu progreso.", "error");
