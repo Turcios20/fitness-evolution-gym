@@ -39,6 +39,22 @@
     }
     .cal-search-wrap input::placeholder { color: var(--text-dim); }
 
+    .cal-inline-state {
+      border: 1px solid rgba(232, 124, 42, 0.28);
+      background: rgba(232, 124, 42, 0.12);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.45;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+    }
+
+    .cal-inline-state--warn {
+      border-color: rgba(240, 192, 64, 0.35);
+      background: rgba(240, 192, 64, 0.12);
+    }
+
     .cal-clase-card {
       background: var(--panel);
       border: 1px solid var(--border);
@@ -180,6 +196,7 @@
           <img src="assets/search_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Buscar">
           <input type="text" id="calSearch" placeholder="Buscar clase o entrenador...">
         </div>
+        <div id="clasesNotice" class="cal-inline-state cal-inline-state--warn" hidden></div>
         <div id="clasesGrid">
           <p class="cal-loading">Cargando clases...</p>
         </div>
