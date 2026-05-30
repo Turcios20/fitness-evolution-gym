@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const clientsPanelTitle = document.getElementById("clientsPanelTitle");
   const progressSubtitle = document.getElementById("progressSubtitle");
   const progressTitle = document.getElementById("progressTitle");
+  const trainerAccountHint = document.getElementById("trainerAccountHint");
   const progressHomeLink = document.getElementById("progressHomeLink");
   const progressSettingsLink = document.getElementById("progressSettingsLink");
   const detailsPlaceholder = document.getElementById("detailsPlaceholder");
@@ -31,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const initialClientId = Number(new URLSearchParams(window.location.search).get("clientId"));
   const isAdminView = session.role === "admin";
   const OBJECTIVE_OTHER = "Otro";
+  const activeAccount = session.username || "sin correo";
 
   let selectedClientId = Number.isFinite(initialClientId) ? initialClientId : null;
   let objectivePresets = [];
@@ -57,9 +59,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function configurePageByRole() {
+    if (trainerAccountHint) {
+      trainerAccountHint.textContent = `Cuenta activa: ${activeAccount}`;
+    }
+
     if (isAdminView) {
       roleBadge.textContent = "ADMIN";
-      progressSubtitle.textContent = "Seguimiento Fisico";
+      progressSubtitle.textContent = "Progreso Fisico";
       progressTitle.textContent = "Progreso de Miembros";
       clientsPanelTitle.textContent = "Clientes";
       progressHomeLink.href = "admin.html";
@@ -69,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     roleBadge.textContent = "COACH";
-    progressSubtitle.textContent = "Seguimiento de Clientes";
+    progressSubtitle.textContent = "Progreso de Clientes";
     progressTitle.textContent = "Progreso de Alumnos";
     clientsPanelTitle.textContent = "Mis Clientes";
     progressHomeLink.href = "entrenador.html";
@@ -338,3 +344,4 @@ document.addEventListener("DOMContentLoaded", () => {
     GymApp.toast(`Error inicial: ${error.message}`, "error");
   }); 
   });
+});

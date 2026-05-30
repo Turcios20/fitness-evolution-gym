@@ -12,6 +12,7 @@
   grid-template-columns: 300px 1fr;
   gap: 25px;
   margin-top: 20px;
+  align-items: start;
 }
 
 /* Panel de Clientes (Lista) */
@@ -23,6 +24,7 @@
   backdrop-filter: blur(15px);
   max-height: 600px;
   overflow-y: auto;
+  min-width: 0;
 }
 
 .clients-header {
@@ -123,6 +125,7 @@
   padding: 30px;
   backdrop-filter: blur(15px);
   min-height: 500px;
+  min-width: 0;
 }
 
 .details-placeholder {
@@ -314,6 +317,37 @@
   text-align: center;
 }
 
+.trainer-comparativa-section .comparativa-container,
+.trainer-historial-section .historial-container {
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .entrenador-progreso-content {
+    padding: 24px 18px 110px;
+  }
+
+  .progreso-container {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .progreso-clients-panel,
+  .progreso-details-panel {
+    max-height: none;
+  }
+
+  .progreso-details-panel {
+    padding: 24px;
+    min-height: 0;
+  }
+
+  .client-header {
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+  }
+}
+
 .measurements-list {
   display: flex;
   flex-direction: column;
@@ -402,12 +436,30 @@
 
 /* Responsivo para tablets */
 @media (max-width: 768px) {
+  .entrenador-progreso-content {
+    padding: 20px 14px 108px;
+  }
+
   .progreso-container {
-    grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .progreso-clients-panel {
     max-height: 300px;
+    padding: 16px;
+  }
+
+  .progreso-details-panel {
+    padding: 20px 16px;
+  }
+
+  .clients-header,
+  .measurement-date,
+  .historial-fecha,
+  .progress-photo-top {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .measurement-values {
@@ -423,6 +475,23 @@
     align-items: stretch;
   }
 
+  .trainer-comparativa-section h2,
+  .trainer-historial-section h2 {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .trainer-historial-section .historial-list {
+    max-height: none;
+  }
+
+  .trainer-historial-section .historial-item,
+  .trainer-objetivo-section .objetivo-card,
+  .objective-editor-card {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
   .objective-editor-button {
     width: 100%;
   }
@@ -431,17 +500,17 @@
 /* Responsivo para móviles */
 @media (max-width: 480px) {
   .entrenador-progreso-content {
-    padding: 15px 15px;
+    padding: 16px 12px 104px;
   }
 
   .progreso-clients-panel {
     max-height: 250px;
-    padding: 15px;
+    padding: 14px;
   }
 
   .progreso-details-panel {
-    padding: 20px;
-    min-height: 400px;
+    padding: 18px 14px;
+    min-height: 0;
   }
 
   .client-header {
@@ -454,6 +523,29 @@
 
   .measurement-values {
     grid-template-columns: 1fr;
+  }
+
+  .trainer-comparativa-section h2,
+  .trainer-historial-section h2 {
+    font-size: 17px;
+    margin-bottom: 18px;
+  }
+
+  .objective-editor-header h3,
+  .objetivo-card h3 {
+    font-size: 14px;
+  }
+
+  .objetivo-texto {
+    font-size: 16px;
+  }
+
+  .trainer-historial-section .historial-medidas {
+    grid-template-columns: 1fr;
+  }
+
+  .trainer-historial-section .medida-card {
+    padding: 12px 10px;
   }
 }
 

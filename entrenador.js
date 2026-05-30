@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const statExpiringSoon = document.getElementById("statExpiringSoon");
   const assignedClientsList = document.getElementById("assignedClientsList");
   const clientsHint = document.getElementById("clientsHint");
+  const trainerAccountHint = document.getElementById("trainerAccountHint");
 
   function getInitials(name) {
     return (name || "CO")
@@ -29,10 +30,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const displayName = session.displayName || "Coach";
   const initials = getInitials(displayName);
+  const activeAccount = session.username || "sin correo";
 
   welcomeTitle.textContent = `Hola, ${displayName}`;
   userAvatar.textContent = initials;
   userAvatar.style.background = avatarColor(initials);
+  if (trainerAccountHint) {
+    trainerAccountHint.textContent = `Cuenta activa: ${activeAccount}`;
+  }
 
   btnLogout.addEventListener("click", () => {
     GymApp.clearSession();

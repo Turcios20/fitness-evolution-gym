@@ -1,10 +1,11 @@
 "use strict";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const session = window.GymApp?.getSession();
-  if (!session) { window.location.href = "login.html"; return; }
+  if (!window.GymApp?.guardRoute("cliente")) {
+    return;
+  }
 
-  const username = session.username;
+  const session = window.GymApp.getSession();
 
   const fmtDate = (d) => {
     if (!d) return "—";
@@ -51,27 +52,80 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let todasClases = [];
   let misReservasIds = new Set();
+  let classesCatalogReady = false;
+
+  function setClassesNotice(message = "", variant = "warn") {
+    const notice = document.getElementById("clasesNotice");
+    if (!notice) return;
+
+    if (!message) {
+      notice.hidden = true;
+      notice.textContent = "";
+      notice.className = "cal-inline-state";
+      return;
+    }
+
+    notice.hidden = false;
+    notice.textContent = message;
+    notice.className = `cal-inline-state cal-inline-state--${variant}`;
+  }
+
+  function renderMisRutinasError(message) {
+    const wrap = document.getElementById("misReservasWrap");
+    wrap.innerHTML = `<p class="cal-empty">${escapeHtml(message)}</p>`;
+  }
 
   async function loadClases() {
     const grid = document.getElementById("clasesGrid");
+    const routinesWrap = document.getElementById("misReservasWrap");
     grid.innerHTML = `<p class="cal-loading">Cargando clases...</p>`;
-    try {
-      const [dataClases, dataReservas, dataRutinas] = await Promise.all([
-        GymApp.api("/api/clases"),
-        GymApp.api(`/api/clases/mis-reservas?username=${encodeURIComponent(username)}`),
-        GymApp.api(`/api/client/${session.id}/routines`)
-      ]);
-      todasClases = dataClases.clases || [];
+    routinesWrap.innerHTML = `<p class="cal-loading">Cargando...</p>`;
+    setClassesNotice("");
+    classesCatalogReady = false;
+
+    const [dataClases, dataReservas, dataRutinas] = await Promise.allSettled([
+      GymApp.api("/api/clases"),
+      GymApp.api("/api/clases/mis-reservas"),
+      GymApp.api(`/api/client/${session.id}/routines`)
+    ]);
+
+    if (dataRutinas.status === "fulfilled") {
+      renderMisRutinas(Array.isArray(dataRutinas.value?.routines) ? dataRutinas.value.routines : []);
+    } else {
+      renderMisRutinasError("No pudimos cargar tus rutinas asignadas por ahora.");
+    }
+
+    if (dataClases.status !== "fulfilled") {
+      todasClases = [];
+      misReservasIds = new Set();
+      grid.innerHTML = `<p class="cal-empty">Las clases no estan disponibles en este momento.</p>`;
+
+      const reservationMessage = dataReservas.status !== "fulfilled"
+        ? "Tus rutinas siguen visibles, pero el modulo de clases y reservas no esta disponible en esta base local."
+        : "Tus rutinas siguen visibles, pero el catalogo de clases no pudo cargarse.";
+      setClassesNotice(reservationMessage, "warn");
+      return;
+    }
+
+    classesCatalogReady = true;
+    todasClases = dataClases.value?.clases || [];
+
+    if (dataReservas.status === "fulfilled") {
       misReservasIds = new Set(
-        (dataReservas.reservas || [])
+        (dataReservas.value?.reservas || [])
           .filter((r) => r.estado === "Confirmada")
           .map((r) => r.id_clase)
       );
-      renderMisRutinas(Array.isArray(dataRutinas?.routines) ? dataRutinas.routines : []);
-      renderClases(todasClases);
-    } catch (e) {
-      grid.innerHTML = `<p class="cal-empty">Error cargando clases. Intenta de nuevo.</p>`;
+      setClassesNotice("");
+    } else {
+      misReservasIds = new Set();
+      setClassesNotice(
+        "El catalogo de clases se cargo, pero tus reservas no estuvieron disponibles. Puedes revisar tus rutinas mientras tanto.",
+        "warn"
+      );
     }
+
+    renderClases(todasClases);
   }
 
   function renderClases(clases) {
@@ -115,9 +169,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.textContent = "Reservando...";
         try {
           await GymApp.api(`/api/clases/${claseId}/reservar`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username })
+            method: "POST"
           });
           GymApp.toast("¡Reserva confirmada!", "success");
           loadClases();
@@ -164,6 +216,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Búsqueda en tiempo real
   document.getElementById("calSearch").addEventListener("input", (e) => {
+    if (!classesCatalogReady) {
+      return;
+    }
+
     const q = e.target.value.toLowerCase();
     const filtradas = q
       ? todasClases.filter((c) => c.nombre.toLowerCase().includes(q) || (c.entrenador || "").toLowerCase().includes(q))

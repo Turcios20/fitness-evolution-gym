@@ -1776,6 +1776,11 @@ body {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
 }
 
+.gm-edit-box {
+  max-width: 500px;
+  padding: 32px 30px 28px;
+}
+
 /* Burbuja grande de iniciales */
 .gm-avatar-big {
   width: 64px;
@@ -1914,6 +1919,9 @@ body {
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px;
   padding: 10px 12px;
+  width: 100%;
+  display: block;
+  box-sizing: border-box;
   color: var(--text);
   font-family: 'Rajdhani', sans-serif;
   font-size: 14px;
@@ -1930,6 +1938,62 @@ body {
   color: #e05555;
   min-height: 14px;
   font-weight: 600;
+}
+
+.gm-role-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.gm-role-summary {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.gm-role-toggle {
+  background: transparent;
+  color: var(--orange);
+  border: 1px solid rgba(232, 124, 42, 0.35);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, transform 0.12s;
+}
+
+.gm-role-toggle:hover {
+  background: rgba(232, 124, 42, 0.12);
+  border-color: rgba(232, 124, 42, 0.55);
+}
+
+.gm-role-toggle:active {
+  transform: scale(0.98);
+}
+
+.gm-role-panel {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+[data-theme="light"] .gm-role-toggle {
+  background: rgba(255, 248, 241, 0.62);
+  border-color: rgba(134, 100, 63, 0.18);
+  color: #b85b16;
+}
+
+[data-theme="light"] .gm-role-panel {
+  background: rgba(255, 248, 241, 0.45);
+  border-color: rgba(134, 100, 63, 0.12);
 }
 
 /* =============================================

@@ -24,13 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const listaPlanes        = document.getElementById("listaPlanes");
   const noPlanes           = document.getElementById("noPlanes");
   const btnCrearPlan       = document.getElementById("btnCrearPlan");
+  const trainerAccountHint = document.getElementById("trainerAccountHint");
   const selectClase        = document.getElementById("selectClase");
   const btnAsignarClase    = document.getElementById("btnAsignarClase");
   const listaReservas      = document.getElementById("listaReservas");
   const noReservas         = document.getElementById("noReservas");
 
   let selectedClientId = null;
-  let selectedClientEmail = null;
   let editingRoutineId = null;
 
   // ── Avatar ──
@@ -45,6 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const displayName = session.name || session.displayName || "Coach";
   userAvatar.textContent      = getInitials(displayName);
   userAvatar.style.background = avatarColor(getInitials(displayName));
+  if (trainerAccountHint) {
+    trainerAccountHint.textContent = `Cuenta activa: ${session.username || "sin correo"}`;
+  }
 
   // ── Logout ──
   btnLogout.addEventListener("click", () => {
@@ -79,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
     seccionRutinas.classList.add("hidden");
     seccionPlanes.classList.add("hidden");
     loadClasesDisponibles();
-    if (selectedClientEmail) loadReservasAsignadas(selectedClientEmail);
+    if (selectedClientId) loadReservasAsignadas(selectedClientId);
   });
 
   // ── Seleccionar cliente ──
@@ -89,7 +92,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector(`[data-client-id="${client.id}"]`)
       ?.classList.add("active");
     selectedClientId        = client.id;
-    selectedClientEmail     = client.email;
     clientName.textContent  = client.name;
     clientEmail.textContent = client.email;
     detailsPlaceholder.style.display = "none";
@@ -409,11 +411,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ── RESERVAS: cargar reservas ya asignadas al cliente ──
-  async function loadReservasAsignadas(email) {
+  async function loadReservasAsignadas(clientId) {
     listaReservas.innerHTML = `<div class="client-item-empty"><p>Cargando reservas...</p></div>`;
     noReservas.classList.add("hidden");
     try {
-      const data = await GymApp.api(`/api/clases/mis-reservas?username=${encodeURIComponent(email)}`);
+      const data = await GymApp.api(`/api/clases/mis-reservas?clientId=${encodeURIComponent(clientId)}`);
       const reservas = (data?.reservas || []).filter((r) => r.estado === "Confirmada" && r.asignada_por != null);
       listaReservas.innerHTML = "";
       if (!reservas.length) {
@@ -481,7 +483,7 @@ document.addEventListener("DOMContentLoaded", () => {
       GymApp.toast("Reserva asignada ✓", "success");
       selectClase.value = "";
       loadClasesDisponibles();
-      loadReservasAsignadas(selectedClientEmail);
+      loadReservasAsignadas(selectedClientId);
     } catch (e) {
       GymApp.toast(`Error: ${e.message}`, "error");
     }
@@ -501,7 +503,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       GymApp.toast("Reserva cancelada ✓", "success");
-      loadReservasAsignadas(selectedClientEmail);
+      loadReservasAsignadas(selectedClientId);
       loadClasesDisponibles();
     } catch (e) {
       GymApp.toast(`Error: ${e.message}`, "error");

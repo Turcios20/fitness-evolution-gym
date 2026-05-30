@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Medidas - FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="entrenador.css">
+  <link rel="stylesheet" href="entrenador-medidas.css">
+</head>
+<body class="entrenador-page">
+
+  <div class="gym-bg"></div>
+
+  <div class="page">
+    <nav class="topnav trainer-topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
+      </div>
+
+      <div class="trainer-top-actions">
+        <a href="entrenador.html" class="back-link">&larr; Volver al Panel</a>
+        <div class="user-avatar-wrap">
+          <span class="role-badge">COACH</span>
+          <div class="user-avatar" id="userAvatar">EN</div>
+        </div>
+        <button type="button" class="trainer-logout" id="btnLogout">Salir</button>
+      </div>
+    </nav>
+
+    <main class="content trainer-content">
+
+      <div class="fadein">
+        <p class="welcome-sub">Seguimiento Físico</p>
+        <h1 class="welcome-title">Registro de Medidas</h1>
+        <p class="trainer-account-hint" id="trainerAccountHint">Cuenta activa: --</p>
+      </div>
+
+      <div class="fadein-2">
+        <div class="medidas-container">
+          
+          <!-- Panel de selección de cliente -->
+          <aside class="clients-panel">
+            <div class="panel-header">
+              <span class="panel-title">Mis Clientes</span>
+              <span class="clients-count" id="clientsCount">0</span>
+            </div>
+            <div class="clients-list" id="clientsList">
+              <p class="loading-text">Cargando clientes...</p>
+            </div>
+          </aside>
+
+          <!-- Panel de registro de medidas -->
+          <section class="medidas-panel">
+            <div class="panel-header">
+              <span class="panel-title">Registrar Medida</span>
+              <span class="selected-client" id="selectedClientName">Selecciona un cliente</span>
+            </div>
+
+            <div id="medidaForm" class="medida-form" style="display: none;">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="fecha">Fecha *</label>
+                  <input type="date" id="fecha" required>
+                </div>
+                <div class="form-group">
+                  <label for="peso">Peso (kg) *</label>
+                  <input type="number" id="peso" step="0.1" min="0" placeholder="75.5" required>
+                </div>
+              </div>
+
+              <div class="form-section-title">Medidas Corporales (cm)</div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="pecho">Pecho</label>
+                  <input type="number" id="pecho" step="0.1" min="0" placeholder="95.0">
+                </div>
+                <div class="form-group">
+                  <label for="cintura">Cintura</label>
+                  <input type="number" id="cintura" step="0.1" min="0" placeholder="85.0">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="cadera">Cadera</label>
+                  <input type="number" id="cadera" step="0.1" min="0" placeholder="95.0">
+                </div>
+                <div class="form-group">
+                  <label for="brazos">Brazos</label>
+                  <input type="number" id="brazos" step="0.1" min="0" placeholder="32.5">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="piernas">Piernas</label>
+                  <input type="number" id="piernas" step="0.1" min="0" placeholder="55.0">
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn-primary" id="btnGuardar">Guardar Medida</button>
+                <button type="button" class="btn-secondary" id="btnLimpiar">Limpiar Formulario</button>
+              </div>
+            </div>
+
+            <!-- Sección objetivo personal (HU-23) -->
+            <div id="objetivoSection" class="objetivo-section" style="display: none;">
+              <div class="panel-header">
+                <span class="panel-title">Objetivo Personal</span>
+              </div>
+              <div class="objetivo-actual" id="objetivoActual">Sin objetivo asignado</div>
+              <div class="form-group" style="margin-top: 12px;">
+                <label for="selectObjetivo">Actualizar objetivo</label>
+                <select id="selectObjetivo">
+                  <option value="">-- Seleccionar --</option>
+                  <option value="Bajar de peso">Bajar de peso</option>
+                  <option value="Ganar masa muscular">Ganar masa muscular</option>
+                  <option value="Mejorar resistencia">Mejorar resistencia</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <button type="button" class="btn-primary" id="btnGuardarObjetivo" style="margin-top: 12px; width: 100%;">Guardar Objetivo</button>
+            </div>
+
+            <div id="emptyState" class="empty-state">
+              <div class="empty-icon">📏</div>
+              <p>Selecciona un cliente de la lista para registrar sus medidas</p>
+            </div>
+
+            <!-- Historial de medidas del cliente seleccionado -->
+            <div id="historialMedidas" class="historial-medidas" style="display: none;">
+              <div class="historial-header">
+                <span class="historial-title">Historial de Medidas</span>
+                <span class="historial-count" id="historialCount">0</span>
+              </div>
+              <div class="medidas-list" id="medidasList"></div>
+            </div>
+
+          </section>
+
+        </div>
+      </div>
+
+    </main>
+
+    <nav class="bottomnav">
+      <a href="entrenador.html" class="bot-link active">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Panel">
+        Panel
+      </a>
+      <a href="entrenador-progreso.html" class="bot-link">
+        <img src="assets/exercise_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Progreso">
+        Progreso
+      </a>
+      <a href="ajustes.html" class="bot-link">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+        Ajustes
+      </a>
+    </nav>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="entrenador-medidas.js"></script>
+</body>
+</html>

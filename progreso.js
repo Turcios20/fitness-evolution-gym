@@ -11,18 +11,7 @@
     return;
   }
 
-  const form = document.getElementById("formProgreso");
-  const dateInput = document.getElementById("fecha");
-  const prefillHint = document.getElementById("prefillHint");
-
-  const inputMap = {
-    weight: document.getElementById("peso"),
-    chest: document.getElementById("pecho"),
-    waist: document.getElementById("cintura"),
-    hips: document.getElementById("cadera"),
-    arms: document.getElementById("brazos"),
-    legs: document.getElementById("piernas")
-  };
+  const historyList = document.getElementById("historialList");
 
   const latestMap = {
     date: document.getElementById("ultimaFecha"),
@@ -34,17 +23,6 @@
     legs: document.getElementById("ultimaPiernas")
   };
 
-  const fieldPairs = [
-    ["weight", "weight"],
-    ["chest", "chest"],
-    ["waist", "waist"],
-    ["hips", "hips"],
-    ["arms", "arms"],
-    ["legs", "legs"]
-  ];
-
-  let measurementsCache = [];
-
   function hasValue(value) {
     return value !== null && value !== undefined && value !== "" && !Number.isNaN(Number(value));
   }
@@ -54,11 +32,7 @@
 
     const rawValue = String(value);
     const isoMatch = rawValue.match(/^(\d{4}-\d{2}-\d{2})/);
-    if (isoMatch) {
-      return isoMatch[1];
-    }
-
-    return "";
+    return isoMatch ? isoMatch[1] : "";
   }
 
   function formatDateDisplay(value) {
@@ -71,48 +45,39 @@
 
   function formatMeasureNumber(value) {
     const numericValue = Number(value);
-    return Number.isInteger(numericValue)
-      ? String(numericValue)
-      : numericValue.toFixed(1);
+    return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(1);
   }
 
   function formatMeasureValue(value, unit) {
     return hasValue(value) ? `${formatMeasureNumber(value)} ${unit}` : `-- ${unit}`;
   }
 
-  function setPrefillHint(message, state = "") {
-    if (!prefillHint) return;
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
 
-    prefillHint.textContent = message;
-    prefillHint.classList.remove("prefill-hint--prefilled", "prefill-hint--editing");
+  function renderObjectiveBanner(objective) {
+    const banner = document.getElementById("objetivoBanner");
+    const value = document.getElementById("objetivoValor");
+    if (!banner || !value) return;
 
-    if (state === "prefilled") {
-      prefillHint.classList.add("prefill-hint--prefilled");
-    } else if (state === "editing") {
-      prefillHint.classList.add("prefill-hint--editing");
+    if (!objective) {
+      banner.style.display = "none";
+      value.textContent = "";
+      return;
     }
+
+    banner.style.display = "flex";
+    value.textContent = objective;
   }
 
-  function clearMeasureInputs() {
-    Object.values(inputMap).forEach((input) => {
-      if (input) {
-        input.value = "";
-      }
-    });
-  }
-
-  function fillMeasureInputs(measurement) {
-    fieldPairs.forEach(([inputKey, measurementKey]) => {
-      const input = inputMap[inputKey];
-      if (!input) return;
-
-      const value = measurement?.[measurementKey];
-      input.value = hasValue(value) ? String(value) : "";
-    });
-  }
-
-  function updateLatestMeasurementCard() {
-    const latestMeasurement = measurementsCache[0];
+  function updateLatestMeasurementCard(measurements) {
+    const latestMeasurement = Array.isArray(measurements) ? measurements[0] : null;
 
     if (!latestMeasurement) {
       latestMap.date.textContent = "--/--/----";
@@ -134,124 +99,35 @@
     latestMap.legs.textContent = formatMeasureValue(latestMeasurement.legs, "cm");
   }
 
-  function getExactMeasurement(dateValue) {
-    return measurementsCache.find((measurement) => normalizeDate(measurement.date) === dateValue) || null;
-  }
+  async function loadEvolution() {
+    const response = await window.GymApp.api(`/api/client/${session.id}/evolution`);
+    const measurements = Array.isArray(response.measurements) ? response.measurements : [];
 
-  function getPreviousMeasurement(dateValue) {
-    return measurementsCache.find((measurement) => normalizeDate(measurement.date) < dateValue) || null;
-  }
+    updateLatestMeasurementCard(measurements);
+    renderObjectiveBanner(response.objective || "");
 
-  function hydrateFormForDate(dateValue) {
-    const normalizedDate = normalizeDate(dateValue);
-
-    if (!normalizedDate) {
-      clearMeasureInputs();
-      setPrefillHint("Selecciona una fecha valida para cargar tus medidas.");
-      return;
-    }
-
-    const exactMeasurement = getExactMeasurement(normalizedDate);
-    if (exactMeasurement) {
-      fillMeasureInputs(exactMeasurement);
-      setPrefillHint(
-        `Estas editando el registro del ${formatDateDisplay(exactMeasurement.date)}.`,
-        "editing"
+    if (window.GymEvolution?.renderEvolution) {
+      window.GymEvolution.renderEvolution(
+        {
+          history: historyList
+        },
+        response
       );
-      return;
-    }
-
-    const previousMeasurement = getPreviousMeasurement(normalizedDate);
-    if (previousMeasurement) {
-      fillMeasureInputs(previousMeasurement);
-      setPrefillHint(
-        `Se cargaron automaticamente las medidas del ${formatDateDisplay(previousMeasurement.date)}. Edita solo lo que cambio.`,
-        "prefilled"
-      );
-      return;
-    }
-
-    clearMeasureInputs();
-    setPrefillHint("No hay medidas previas para autocompletar. Ingresa tu primera medicion.");
-  }
-
-  async function loadMeasurements() {
-    const response = await window.GymApp.api(`/api/client/${session.id}/measurements`);
-    measurementsCache = Array.isArray(response.measurements) ? response.measurements : [];
-    updateLatestMeasurementCard();
-  }
-
-  function setTodayDate() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    dateInput.value = `${year}-${month}-${day}`;
-  }
-
-  function buildPayload() {
-    return {
-      fecha: dateInput.value,
-      peso: inputMap.weight.value.trim(),
-      pecho: inputMap.chest.value.trim(),
-      cintura: inputMap.waist.value.trim(),
-      cadera: inputMap.hips.value.trim(),
-      brazos: inputMap.arms.value.trim(),
-      piernas: inputMap.legs.value.trim()
-    };
-  }
-
-  function hasAtLeastOneMeasure(payload) {
-    return [payload.peso, payload.pecho, payload.cintura, payload.cadera, payload.brazos, payload.piernas]
-      .some((value) => value !== "");
-  }
-
-  async function saveMeasurement(event) {
-    event.preventDefault();
-
-    const payload = buildPayload();
-
-    if (!payload.fecha) {
-      window.GymApp.toast("Selecciona una fecha para guardar el registro.", "error");
-      return;
-    }
-
-    if (!hasAtLeastOneMeasure(payload)) {
-      window.GymApp.toast("Debes ingresar al menos una medida.", "error");
-      return;
-    }
-
-    try {
-      await window.GymApp.api(`/api/client/${session.id}/measurements`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      window.GymApp.toast("Registro guardado correctamente.", "success");
-      await loadMeasurements();
-      hydrateFormForDate(dateInput.value);
-    } catch (error) {
-      window.GymApp.toast(error.message || "No se pudo guardar el registro.", "error");
+    } else if (historyList) {
+      historyList.innerHTML = '<div class="loading-message">No se pudo cargar el historial visual.</div>';
     }
   }
 
   async function initialize() {
-    setTodayDate();
-
     try {
-      await loadMeasurements();
-      hydrateFormForDate(dateInput.value);
+      await loadEvolution();
     } catch (error) {
-      setPrefillHint("No se pudieron cargar las medidas previas en este momento.");
+      if (historyList) {
+        historyList.innerHTML = `<div class="error-message">No se pudo cargar el historial: ${escapeHtml(error.message)}</div>`;
+      }
       window.GymApp.toast(error.message || "No se pudo cargar tu progreso.", "error");
     }
   }
 
-  dateInput.addEventListener("change", () => {
-    hydrateFormForDate(dateInput.value);
-  });
-
-  form.addEventListener("submit", saveMeasurement);
   initialize();
 })();

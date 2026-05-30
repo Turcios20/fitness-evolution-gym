@@ -86,6 +86,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showEditModal(member, onConfirm) {
     const { overlay, box } = createOverlay();
+    box.classList.add("gm-edit-box");
+    const currentRole = String(member.role || "cliente").toLowerCase();
+    const roleLabels = {
+      cliente: "Cliente",
+      entrenador: "Entrenador",
+      recepcionista: "Recepcionista",
+      admin: "Administrador"
+    };
     const currentPlan = member.membership?.plan || "Mensual";
     const currentStatus = member.membership?.status || "Activo";
     box.innerHTML = `
@@ -99,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <label>Correo electronico</label>
           <input id="gmEmail" class="gm-input" type="email" value="${member.email}">
         </div>
-        <div class="gm-field">
+        <div class="gm-field" id="gmPlanField">
           <label>Plan</label>
           <select id="gmPlan" class="gm-input">
             ${["Mensual", "Trimestral", "Semestral", "Anual"].map((plan) => `
@@ -107,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
             `).join("")}
           </select>
         </div>
-        <div class="gm-field">
+        <div class="gm-field" id="gmStatusField">
           <label>Estado</label>
           <select id="gmStatus" class="gm-input">
             ${["Activo", "Inactivo"].map((status) => `
@@ -115,9 +123,28 @@ document.addEventListener("DOMContentLoaded", () => {
             `).join("")}
           </select>
         </div>
-        <div class="gm-field">
+        <div class="gm-field" id="gmTrainerField">
           <label>Entrenador asignado</label>
           <select id="gmTrainer" class="gm-input">${trainerOptions(member.assignedTrainer?.id)}</select>
+        </div>
+        <div class="gm-role-toolbar">
+          <span class="gm-role-summary" id="gmRoleSummary">Rol actual: ${roleLabels[currentRole] || "Cliente"}</span>
+          <button type="button" class="gm-role-toggle" id="gmToggleRole">Cambiar rol</button>
+        </div>
+        <div class="gm-role-panel" id="gmRolePanel" hidden>
+          <div class="gm-field">
+            <label>Rol</label>
+            <select id="gmRole" class="gm-input">
+              ${[
+                ["cliente", "Cliente"],
+                ["entrenador", "Entrenador"],
+                ["recepcionista", "Recepcionista"],
+                ["admin", "Administrador"]
+              ].map(([value, label]) => `
+                <option value="${value}" ${value === currentRole ? "selected" : ""}>${label}</option>
+              `).join("")}
+            </select>
+          </div>
         </div>
         <span class="gm-error" id="gmError"></span>
       </div>
@@ -126,11 +153,35 @@ document.addEventListener("DOMContentLoaded", () => {
         <button class="gm-btn gm-btn-primary" id="gmSave">Guardar cambios</button>
       </div>
     `;
+    const roleSelect = box.querySelector("#gmRole");
+    const rolePanel = box.querySelector("#gmRolePanel");
+    const roleSummary = box.querySelector("#gmRoleSummary");
+    const toggleRoleButton = box.querySelector("#gmToggleRole");
+    const planField = box.querySelector("#gmPlanField");
+    const statusField = box.querySelector("#gmStatusField");
+    const trainerField = box.querySelector("#gmTrainerField");
+
+    function syncEditFields() {
+      const isClientRole = roleSelect.value === "cliente";
+      [planField, statusField, trainerField].forEach((field) => {
+        field.style.display = isClientRole ? "block" : "none";
+      });
+      roleSummary.textContent = `Rol: ${roleLabels[roleSelect.value] || "Cliente"}`;
+    }
+
+    toggleRoleButton.addEventListener("click", () => {
+      rolePanel.hidden = !rolePanel.hidden;
+      toggleRoleButton.textContent = rolePanel.hidden ? "Cambiar rol" : "Ocultar rol";
+      syncEditFields();
+    });
+    roleSelect.addEventListener("change", syncEditFields);
+    syncEditFields();
 
     box.querySelector("#gmCancel").onclick = () => overlay.remove();
     box.querySelector("#gmSave").onclick = () => {
       const name = box.querySelector("#gmName").value.trim();
       const email = box.querySelector("#gmEmail").value.trim();
+      const role = roleSelect.value;
       const plan = box.querySelector("#gmPlan").value;
       const status = box.querySelector("#gmStatus").value;
       const trainerIdValue = box.querySelector("#gmTrainer").value;
@@ -147,13 +198,19 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       overlay.remove();
-      onConfirm({
+      const payload = {
         name,
         email,
-        plan,
-        status,
-        trainerId: trainerIdValue ? Number(trainerIdValue) : null
-      });
+        role
+      };
+
+      if (role === "cliente") {
+        payload.plan = plan;
+        payload.status = status;
+        payload.trainerId = trainerIdValue ? Number(trainerIdValue) : null;
+      }
+
+      onConfirm(payload);
     };
   }
 
