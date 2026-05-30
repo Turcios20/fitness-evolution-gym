@@ -45,6 +45,9 @@ const ROLE_DB_TO_FRONTEND = {
   recepcionista: "recepcionista",
   entrenador: "entrenador"
 };
+const STAFF_DB_ROLES = ["Administrador", "Recepcionista", "Entrenador"];
+const STAFF_PAYMENT_METHODS = ["Transferencia", "Efectivo", "Cheque"];
+const YEAR_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
@@ -61,6 +64,22 @@ function roleToFrontend(role) {
 function roleToDb(role) {
   const value = String(role || "").trim().toLowerCase();
   return ROLE_FRONTEND_TO_DB[value] || "Cliente";
+}
+
+function getCurrentYearMonth(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function normalizeYearMonth(value, fallback = getCurrentYearMonth()) {
+  const normalized = String(value || "").trim();
+  return YEAR_MONTH_PATTERN.test(normalized) ? normalized : fallback;
+}
+
+function shiftYearMonth(yearMonth, delta) {
+  const normalized = normalizeYearMonth(yearMonth);
+  const [year, month] = normalized.split("-").map(Number);
+  const nextDate = new Date(year, month - 1 + delta, 1);
+  return getCurrentYearMonth(nextDate);
 }
 
 async function tableExists(executor, tableName) {
@@ -147,6 +166,33 @@ async function ensureTrainerFeatureSchema() {
         WHERE current.id_rutina IS NULL`
       );
     }
+  } finally {
+    connection.release();
+  }
+}
+
+async function ensureFinanceFeatureSchema() {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS pagos_personal (
+        id_pago_personal INT AUTO_INCREMENT PRIMARY KEY,
+        id_usuario INT NOT NULL,
+        concepto VARCHAR(100) NOT NULL,
+        periodo_referencia CHAR(7) NOT NULL,
+        monto DECIMAL(10,2) NOT NULL,
+        metodo_pago ENUM('Transferencia', 'Efectivo', 'Cheque') NOT NULL DEFAULT 'Transferencia',
+        observaciones VARCHAR(255) NULL,
+        fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_pagos_personal_periodo (periodo_referencia),
+        INDEX idx_pagos_personal_usuario_fecha (id_usuario, fecha_pago),
+        CONSTRAINT fk_pagos_personal_usuario
+          FOREIGN KEY (id_usuario)
+          REFERENCES usuarios(id_usuario)
+          ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
   } finally {
     connection.release();
   }
@@ -877,6 +923,41 @@ async function listClientMembers(executor = pool) {
   );
 
   return rows.map(normalizeMember);
+}
+
+function normalizeStaffMember(row) {
+  return {
+    id: row.id_usuario,
+    name: row.nombre_completo,
+    email: row.correo,
+    role: roleToFrontend(row.rol),
+    roleLabel: row.rol,
+    joinedAt: row.fecha_registro
+  };
+}
+
+async function listStaffMembers(executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT id_usuario, nombre_completo, correo, rol, fecha_registro
+     FROM usuarios
+     WHERE rol IN ('Administrador', 'Recepcionista', 'Entrenador')
+     ORDER BY FIELD(rol, 'Entrenador', 'Recepcionista', 'Administrador'), nombre_completo ASC`
+  );
+
+  return rows.map(normalizeStaffMember);
+}
+
+async function getStaffMemberById(staffId, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT id_usuario, nombre_completo, correo, rol, fecha_registro
+     FROM usuarios
+     WHERE id_usuario = ?
+       AND rol IN ('Administrador', 'Recepcionista', 'Entrenador')
+     LIMIT 1`,
+    [staffId]
+  );
+
+  return rows[0] || null;
 }
 
 function mapMeasurementRow(row) {
@@ -2673,6 +2754,267 @@ app.get("/api/trainer/clients/:clientId/measurements", authenticate, requireRole
 
 // â”€â”€ PAGOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+app.get("/api/admin/staff-members", authenticate, requireRoles("admin"), async (_req, res) => {
+  try {
+    const staff = await listStaffMembers();
+    res.json({ staff, total: staff.length });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando personal", detail: error.message });
+  }
+});
+
+app.get("/api/admin/staff-payments", authenticate, requireRoles("admin"), async (req, res) => {
+  const selectedPeriod = normalizeYearMonth(req.query?.period);
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+         pp.id_pago_personal,
+         pp.id_usuario,
+         u.nombre_completo,
+         u.correo,
+         u.rol,
+         pp.concepto,
+         pp.periodo_referencia,
+         pp.monto,
+         pp.metodo_pago,
+         pp.observaciones,
+         pp.fecha_pago
+       FROM pagos_personal pp
+       INNER JOIN usuarios u
+         ON u.id_usuario = pp.id_usuario
+        AND u.rol IN ('Administrador', 'Recepcionista', 'Entrenador')
+       WHERE pp.periodo_referencia = ?
+       ORDER BY pp.fecha_pago DESC, pp.id_pago_personal DESC
+       LIMIT 300`,
+      [selectedPeriod]
+    );
+
+    res.json({
+      period: selectedPeriod,
+      payments: rows.map((row) => ({
+        id: row.id_pago_personal,
+        staffId: row.id_usuario,
+        name: row.nombre_completo,
+        email: row.correo,
+        role: roleToFrontend(row.rol),
+        roleLabel: row.rol,
+        concept: row.concepto,
+        period: row.periodo_referencia,
+        amount: Number(row.monto || 0),
+        method: row.metodo_pago,
+        notes: row.observaciones || "",
+        paidAt: row.fecha_pago
+      })),
+      total: rows.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando pagos al personal", detail: error.message });
+  }
+});
+
+app.post("/api/admin/staff-payments", authenticate, requireRoles("admin"), async (req, res) => {
+  const { staffId, monto, metodoPago, concepto, period, observaciones } = req.body || {};
+  const normalizedStaffId = Number(staffId);
+  const normalizedAmount = Number(monto);
+  const normalizedConcept = String(concepto || "").trim();
+  const normalizedMethod = String(metodoPago || "").trim();
+  const normalizedPeriod = String(period || "").trim();
+  const normalizedNotes = String(observaciones || "").trim();
+
+  if (!Number.isInteger(normalizedStaffId) || normalizedStaffId <= 0) {
+    res.status(400).json({ error: "Selecciona un colaborador valido" });
+    return;
+  }
+
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    res.status(400).json({ error: "El monto debe ser mayor que cero" });
+    return;
+  }
+
+  if (!normalizedConcept || normalizedConcept.length > 100) {
+    res.status(400).json({ error: "El concepto es obligatorio y debe ser breve" });
+    return;
+  }
+
+  if (!STAFF_PAYMENT_METHODS.includes(normalizedMethod)) {
+    res.status(400).json({ error: "Metodo de pago invalido" });
+    return;
+  }
+
+  if (!YEAR_MONTH_PATTERN.test(normalizedPeriod)) {
+    res.status(400).json({ error: "Periodo invalido" });
+    return;
+  }
+
+  if (normalizedNotes.length > 255) {
+    res.status(400).json({ error: "Las observaciones no pueden exceder 255 caracteres" });
+    return;
+  }
+
+  try {
+    const staffMember = await getStaffMemberById(normalizedStaffId);
+
+    if (!staffMember) {
+      res.status(404).json({ error: "Colaborador no encontrado" });
+      return;
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO pagos_personal (
+         id_usuario,
+         concepto,
+         periodo_referencia,
+         monto,
+         metodo_pago,
+         observaciones
+       )
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        normalizedStaffId,
+        normalizedConcept,
+        normalizedPeriod,
+        normalizedAmount,
+        normalizedMethod,
+        normalizedNotes || null
+      ]
+    );
+
+    res.status(201).json({
+      ok: true,
+      id: result.insertId,
+      message: `Pago registrado para ${staffMember.nombre_completo || "el colaborador"}`
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error registrando pago al personal", detail: error.message });
+  }
+});
+
+app.get("/api/admin/staff-payments/summary", authenticate, requireRoles("admin"), async (req, res) => {
+  const selectedPeriod = normalizeYearMonth(req.query?.period);
+  const rangeStart = shiftYearMonth(selectedPeriod, -5);
+
+  try {
+    const [totals] = await pool.query(
+      `SELECT
+         COALESCE(SUM(CASE WHEN pp.periodo_referencia = ? THEN pp.monto ELSE 0 END), 0) AS total_pagado_periodo,
+         COALESCE(SUM(CASE WHEN DATE(pp.fecha_pago) = CURDATE() THEN pp.monto ELSE 0 END), 0) AS pagado_hoy,
+         COALESCE(SUM(CASE WHEN pp.periodo_referencia = ? THEN 1 ELSE 0 END), 0) AS pagos_registrados_periodo,
+         COALESCE(AVG(CASE WHEN pp.periodo_referencia = ? THEN pp.monto END), 0) AS promedio_pago_periodo,
+         COALESCE(COUNT(DISTINCT CASE WHEN pp.periodo_referencia = ? THEN pp.id_usuario END), 0) AS colaboradores_pagados_periodo,
+         COALESCE(SUM(pp.monto), 0) AS total_historico
+       FROM pagos_personal pp
+       INNER JOIN usuarios u
+         ON u.id_usuario = pp.id_usuario
+        AND u.rol IN ('Administrador', 'Recepcionista', 'Entrenador')`,
+      [selectedPeriod, selectedPeriod, selectedPeriod, selectedPeriod]
+    );
+
+    const [byRole] = await pool.query(
+      `SELECT
+         u.rol,
+         COUNT(*) AS cantidad,
+         COALESCE(SUM(pp.monto), 0) AS subtotal
+       FROM pagos_personal pp
+       INNER JOIN usuarios u
+         ON u.id_usuario = pp.id_usuario
+        AND u.rol IN ('Administrador', 'Recepcionista', 'Entrenador')
+       WHERE pp.periodo_referencia = ?
+       GROUP BY u.rol
+       ORDER BY subtotal DESC, u.rol ASC`,
+      [selectedPeriod]
+    );
+
+    const [byMethod] = await pool.query(
+      `SELECT
+         pp.metodo_pago,
+         COUNT(*) AS cantidad,
+         COALESCE(SUM(pp.monto), 0) AS subtotal
+       FROM pagos_personal pp
+       INNER JOIN usuarios u
+         ON u.id_usuario = pp.id_usuario
+        AND u.rol IN ('Administrador', 'Recepcionista', 'Entrenador')
+       WHERE pp.periodo_referencia = ?
+       GROUP BY pp.metodo_pago
+       ORDER BY subtotal DESC, pp.metodo_pago ASC`,
+      [selectedPeriod]
+    );
+
+    const [monthly] = await pool.query(
+      `SELECT
+         pp.periodo_referencia AS mes,
+         COALESCE(SUM(pp.monto), 0) AS total
+       FROM pagos_personal pp
+       INNER JOIN usuarios u
+         ON u.id_usuario = pp.id_usuario
+        AND u.rol IN ('Administrador', 'Recepcionista', 'Entrenador')
+       WHERE pp.periodo_referencia BETWEEN ? AND ?
+       GROUP BY pp.periodo_referencia
+       ORDER BY pp.periodo_referencia ASC`,
+      [rangeStart, selectedPeriod]
+    );
+
+    const [topRecipients] = await pool.query(
+      `SELECT
+         u.id_usuario,
+         u.nombre_completo,
+         u.correo,
+         u.rol,
+         COUNT(*) AS cantidad,
+         COALESCE(SUM(pp.monto), 0) AS subtotal,
+         MAX(pp.fecha_pago) AS ultimo_pago
+       FROM pagos_personal pp
+       INNER JOIN usuarios u
+         ON u.id_usuario = pp.id_usuario
+        AND u.rol IN ('Administrador', 'Recepcionista', 'Entrenador')
+       WHERE pp.periodo_referencia = ?
+       GROUP BY u.id_usuario, u.nombre_completo, u.correo, u.rol
+       ORDER BY subtotal DESC, cantidad DESC, u.nombre_completo ASC
+       LIMIT 5`,
+      [selectedPeriod]
+    );
+
+    res.json({
+      period: selectedPeriod,
+      summary: {
+        total_pagado_periodo: Number(totals[0]?.total_pagado_periodo || 0),
+        pagado_hoy: Number(totals[0]?.pagado_hoy || 0),
+        pagos_registrados_periodo: Number(totals[0]?.pagos_registrados_periodo || 0),
+        promedio_pago_periodo: Number(totals[0]?.promedio_pago_periodo || 0),
+        colaboradores_pagados_periodo: Number(totals[0]?.colaboradores_pagados_periodo || 0),
+        total_historico: Number(totals[0]?.total_historico || 0)
+      },
+      byRole: byRole.map((row) => ({
+        role: roleToFrontend(row.rol),
+        roleLabel: row.rol,
+        quantity: Number(row.cantidad || 0),
+        subtotal: Number(row.subtotal || 0)
+      })),
+      byMethod: byMethod.map((row) => ({
+        method: row.metodo_pago,
+        quantity: Number(row.cantidad || 0),
+        subtotal: Number(row.subtotal || 0)
+      })),
+      monthly: monthly.map((row) => ({
+        mes: row.mes,
+        total: Number(row.total || 0)
+      })),
+      topRecipients: topRecipients.map((row) => ({
+        id: row.id_usuario,
+        name: row.nombre_completo,
+        email: row.correo,
+        role: roleToFrontend(row.rol),
+        roleLabel: row.rol,
+        quantity: Number(row.cantidad || 0),
+        subtotal: Number(row.subtotal || 0),
+        lastPaymentAt: row.ultimo_pago
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando resumen de pagos al personal", detail: error.message });
+  }
+});
+
 app.get("/api/admin/payments", authenticate, requireRoles("admin"), async (_req, res) => {
   try {
     const [rows] = await pool.query(
@@ -3313,6 +3655,7 @@ app.post("/api/fotos", authenticate, requireRoles("admin", "entrenador"), async 
 async function startServer() {
   try {
     await ensureTrainerFeatureSchema();
+    await ensureFinanceFeatureSchema();
     app.listen(PORT, () => {
       console.log(`API corriendo en http://localhost:${PORT}`);
     });

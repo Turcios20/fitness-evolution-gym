@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Finanzas — FITNESS EVOLUTIONS GYM</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="finance-module.css">
   <style>
     /* ── Estilos exclusivos de finanzas ── */
     .fin-stats {
@@ -147,6 +148,14 @@
       padding: 20px 0;
     }
 
+    .finance-head-copy {
+      max-width: 760px;
+      color: var(--text-dim);
+      font-size: 15px;
+      line-height: 1.65;
+      margin-bottom: 18px;
+    }
+
     @media (max-width: 768px) {
       .fin-stats { grid-template-columns: repeat(2, 1fr); }
       .fin-grid  { grid-template-columns: 1fr; }
@@ -176,9 +185,18 @@
     <main class="content">
 
       <div class="fadein">
-        <p class="welcome-sub">Panel de control</p>
-        <h1 class="welcome-title">Finanzas</h1>
+        <p class="welcome-sub">Modulo de finanzas</p>
+        <h1 class="welcome-title">Registro de ingresos</h1>
+        <p class="finance-head-copy">
+          Controla los ingresos de membresias y navega entre los modulos financieros del sistema
+          sin mezclar entradas de clientes con pagos internos del personal.
+        </p>
       </div>
+
+      <nav class="finance-module-nav fadein-2">
+        <a href="finanzas.html" class="finance-module-link active">Ingresos</a>
+        <a href="pagos-personal.html" class="finance-module-link">Pagos al personal</a>
+      </nav>
 
       <!-- Stats de resumen -->
       <div class="fin-stats fadein-2">

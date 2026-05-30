@@ -135,6 +135,23 @@ CREATE TABLE IF NOT EXISTS pagos (
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS pagos_personal (
+    id_pago_personal INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    concepto VARCHAR(100) NOT NULL,
+    periodo_referencia CHAR(7) NOT NULL,
+    monto DECIMAL(10,2) NOT NULL,
+    metodo_pago ENUM('Transferencia', 'Efectivo', 'Cheque') NOT NULL DEFAULT 'Transferencia',
+    observaciones VARCHAR(255) NULL,
+    fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_pagos_personal_periodo (periodo_referencia),
+    INDEX idx_pagos_personal_usuario_fecha (id_usuario, fecha_pago),
+    CONSTRAINT fk_pagos_personal_usuario
+        FOREIGN KEY (id_usuario)
+        REFERENCES usuarios(id_usuario)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS asistencia (
     id_asistencia INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,
