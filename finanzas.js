@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let financeMembers = [];
   let financeMembersPromise = null;
+  let financePayments = [];
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -78,6 +79,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         </option>
       `)
     ].join("");
+  }
+
+  function findPaymentById(paymentId) {
+    return financePayments.find((payment) => Number(payment.id_pago) === Number(paymentId)) || null;
   }
 
   async function loadSummary() {
@@ -147,16 +152,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function loadPayments() {
     const tbody = document.getElementById("finTbody");
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">Cargando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px">Cargando...</td></tr>';
 
     try {
       const data = await GymApp.api("/api/admin/payments");
-      if (!data.payments.length) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:32px">Sin ingresos registrados.</td></tr>';
+      financePayments = Array.isArray(data.payments) ? data.payments : [];
+
+      if (!financePayments.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:32px">Sin ingresos registrados.</td></tr>';
         return;
       }
 
-      tbody.innerHTML = data.payments.map((payment) => `
+      tbody.innerHTML = financePayments.map((payment) => `
         <tr>
           <td>
             <div class="td-member">
@@ -172,14 +179,21 @@ document.addEventListener("DOMContentLoaded", async () => {
             <span style="color:${METHOD_COLOR[payment.metodo_pago] || "#aaa"}">${METHOD_ICON[payment.metodo_pago] || "--"} ${escapeHtml(payment.metodo_pago || "--")}</span>
           </td>
           <td>${fmtDate(payment.fecha_pago)}</td>
+          <td>
+            <div class="fin-row-actions">
+              <button class="fin-action-btn" type="button" data-action="edit" data-id="${payment.id_pago}">Editar</button>
+              <button class="fin-action-btn fin-action-btn--danger" type="button" data-action="delete" data-id="${payment.id_pago}">Borrar</button>
+            </div>
+          </td>
         </tr>
       `).join("");
     } catch (_error) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#e07070;padding:24px">Error cargando ingresos.</td></tr>';
+      financePayments = [];
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#e07070;padding:24px">Error cargando ingresos.</td></tr>';
     }
   }
 
-  async function showIncomeModal() {
+  async function showIncomeModal(existingPayment = null) {
     const overlay = document.createElement("div");
     overlay.className = "gym-modal-overlay";
 
@@ -195,8 +209,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
 
+    const isEditing = Boolean(existingPayment);
+    const modalTitle = isEditing ? "Editar ingreso" : "Registrar ingreso";
+    const submitLabel = isEditing ? "Guardar cambios" : "Registrar";
+    const submitMethod = isEditing ? "PUT" : "POST";
+    const submitEndpoint = isEditing
+      ? `/api/admin/payments/${existingPayment.id_pago}`
+      : "/api/admin/payments";
+
     box.innerHTML = `
-      <h3 class="gm-title">Registrar ingreso</h3>
+      <h3 class="gm-title">${modalTitle}</h3>
       <div class="gm-form">
         <p style="color:var(--text-dim);font-size:13px;margin:0;">Cargando clientes...</p>
       </div>
@@ -211,7 +233,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       await loadFinanceMembers();
     } catch (_error) {
       box.innerHTML = `
-        <h3 class="gm-title">Registrar ingreso</h3>
+        <h3 class="gm-title">${modalTitle}</h3>
         <div class="gm-form">
           <span class="gm-error">No se pudo cargar la lista de clientes.</span>
         </div>
@@ -224,32 +246,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     box.innerHTML = `
-      <h3 class="gm-title">Registrar ingreso</h3>
+      <h3 class="gm-title">${modalTitle}</h3>
       <div class="gm-form">
         <div class="gm-field">
           <label>Cliente</label>
           <select id="gmUserId" class="gm-input">
-            ${renderMemberOptions()}
+            ${renderMemberOptions(existingPayment?.id_usuario || "")}
           </select>
           <span id="gmMemberHint" style="display:block;margin-top:6px;color:var(--text-dim);font-size:12px;"></span>
         </div>
         <div class="gm-field">
           <label>Monto ($)</label>
-          <input id="gmMonto" class="gm-input" type="number" placeholder="Ej: 35" min="0.01" step="0.01" />
+          <input id="gmMonto" class="gm-input" type="number" placeholder="Ej: 35" min="0.01" step="0.01" value="${escapeHtml(existingPayment?.monto ?? "")}" />
         </div>
         <div class="gm-field">
           <label>Metodo de pago</label>
           <select id="gmMetodo" class="gm-input">
-            <option value="Efectivo">Efectivo</option>
-            <option value="Tarjeta">Tarjeta</option>
-            <option value="Transferencia">Transferencia</option>
+            <option value="Efectivo" ${existingPayment?.metodo_pago === "Efectivo" ? "selected" : ""}>Efectivo</option>
+            <option value="Tarjeta" ${existingPayment?.metodo_pago === "Tarjeta" ? "selected" : ""}>Tarjeta</option>
+            <option value="Transferencia" ${existingPayment?.metodo_pago === "Transferencia" ? "selected" : ""}>Transferencia</option>
           </select>
         </div>
         <span class="gm-error" id="gmErr"></span>
       </div>
       <div class="gm-actions">
         <button class="gm-btn gm-btn-cancel" id="gmCancel">Cancelar</button>
-        <button class="gm-btn gm-btn-primary" id="gmGuardar">Registrar</button>
+        <button class="gm-btn gm-btn-primary" id="gmGuardar">${submitLabel}</button>
       </div>
     `;
 
@@ -291,8 +313,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       try {
-        await GymApp.api("/api/admin/payments", {
-          method: "POST",
+        await GymApp.api(submitEndpoint, {
+          method: submitMethod,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userId: Number(userId),
@@ -302,10 +324,66 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         overlay.remove();
-        GymApp.toast("Ingreso registrado correctamente", "success");
+        GymApp.toast(isEditing ? "Ingreso actualizado correctamente" : "Ingreso registrado correctamente", "success");
         await Promise.all([loadSummary(), loadPayments()]);
       } catch (error) {
-        errEl.textContent = error?.message || "Error al registrar el ingreso.";
+        errEl.textContent = error?.message || `Error al ${isEditing ? "actualizar" : "registrar"} el ingreso.`;
+      }
+    };
+  }
+
+  function showDeleteIncomeModal(payment) {
+    const overlay = document.createElement("div");
+    overlay.className = "gym-modal-overlay";
+
+    const box = document.createElement("div");
+    box.className = "gym-modal-box fadein";
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        overlay.remove();
+      }
+    });
+
+    box.innerHTML = `
+      <h3 class="gm-title">Eliminar ingreso</h3>
+      <div class="gm-form">
+        <p style="color:var(--text);margin:0 0 8px 0;">
+          Vas a eliminar el ingreso de <strong>${escapeHtml(payment.nombre_completo)}</strong>.
+        </p>
+        <p style="color:var(--text-dim);font-size:13px;margin:0;">
+          Monto: <strong>${fmt(payment.monto)}</strong> | Metodo: <strong>${escapeHtml(payment.metodo_pago)}</strong> | Fecha: <strong>${fmtDate(payment.fecha_pago)}</strong>
+        </p>
+        <span class="gm-error" id="gmDeleteErr"></span>
+      </div>
+      <div class="gm-actions">
+        <button class="gm-btn gm-btn-cancel" id="gmDeleteCancel">Cancelar</button>
+        <button class="gm-btn gm-btn-danger" id="gmDeleteConfirm">Borrar ingreso</button>
+      </div>
+    `;
+
+    const errorElement = box.querySelector("#gmDeleteErr");
+    const confirmButton = box.querySelector("#gmDeleteConfirm");
+
+    box.querySelector("#gmDeleteCancel").onclick = () => overlay.remove();
+    confirmButton.onclick = async () => {
+      confirmButton.disabled = true;
+      errorElement.textContent = "";
+
+      try {
+        await GymApp.api(`/api/admin/payments/${payment.id_pago}`, {
+          method: "DELETE"
+        });
+
+        overlay.remove();
+        GymApp.toast("Ingreso eliminado correctamente", "success");
+        await Promise.all([loadSummary(), loadPayments()]);
+      } catch (error) {
+        errorElement.textContent = error?.message || "No se pudo eliminar el ingreso.";
+        confirmButton.disabled = false;
       }
     };
   }
@@ -314,6 +392,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     showIncomeModal().catch(() => {
       GymApp.toast("No se pudo abrir el registro de ingresos", "error");
     });
+  });
+
+  document.getElementById("finTbody").addEventListener("click", (event) => {
+    const actionButton = event.target.closest("[data-action][data-id]");
+    if (!actionButton) return;
+
+    const payment = findPaymentById(actionButton.dataset.id);
+    if (!payment) {
+      GymApp.toast("No se pudo encontrar el ingreso seleccionado", "error");
+      return;
+    }
+
+    if (actionButton.dataset.action === "edit") {
+      showIncomeModal(payment).catch(() => {
+        GymApp.toast("No se pudo abrir la edicion del ingreso", "error");
+      });
+      return;
+    }
+
+    if (actionButton.dataset.action === "delete") {
+      showDeleteIncomeModal(payment);
+    }
   });
 
   await Promise.all([

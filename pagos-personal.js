@@ -454,13 +454,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       const payload = {
         staffId: Number(staffSelect.value),
         concepto: conceptInput.value.trim(),
-        periodo: periodField.value.trim(),
+        period: periodField.value.trim(),
         monto: Number(amountField.value),
         metodoPago: methodField.value,
         observaciones: notesField.value.trim()
       };
 
-      if (!payload.staffId || !payload.concepto || !payload.periodo || !Number.isFinite(payload.monto) || payload.monto <= 0) {
+      if (!payload.staffId || !payload.concepto || !payload.period || !Number.isFinite(payload.monto) || payload.monto <= 0) {
         errorElement.textContent = "Completa colaborador, concepto, periodo y un monto valido.";
         return;
       }

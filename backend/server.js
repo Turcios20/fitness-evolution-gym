@@ -925,6 +925,19 @@ async function listClientMembers(executor = pool) {
   return rows.map(normalizeMember);
 }
 
+async function getClientMemberById(memberId, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT id_usuario
+     FROM usuarios
+     WHERE id_usuario = ?
+       AND rol = 'Cliente'
+     LIMIT 1`,
+    [memberId]
+  );
+
+  return rows[0] || null;
+}
+
 function normalizeStaffMember(row) {
   return {
     id: row.id_usuario,
@@ -2814,12 +2827,12 @@ app.get("/api/admin/staff-payments", authenticate, requireRoles("admin"), async 
 });
 
 app.post("/api/admin/staff-payments", authenticate, requireRoles("admin"), async (req, res) => {
-  const { staffId, monto, metodoPago, concepto, period, observaciones } = req.body || {};
+  const { staffId, monto, metodoPago, concepto, period, periodo, observaciones } = req.body || {};
   const normalizedStaffId = Number(staffId);
   const normalizedAmount = Number(monto);
   const normalizedConcept = String(concepto || "").trim();
   const normalizedMethod = String(metodoPago || "").trim();
-  const normalizedPeriod = String(period || "").trim();
+  const normalizedPeriod = String(period || periodo || "").trim();
   const normalizedNotes = String(observaciones || "").trim();
 
   if (!Number.isInteger(normalizedStaffId) || normalizedStaffId <= 0) {
@@ -3060,16 +3073,9 @@ app.post("/api/admin/payments", authenticate, requireRoles("admin"), async (req,
   }
 
   try {
-    const [memberRows] = await pool.query(
-      `SELECT id_usuario
-       FROM usuarios
-       WHERE id_usuario = ?
-         AND rol = 'Cliente'
-       LIMIT 1`,
-      [normalizedUserId]
-    );
+    const member = await getClientMemberById(normalizedUserId);
 
-    if (!memberRows.length) {
+    if (!member) {
       res.status(404).json({ error: "Cliente no encontrado" });
       return;
     }
@@ -3081,6 +3087,85 @@ app.post("/api/admin/payments", authenticate, requireRoles("admin"), async (req,
     res.status(201).json({ ok: true, id: result.insertId });
   } catch (error) {
     res.status(500).json({ error: "Error registrando pago", detail: error.message });
+  }
+});
+
+app.put("/api/admin/payments/:paymentId", authenticate, requireRoles("admin"), async (req, res) => {
+  const paymentId = Number(req.params.paymentId);
+  const { userId, monto, metodoPago } = req.body || {};
+  const normalizedUserId = Number(userId);
+  const normalizedAmount = Number(monto);
+  const metodos = ["Efectivo", "Tarjeta", "Transferencia"];
+
+  if (!Number.isInteger(paymentId) || paymentId <= 0) {
+    res.status(400).json({ error: "Pago invalido" });
+    return;
+  }
+
+  if (!Number.isInteger(normalizedUserId) || normalizedUserId <= 0) {
+    res.status(400).json({ error: "Selecciona un cliente valido" });
+    return;
+  }
+
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    res.status(400).json({ error: "El monto debe ser mayor que cero" });
+    return;
+  }
+
+  if (!metodos.includes(metodoPago)) {
+    res.status(400).json({ error: "Metodo de pago invalido" });
+    return;
+  }
+
+  try {
+    const member = await getClientMemberById(normalizedUserId);
+
+    if (!member) {
+      res.status(404).json({ error: "Cliente no encontrado" });
+      return;
+    }
+
+    const [result] = await pool.query(
+      `UPDATE pagos
+       SET id_usuario = ?, monto = ?, metodo_pago = ?
+       WHERE id_pago = ?`,
+      [normalizedUserId, normalizedAmount, metodoPago, paymentId]
+    );
+
+    if (!result.affectedRows) {
+      res.status(404).json({ error: "Ingreso no encontrado" });
+      return;
+    }
+
+    res.json({ ok: true, id: paymentId });
+  } catch (error) {
+    res.status(500).json({ error: "Error actualizando ingreso", detail: error.message });
+  }
+});
+
+app.delete("/api/admin/payments/:paymentId", authenticate, requireRoles("admin"), async (req, res) => {
+  const paymentId = Number(req.params.paymentId);
+
+  if (!Number.isInteger(paymentId) || paymentId <= 0) {
+    res.status(400).json({ error: "Pago invalido" });
+    return;
+  }
+
+  try {
+    const [result] = await pool.query(
+      `DELETE FROM pagos
+       WHERE id_pago = ?`,
+      [paymentId]
+    );
+
+    if (!result.affectedRows) {
+      res.status(404).json({ error: "Ingreso no encontrado" });
+      return;
+    }
+
+    res.json({ ok: true, id: paymentId });
+  } catch (error) {
+    res.status(500).json({ error: "Error eliminando ingreso", detail: error.message });
   }
 });
 

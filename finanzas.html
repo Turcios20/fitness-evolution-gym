@@ -134,6 +134,36 @@
     }
     .fin-btn:hover { background: var(--orange-dark); }
 
+    .fin-row-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .fin-action-btn {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color 0.18s, background 0.18s, color 0.18s, transform 0.18s;
+    }
+    .fin-action-btn:hover {
+      border-color: rgba(232,124,42,0.4);
+      background: rgba(232,124,42,0.1);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .fin-action-btn--danger:hover {
+      border-color: rgba(224,112,112,0.45);
+      background: rgba(224,112,112,0.12);
+      color: #ffb3b3;
+    }
+
     .fin-table-wrap {
       background: var(--panel);
       border: 1px solid var(--border);
@@ -244,10 +274,11 @@
                 <th>Monto</th>
                 <th>Método</th>
                 <th>Fecha</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="finTbody">
-              <tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:32px">Cargando...</td></tr>
+              <tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:32px">Cargando...</td></tr>
             </tbody>
           </table>
         </div>
