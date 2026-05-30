@@ -2686,6 +2686,7 @@ app.get("/api/admin/payments", authenticate, requireRoles("admin"), async (_req,
          p.metodo_pago
        FROM pagos p
        JOIN usuarios u ON u.id_usuario = p.id_usuario
+      WHERE u.rol = 'Cliente'
        ORDER BY p.fecha_pago DESC
        LIMIT 200`
     );
@@ -2697,17 +2698,43 @@ app.get("/api/admin/payments", authenticate, requireRoles("admin"), async (_req,
 
 app.post("/api/admin/payments", authenticate, requireRoles("admin"), async (req, res) => {
   const { userId, monto, metodoPago } = req.body || {};
-  if (!userId || !monto) {
-    res.status(400).json({ error: "userId y monto son requeridos" });
+  const normalizedUserId = Number(userId);
+  const normalizedAmount = Number(monto);
+  const metodos = ["Efectivo", "Tarjeta", "Transferencia"];
+
+  if (!Number.isInteger(normalizedUserId) || normalizedUserId <= 0) {
+    res.status(400).json({ error: "Selecciona un cliente valido" });
     return;
   }
-  const metodos = ["Efectivo", "Tarjeta", "Transferencia"];
-  const metodo = metodos.includes(metodoPago) ? metodoPago : "Efectivo";
+
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    res.status(400).json({ error: "El monto debe ser mayor que cero" });
+    return;
+  }
+
+  if (!metodos.includes(metodoPago)) {
+    res.status(400).json({ error: "Metodo de pago invalido" });
+    return;
+  }
 
   try {
+    const [memberRows] = await pool.query(
+      `SELECT id_usuario
+       FROM usuarios
+       WHERE id_usuario = ?
+         AND rol = 'Cliente'
+       LIMIT 1`,
+      [normalizedUserId]
+    );
+
+    if (!memberRows.length) {
+      res.status(404).json({ error: "Cliente no encontrado" });
+      return;
+    }
+
     const [result] = await pool.query(
       `INSERT INTO pagos (id_usuario, monto, metodo_pago) VALUES (?, ?, ?)`,
-      [userId, Number(monto), metodo]
+      [normalizedUserId, normalizedAmount, metodoPago]
     );
     res.status(201).json({ ok: true, id: result.insertId });
   } catch (error) {
@@ -2723,12 +2750,18 @@ app.get("/api/admin/finance/summary", authenticate, requireRoles("admin"), async
          COALESCE(SUM(monto), 0)                          AS ingresos_total,
          COALESCE(SUM(CASE WHEN DATE(fecha_pago) = CURDATE() THEN monto ELSE 0 END), 0) AS ingresos_hoy,
          COALESCE(SUM(CASE WHEN YEAR(fecha_pago) = YEAR(CURDATE()) AND MONTH(fecha_pago) = MONTH(CURDATE()) THEN monto ELSE 0 END), 0) AS ingresos_mes
-       FROM pagos`
+       FROM pagos p
+       INNER JOIN usuarios u
+         ON u.id_usuario = p.id_usuario
+        AND u.rol = 'Cliente'`
     );
 
     const [byMethod] = await pool.query(
       `SELECT metodo_pago, COUNT(*) AS cantidad, COALESCE(SUM(monto), 0) AS subtotal
-       FROM pagos
+       FROM pagos p
+       INNER JOIN usuarios u
+         ON u.id_usuario = p.id_usuario
+        AND u.rol = 'Cliente'
        GROUP BY metodo_pago`
     );
 
@@ -2736,7 +2769,10 @@ app.get("/api/admin/finance/summary", authenticate, requireRoles("admin"), async
       `SELECT
          DATE_FORMAT(fecha_pago, '%Y-%m') AS mes,
          COALESCE(SUM(monto), 0)          AS total
-       FROM pagos
+       FROM pagos p
+       INNER JOIN usuarios u
+         ON u.id_usuario = p.id_usuario
+        AND u.rol = 'Cliente'
        WHERE fecha_pago >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
        GROUP BY mes
        ORDER BY mes ASC`
