@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (isAdminView) {
       roleBadge.textContent = "ADMIN";
-      progressSubtitle.textContent = "Seguimiento Fisico";
+      progressSubtitle.textContent = "Progreso Fisico";
       progressTitle.textContent = "Progreso de Miembros";
       clientsPanelTitle.textContent = "Clientes";
       progressHomeLink.href = "admin.html";
@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     roleBadge.textContent = "COACH";
-    progressSubtitle.textContent = "Seguimiento de Clientes";
+    progressSubtitle.textContent = "Progreso de Clientes";
     progressTitle.textContent = "Progreso de Alumnos";
     clientsPanelTitle.textContent = "Mis Clientes";
     progressHomeLink.href = "entrenador.html";

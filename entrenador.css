@@ -444,6 +444,21 @@ body[data-theme="light"] .bot-link img {
 }
 
 @media (max-width: 768px) {
+  .topnav {
+    padding: 10px 14px;
+    gap: 12px;
+  }
+
+  .trainer-top-actions {
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .logo span {
+    font-size: 14px;
+  }
+
   .trainer-stats-grid {
     grid-template-columns: 1fr;
   }
@@ -461,4 +476,40 @@ body[data-theme="light"] .bot-link img {
     margin-left: 0;
   }
 
+}
+
+@media (max-width: 480px) {
+  .topnav {
+    padding: 10px 12px;
+  }
+
+  .logo {
+    font-size: 12px;
+  }
+
+  .logo span {
+    font-size: 13px;
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .trainer-logout {
+    padding: 8px 10px;
+  }
+
+  .bottomnav {
+    padding: 10px 0 12px;
+  }
+
+  .bot-link {
+    font-size: 9px;
+  }
+
+  .bot-link img {
+    width: 20px;
+    height: 20px;
+  }
 }

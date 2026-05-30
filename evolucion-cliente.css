@@ -60,6 +60,7 @@
   border-radius: 8px;
   background: rgba(20, 20, 20, 0.8);
   backdrop-filter: blur(10px);
+  -webkit-overflow-scrolling: touch;
 }
 
 .tabla-comparativa {
@@ -316,6 +317,30 @@
   .comparativa-section h2,
   .historial-section h2 {
     font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabla-comparativa {
+    min-width: 520px;
+  }
+
+  .historial-item {
+    padding: 16px 14px;
+  }
+
+  .historial-medidas {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-photo-card {
+    padding: 12px;
+  }
+
+  .progress-photo-picker {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
   }
 }
 
