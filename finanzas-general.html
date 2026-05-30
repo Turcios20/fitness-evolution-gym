@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vista general de finanzas - FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="finance-module.css">
+</head>
+<body class="finance-overview-page">
+  <div class="gym-bg"></div>
+  <div class="page">
+    <nav class="topnav">
+      <div class="logo">FITNESS<span>EVOLUTIONS GYM</span></div>
+      <a href="admin.html" class="nav-link">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio"> Inicio
+      </a>
+      <a href="miembros.html" class="nav-link">
+        <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros"> Miembros
+      </a>
+      <a href="finanzas-general.html" class="nav-link active">
+        <img src="assets/attach_money_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Finanzas"> Finanzas
+      </a>
+      <a href="ajustes.html" class="nav-link">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes"> Ajustes
+      </a>
+    </nav>
+
+    <main class="content">
+      <section class="payroll-head fadein">
+        <div>
+          <p class="welcome-sub">Modulo de finanzas</p>
+          <h1 class="welcome-title">Vista general financiera</h1>
+          <p class="payroll-lead">
+            Consolida ingresos, pagos al personal y egresos en un tablero ejecutivo para leer
+            la salud financiera del gimnasio sin perder el acceso directo a cada modulo operativo.
+          </p>
+          <div class="payroll-meta-row">
+            <span class="payroll-history-chip" id="overviewPeriodBadge">Periodo activo: --</span>
+            <span class="payroll-history-chip payroll-history-chip--muted overview-balance-chip" id="overviewBalanceBadge">Balance: --</span>
+          </div>
+        </div>
+
+        <div class="payroll-head-controls">
+          <label class="payroll-period-card" for="overviewMonth">
+            <span class="payroll-period-label">Mes analizado</span>
+            <input type="month" id="overviewMonth" class="payroll-period-input">
+          </label>
+          <a class="fin-btn payroll-head-btn" href="finanzas.html">Abrir ingresos</a>
+        </div>
+      </section>
+
+      <nav class="finance-module-nav fadein-2">
+        <a href="finanzas-general.html" class="finance-module-link active">Vista general</a>
+        <a href="finanzas.html" class="finance-module-link">Ingresos</a>
+        <a href="pagos-personal.html" class="finance-module-link">Pagos al personal</a>
+        <a href="egresos.html" class="finance-module-link">Egresos</a>
+      </nav>
+
+      <section class="payroll-stats fadein-2">
+        <article class="fin-stat">
+          <div class="fin-stat-num" id="overviewIncomeTotal">$0.00</div>
+          <div class="fin-stat-label">Ingresos del periodo</div>
+        </article>
+        <article class="fin-stat">
+          <div class="fin-stat-num" id="overviewOutflowTotal">$0.00</div>
+          <div class="fin-stat-label">Salidas del periodo</div>
+        </article>
+        <article class="fin-stat">
+          <div class="fin-stat-num" id="overviewNetBalance">$0.00</div>
+          <div class="fin-stat-label">Balance neto</div>
+        </article>
+        <article class="fin-stat">
+          <div class="fin-stat-num" id="overviewMovementCount">0</div>
+          <div class="fin-stat-label">Movimientos del periodo</div>
+        </article>
+      </section>
+
+      <section class="payroll-analytics-grid overview-grid fadein-2">
+        <article class="fin-card">
+          <div class="fin-card-title">Composicion del flujo</div>
+          <p class="payroll-card-note">La mezcla entre entradas y salidas para el periodo seleccionado.</p>
+          <div id="overviewComposition">
+            <p class="fin-empty">Cargando composicion financiera...</p>
+          </div>
+        </article>
+
+        <article class="fin-card">
+          <div class="fin-card-title">Claves del periodo</div>
+          <p class="payroll-card-note">Lecturas rapidas para detectar donde se concentra el movimiento.</p>
+          <div id="overviewHighlights">
+            <p class="fin-empty">Cargando indicadores...</p>
+          </div>
+        </article>
+
+        <article class="fin-card" style="grid-column: 1 / -1;">
+          <div class="fin-card-title">Resumen por modulo</div>
+          <p class="payroll-card-note">Desde aqui puedes saltar al detalle de ingresos, pagos al personal o egresos.</p>
+          <div id="overviewModules">
+            <p class="fin-empty">Cargando resumen operativo...</p>
+          </div>
+        </article>
+
+        <article class="fin-card" style="grid-column: 1 / -1;">
+          <div class="fin-card-title">Balance de los ultimos 6 meses</div>
+          <p class="payroll-card-note">Comparativa de ingresos, pagos internos y egresos para identificar estabilidad o presion de caja.</p>
+          <div id="overviewTrend">
+            <p class="fin-empty">Cargando tendencia consolidada...</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="payroll-history-panel fadein-3">
+        <div class="section-header section-header--wrap">
+          <span class="section-title">Actividad financiera reciente</span>
+          <span class="payroll-history-chip payroll-history-chip--muted" id="overviewActivityHint">Movimientos mas recientes del periodo</span>
+        </div>
+        <div id="overviewRecentActivity">
+          <p class="fin-empty">Cargando actividad reciente...</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="finanzas-general.js"></script>
+</body>
+</html>

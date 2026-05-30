@@ -3565,6 +3565,292 @@ app.delete("/api/admin/payments/:paymentId", authenticate, requireRoles("admin")
   }
 });
 
+app.get("/api/admin/finance/overview", authenticate, requireRoles("admin"), async (req, res) => {
+  const selectedMonth = normalizeYearMonth(req.query?.month);
+  const rangeStart = shiftYearMonth(selectedMonth, -5);
+
+  try {
+    const [incomeTotalsRows] = await pool.query(
+      `SELECT
+         COALESCE(SUM(CASE WHEN DATE_FORMAT(p.fecha_pago, '%Y-%m') = ? THEN p.monto ELSE 0 END), 0) AS total_periodo,
+         COALESCE(COUNT(CASE WHEN DATE_FORMAT(p.fecha_pago, '%Y-%m') = ? THEN 1 END), 0) AS movimientos_periodo,
+         COALESCE(AVG(CASE WHEN DATE_FORMAT(p.fecha_pago, '%Y-%m') = ? THEN p.monto END), 0) AS promedio_periodo,
+         COALESCE(SUM(CASE WHEN DATE(p.fecha_pago) = CURDATE() THEN p.monto ELSE 0 END), 0) AS total_hoy,
+         COALESCE(SUM(p.monto), 0) AS total_historico
+       FROM pagos p
+       INNER JOIN usuarios u
+         ON u.id_usuario = p.id_usuario
+        AND u.rol = 'Cliente'`,
+      [selectedMonth, selectedMonth, selectedMonth]
+    );
+
+    const [staffTotalsRows] = await pool.query(
+      `SELECT
+         COALESCE(SUM(CASE WHEN pp.periodo_referencia = ? THEN pp.monto ELSE 0 END), 0) AS total_periodo,
+         COALESCE(COUNT(CASE WHEN pp.periodo_referencia = ? THEN 1 END), 0) AS movimientos_periodo,
+         COALESCE(AVG(CASE WHEN pp.periodo_referencia = ? THEN pp.monto END), 0) AS promedio_periodo,
+         COALESCE(COUNT(DISTINCT CASE WHEN pp.periodo_referencia = ? THEN pp.id_usuario END), 0) AS colaboradores_cubiertos,
+         COALESCE(SUM(CASE WHEN DATE(pp.fecha_pago) = CURDATE() THEN pp.monto ELSE 0 END), 0) AS total_hoy,
+         COALESCE(SUM(pp.monto), 0) AS total_historico
+       FROM pagos_personal pp
+       INNER JOIN usuarios u
+         ON u.id_usuario = pp.id_usuario
+        AND u.rol IN ('Administrador', 'Recepcionista', 'Entrenador')`,
+      [selectedMonth, selectedMonth, selectedMonth, selectedMonth]
+    );
+
+    const [expenseTotalsRows] = await pool.query(
+      `SELECT
+         COALESCE(SUM(CASE WHEN DATE_FORMAT(fecha_egreso, '%Y-%m') = ? THEN monto ELSE 0 END), 0) AS total_periodo,
+         COALESCE(COUNT(CASE WHEN DATE_FORMAT(fecha_egreso, '%Y-%m') = ? THEN 1 END), 0) AS movimientos_periodo,
+         COALESCE(AVG(CASE WHEN DATE_FORMAT(fecha_egreso, '%Y-%m') = ? THEN monto END), 0) AS promedio_periodo,
+         COALESCE(COUNT(DISTINCT CASE WHEN DATE_FORMAT(fecha_egreso, '%Y-%m') = ? THEN categoria END), 0) AS categorias_activas,
+         COALESCE(SUM(monto), 0) AS total_historico
+       FROM egresos_financieros`,
+      [selectedMonth, selectedMonth, selectedMonth, selectedMonth]
+    );
+
+    const [incomeMonthlyRows] = await pool.query(
+      `SELECT
+         DATE_FORMAT(p.fecha_pago, '%Y-%m') AS mes,
+         COALESCE(SUM(p.monto), 0) AS total
+       FROM pagos p
+       INNER JOIN usuarios u
+         ON u.id_usuario = p.id_usuario
+        AND u.rol = 'Cliente'
+       WHERE DATE_FORMAT(p.fecha_pago, '%Y-%m') BETWEEN ? AND ?
+       GROUP BY mes
+       ORDER BY mes ASC`,
+      [rangeStart, selectedMonth]
+    );
+
+    const [staffMonthlyRows] = await pool.query(
+      `SELECT
+         pp.periodo_referencia AS mes,
+         COALESCE(SUM(pp.monto), 0) AS total
+       FROM pagos_personal pp
+       INNER JOIN usuarios u
+         ON u.id_usuario = pp.id_usuario
+        AND u.rol IN ('Administrador', 'Recepcionista', 'Entrenador')
+       WHERE pp.periodo_referencia BETWEEN ? AND ?
+       GROUP BY pp.periodo_referencia
+       ORDER BY pp.periodo_referencia ASC`,
+      [rangeStart, selectedMonth]
+    );
+
+    const [expenseMonthlyRows] = await pool.query(
+      `SELECT
+         DATE_FORMAT(fecha_egreso, '%Y-%m') AS mes,
+         COALESCE(SUM(monto), 0) AS total
+       FROM egresos_financieros
+       WHERE DATE_FORMAT(fecha_egreso, '%Y-%m') BETWEEN ? AND ?
+       GROUP BY mes
+       ORDER BY mes ASC`,
+      [rangeStart, selectedMonth]
+    );
+
+    const [topIncomeMethodRows] = await pool.query(
+      `SELECT
+         p.metodo_pago,
+         COUNT(*) AS cantidad,
+         COALESCE(SUM(p.monto), 0) AS subtotal
+       FROM pagos p
+       INNER JOIN usuarios u
+         ON u.id_usuario = p.id_usuario
+        AND u.rol = 'Cliente'
+       WHERE DATE_FORMAT(p.fecha_pago, '%Y-%m') = ?
+       GROUP BY p.metodo_pago
+       ORDER BY subtotal DESC, cantidad DESC, p.metodo_pago ASC
+       LIMIT 1`,
+      [selectedMonth]
+    );
+
+    const [topStaffRoleRows] = await pool.query(
+      `SELECT
+         u.rol,
+         COUNT(*) AS cantidad,
+         COALESCE(SUM(pp.monto), 0) AS subtotal
+       FROM pagos_personal pp
+       INNER JOIN usuarios u
+         ON u.id_usuario = pp.id_usuario
+        AND u.rol IN ('Administrador', 'Recepcionista', 'Entrenador')
+       WHERE pp.periodo_referencia = ?
+       GROUP BY u.rol
+       ORDER BY subtotal DESC, cantidad DESC, u.rol ASC
+       LIMIT 1`,
+      [selectedMonth]
+    );
+
+    const [topExpenseCategoryRows] = await pool.query(
+      `SELECT
+         categoria,
+         COUNT(*) AS cantidad,
+         COALESCE(SUM(monto), 0) AS subtotal
+       FROM egresos_financieros
+       WHERE DATE_FORMAT(fecha_egreso, '%Y-%m') = ?
+       GROUP BY categoria
+       ORDER BY subtotal DESC, cantidad DESC, categoria ASC
+       LIMIT 1`,
+      [selectedMonth]
+    );
+
+    const [recentActivityRows] = await pool.query(
+      `SELECT *
+       FROM (
+         SELECT
+           'ingresos' AS modulo,
+           'Ingreso' AS etiqueta,
+           u.nombre_completo AS titulo,
+           CONCAT(p.metodo_pago, ' · ', u.correo) AS subtitulo,
+           p.monto AS monto,
+           p.fecha_pago AS fecha_evento
+         FROM pagos p
+         INNER JOIN usuarios u
+           ON u.id_usuario = p.id_usuario
+          AND u.rol = 'Cliente'
+         WHERE DATE_FORMAT(p.fecha_pago, '%Y-%m') = ?
+
+         UNION ALL
+
+         SELECT
+           'pagos_personal' AS modulo,
+           'Pago al personal' AS etiqueta,
+           u.nombre_completo AS titulo,
+           CONCAT(pp.concepto, ' · ', u.rol) AS subtitulo,
+           pp.monto AS monto,
+           pp.fecha_pago AS fecha_evento
+         FROM pagos_personal pp
+         INNER JOIN usuarios u
+           ON u.id_usuario = pp.id_usuario
+          AND u.rol IN ('Administrador', 'Recepcionista', 'Entrenador')
+         WHERE pp.periodo_referencia = ?
+
+         UNION ALL
+
+         SELECT
+           'egresos' AS modulo,
+           'Egreso' AS etiqueta,
+           ef.concepto AS titulo,
+           CONCAT(ef.categoria, ' · ', ef.metodo_pago) AS subtitulo,
+           ef.monto AS monto,
+           ef.fecha_egreso AS fecha_evento
+         FROM egresos_financieros ef
+         WHERE DATE_FORMAT(ef.fecha_egreso, '%Y-%m') = ?
+       ) AS movimientos
+       ORDER BY fecha_evento DESC, monto DESC
+       LIMIT 8`,
+      [selectedMonth, selectedMonth, selectedMonth]
+    );
+
+    const incomeSummary = {
+      total_periodo: Number(incomeTotalsRows[0]?.total_periodo || 0),
+      movimientos_periodo: Number(incomeTotalsRows[0]?.movimientos_periodo || 0),
+      promedio_periodo: Number(incomeTotalsRows[0]?.promedio_periodo || 0),
+      total_hoy: Number(incomeTotalsRows[0]?.total_hoy || 0),
+      total_historico: Number(incomeTotalsRows[0]?.total_historico || 0)
+    };
+    const staffSummary = {
+      total_periodo: Number(staffTotalsRows[0]?.total_periodo || 0),
+      movimientos_periodo: Number(staffTotalsRows[0]?.movimientos_periodo || 0),
+      promedio_periodo: Number(staffTotalsRows[0]?.promedio_periodo || 0),
+      colaboradores_cubiertos: Number(staffTotalsRows[0]?.colaboradores_cubiertos || 0),
+      total_hoy: Number(staffTotalsRows[0]?.total_hoy || 0),
+      total_historico: Number(staffTotalsRows[0]?.total_historico || 0)
+    };
+    const expenseSummary = {
+      total_periodo: Number(expenseTotalsRows[0]?.total_periodo || 0),
+      movimientos_periodo: Number(expenseTotalsRows[0]?.movimientos_periodo || 0),
+      promedio_periodo: Number(expenseTotalsRows[0]?.promedio_periodo || 0),
+      categorias_activas: Number(expenseTotalsRows[0]?.categorias_activas || 0),
+      total_historico: Number(expenseTotalsRows[0]?.total_historico || 0)
+    };
+
+    const incomeMonthlyMap = new Map(incomeMonthlyRows.map((row) => [row.mes, Number(row.total || 0)]));
+    const staffMonthlyMap = new Map(staffMonthlyRows.map((row) => [row.mes, Number(row.total || 0)]));
+    const expenseMonthlyMap = new Map(expenseMonthlyRows.map((row) => [row.mes, Number(row.total || 0)]));
+    const monthly = [];
+
+    for (let offset = 5; offset >= 0; offset -= 1) {
+      const mes = shiftYearMonth(selectedMonth, -offset);
+      const ingresos = incomeMonthlyMap.get(mes) || 0;
+      const pagosPersonal = staffMonthlyMap.get(mes) || 0;
+      const egresos = expenseMonthlyMap.get(mes) || 0;
+
+      monthly.push({
+        mes,
+        ingresos,
+        pagosPersonal,
+        egresos,
+        balanceNeto: ingresos - pagosPersonal - egresos
+      });
+    }
+
+    const totalSalidas = staffSummary.total_periodo + expenseSummary.total_periodo;
+    const balanceNeto = incomeSummary.total_periodo - totalSalidas;
+    const cobertura = incomeSummary.total_periodo > 0
+      ? Math.round((totalSalidas / incomeSummary.total_periodo) * 100)
+      : 0;
+
+    const topIncomeMethod = topIncomeMethodRows[0]
+      ? {
+          label: topIncomeMethodRows[0].metodo_pago,
+          quantity: Number(topIncomeMethodRows[0].cantidad || 0),
+          subtotal: Number(topIncomeMethodRows[0].subtotal || 0)
+        }
+      : null;
+    const topStaffRole = topStaffRoleRows[0]
+      ? {
+          label: topStaffRoleRows[0].rol,
+          quantity: Number(topStaffRoleRows[0].cantidad || 0),
+          subtotal: Number(topStaffRoleRows[0].subtotal || 0)
+        }
+      : null;
+    const topExpenseCategory = topExpenseCategoryRows[0]
+      ? {
+          label: topExpenseCategoryRows[0].categoria,
+          quantity: Number(topExpenseCategoryRows[0].cantidad || 0),
+          subtotal: Number(topExpenseCategoryRows[0].subtotal || 0)
+        }
+      : null;
+
+    res.json({
+      month: selectedMonth,
+      overview: {
+        ingresos: incomeSummary,
+        pagosPersonal: staffSummary,
+        egresos: expenseSummary,
+        salidas_totales: totalSalidas,
+        balance_neto: balanceNeto,
+        movimientos_totales: incomeSummary.movimientos_periodo + staffSummary.movimientos_periodo + expenseSummary.movimientos_periodo,
+        cobertura_porcentaje: cobertura,
+        estado_balance: balanceNeto >= 0 ? "positivo" : "alerta"
+      },
+      composition: [
+        { key: "ingresos", label: "Ingresos", subtotal: incomeSummary.total_periodo, tone: "income" },
+        { key: "pagos_personal", label: "Pagos al personal", subtotal: staffSummary.total_periodo, tone: "staff" },
+        { key: "egresos", label: "Egresos", subtotal: expenseSummary.total_periodo, tone: "expense" }
+      ],
+      monthly,
+      highlights: {
+        topIncomeMethod,
+        topStaffRole,
+        topExpenseCategory
+      },
+      recentActivity: recentActivityRows.map((row) => ({
+        module: row.modulo,
+        label: row.etiqueta,
+        title: row.titulo,
+        subtitle: row.subtitulo,
+        amount: Number(row.monto || 0),
+        direction: row.modulo === "ingresos" ? "in" : "out",
+        activityDate: row.modulo === "egresos" ? serializeDateOnly(row.fecha_evento) : row.fecha_evento
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando vista general de finanzas", detail: error.message });
+  }
+});
+
 app.get("/api/admin/finance/summary", authenticate, requireRoles("admin"), async (_req, res) => {
   try {
     const [totals] = await pool.query(

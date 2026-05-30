@@ -29,6 +29,8 @@ fitness-evolution-gym/
   miembros.js                    # Logica del dashboard de miembros
   form.html                      # Formulario para agregar nuevo cliente
   form.js                        # Validacion y envio del formulario
+  finanzas-general.html          # Vista general consolidada de finanzas
+  finanzas-general.js            # Dashboard ejecutivo de finanzas
   finanzas.html                  # Modulo de ingresos financieros
   finanzas.js                    # Logica del modulo de ingresos
   pagos-personal.html            # Modulo de pagos al personal
@@ -231,6 +233,7 @@ DELETE /api/admin/members/:id
 
 ```text
 GET    /api/admin/finance/summary
+GET    /api/admin/finance/overview?month=YYYY-MM
 GET    /api/admin/payments
 POST   /api/admin/payments
 PUT    /api/admin/payments/:paymentId
@@ -261,9 +264,17 @@ GET    /api/admin/expenses/summary?month=YYYY-MM
 ```
 
 Los modulos financieros quedan separados por dominio:
+- `finanzas-general.html`: tablero ejecutivo consolidado de ingresos, pagos al personal y egresos.
 - `finanzas.html`: ingresos por membresias de clientes.
 - `pagos-personal.html`: pagos internos al personal.
 - `egresos.html`: gastos operativos y extraordinarios del gimnasio.
+
+El endpoint `GET /api/admin/finance/overview?month=YYYY-MM` alimenta la vista general con:
+- resumen del periodo por ingresos, pagos al personal y egresos
+- salidas totales y balance neto
+- composicion del flujo del mes
+- tendencia consolidada de los ultimos 6 meses
+- indicadores destacados y actividad financiera reciente
 
 ---
 
@@ -457,6 +468,7 @@ Estas paginas estan creadas con estructura completa y placeholder visual:
 
 | Archivo | Descripcion |
 |---------|-------------|
+| `finanzas-general.html` | Vista general consolidada del area de finanzas |
 | `finanzas.html` | Registro y control de ingresos |
 | `pagos-personal.html` | Registro y analitica de pagos al personal |
 | `egresos.html` | Registro y control de egresos financieros |
