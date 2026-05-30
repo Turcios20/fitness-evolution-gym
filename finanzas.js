@@ -104,34 +104,74 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("finIngresosTotal").textContent = fmt(data.summary.ingresos_total);
       document.getElementById("finTotalPagos").textContent = data.summary.total_pagos;
 
-      renderByMethod(data.byMethod);
-      renderMonthly(data.monthly);
+      renderIncomeComposition(data.byMethod);
+      renderIncomeTrend(data.monthly);
     } catch (_error) {
       GymApp.toast("Error cargando resumen financiero", "error");
     }
   }
 
-  function renderByMethod(byMethod) {
-    const wrap = document.getElementById("finByMethod");
-    if (!byMethod || !byMethod.length) {
+  function renderIncomeComposition(byMethod) {
+    const wrap = document.getElementById("finComposition");
+    const items = Array.isArray(byMethod)
+      ? byMethod
+        .map((item) => ({
+          metodo_pago: item.metodo_pago || "--",
+          cantidad: Number(item.cantidad || 0),
+          subtotal: Number(item.subtotal || 0)
+        }))
+        .filter((item) => item.subtotal > 0)
+        .sort((a, b) => b.subtotal - a.subtotal)
+      : [];
+
+    if (!items.length) {
       wrap.innerHTML = '<p class="fin-empty">Sin ingresos registrados aun.</p>';
       return;
     }
 
-    wrap.innerHTML = byMethod.map((methodRow) => `
-      <div class="fin-method-row">
-        <span class="fin-method-icon">${METHOD_ICON[methodRow.metodo_pago] || "--"}</span>
-        <div class="fin-method-info">
-          <span class="fin-method-name">${escapeHtml(methodRow.metodo_pago || "--")}</span>
-          <span class="fin-method-count">${methodRow.cantidad} registro${methodRow.cantidad !== 1 ? "s" : ""}</span>
+    const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
+    let current = 0;
+
+    const segments = items.map((item) => {
+      const start = current;
+      const percentage = totalAmount ? (item.subtotal / totalAmount) * 100 : 0;
+      current += percentage;
+      return `${METHOD_COLOR[item.metodo_pago] || "#999999"} ${start.toFixed(2)}% ${current.toFixed(2)}%`;
+    });
+
+    if (current < 100) {
+      segments.push(`rgba(255,255,255,0.08) ${current.toFixed(2)}% 100%`);
+    }
+
+    wrap.innerHTML = `
+      <div class="payroll-donut-layout">
+        <div class="payroll-donut" style="background: conic-gradient(${segments.join(", ")});">
+          <div class="payroll-donut-center">
+            <strong>${fmt(totalAmount)}</strong>
+            <span>Total historico</span>
+          </div>
         </div>
-        <span class="fin-method-total" style="color:${METHOD_COLOR[methodRow.metodo_pago] || "#e87c2a"}">${fmt(methodRow.subtotal)}</span>
+        <div class="payroll-legend">
+          ${items.map((item) => {
+            const percentage = totalAmount ? Math.round((item.subtotal / totalAmount) * 100) : 0;
+            return `
+              <div class="payroll-legend-item">
+                <span class="payroll-legend-swatch" style="background:${METHOD_COLOR[item.metodo_pago] || "#999999"}"></span>
+                <div>
+                  <span class="payroll-legend-label">${escapeHtml(item.metodo_pago)}</span>
+                  <span class="payroll-legend-detail">${item.cantidad} registro${item.cantidad !== 1 ? "s" : ""} &middot; ${percentage}%</span>
+                </div>
+                <span class="payroll-legend-amount">${fmt(item.subtotal)}</span>
+              </div>
+            `;
+          }).join("")}
+        </div>
       </div>
-    `).join("");
+    `;
   }
 
-  function renderMonthly(monthly) {
-    const wrap = document.getElementById("finMonthly");
+  function renderIncomeTrend(monthly) {
+    const wrap = document.getElementById("finTrend");
     if (!monthly || !monthly.length) {
       wrap.innerHTML = '<p class="fin-empty">Sin datos de los ultimos 6 meses.</p>';
       return;
