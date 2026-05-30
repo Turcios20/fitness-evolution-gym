@@ -147,6 +147,87 @@
       padding: 20px 0;
     }
 
+    /* ── Panel de egresos ── */
+    #panelEgresos { display: none; }
+    #panelIngresos { display: block; }
+ 
+    /* ── Filtro de mes ── */
+    .egr-filter {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .egr-filter label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .egr-select {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      padding: 7px 12px;
+      cursor: pointer;
+      outline: none;
+    }
+ 
+    /* ── Resumen egresos ── */
+    .egr-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .egr-stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 14px;
+      text-align: center;
+      backdrop-filter: blur(12px);
+    }
+    .egr-stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      line-height: 1;
+      color: #e05555;
+    }
+    .egr-stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+ 
+    /* ── Gráfico egresos por mes ── */
+    .egr-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+ 
+    /* ── Badge de categoría ── */
+    .egr-cat-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(224,85,85,0.15);
+      color: #e05555;
+    }
+ 
+
     @media (max-width: 768px) {
       .fin-stats { grid-template-columns: repeat(2, 1fr); }
       .fin-grid  { grid-template-columns: 1fr; }
