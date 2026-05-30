@@ -47,7 +47,19 @@ const ROLE_DB_TO_FRONTEND = {
 };
 const STAFF_DB_ROLES = ["Administrador", "Recepcionista", "Entrenador"];
 const STAFF_PAYMENT_METHODS = ["Transferencia", "Efectivo", "Cheque"];
+const EXPENSE_METHODS = ["Transferencia", "Efectivo", "Tarjeta", "Cheque"];
+const EXPENSE_CATEGORIES = [
+  "Servicios",
+  "Mantenimiento",
+  "Equipamiento",
+  "Suministros",
+  "Marketing",
+  "Operacion",
+  "Imprevistos",
+  "Otros"
+];
 const YEAR_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+const ISO_DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
@@ -80,6 +92,34 @@ function shiftYearMonth(yearMonth, delta) {
   const [year, month] = normalized.split("-").map(Number);
   const nextDate = new Date(year, month - 1 + delta, 1);
   return getCurrentYearMonth(nextDate);
+}
+
+function normalizeIsoDate(value) {
+  const normalized = String(value || "").trim();
+  if (!ISO_DATE_PATTERN.test(normalized)) {
+    return null;
+  }
+
+  const [year, month, day] = normalized.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return normalized;
+}
+
+function serializeDateOnly(value) {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  return String(value).slice(0, 10);
 }
 
 async function tableExists(executor, tableName) {
@@ -191,6 +231,22 @@ async function ensureFinanceFeatureSchema() {
           FOREIGN KEY (id_usuario)
           REFERENCES usuarios(id_usuario)
           ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS egresos_financieros (
+        id_egreso INT AUTO_INCREMENT PRIMARY KEY,
+        concepto VARCHAR(120) NOT NULL,
+        categoria ENUM('Servicios', 'Mantenimiento', 'Equipamiento', 'Suministros', 'Marketing', 'Operacion', 'Imprevistos', 'Otros') NOT NULL DEFAULT 'Operacion',
+        monto DECIMAL(10,2) NOT NULL,
+        fecha_egreso DATE NOT NULL,
+        metodo_pago ENUM('Transferencia', 'Efectivo', 'Tarjeta', 'Cheque') NOT NULL DEFAULT 'Transferencia',
+        observaciones VARCHAR(255) NULL,
+        fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_egresos_financieros_fecha (fecha_egreso),
+        INDEX idx_egresos_financieros_categoria_fecha (categoria, fecha_egreso),
+        INDEX idx_egresos_financieros_metodo_fecha (metodo_pago, fecha_egreso)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
     );
   } finally {
@@ -968,6 +1024,39 @@ async function getStaffMemberById(staffId, executor = pool) {
        AND rol IN ('Administrador', 'Recepcionista', 'Entrenador')
      LIMIT 1`,
     [staffId]
+  );
+
+  return rows[0] || null;
+}
+
+function normalizeExpenseRow(row) {
+  return {
+    id: row.id_egreso,
+    concept: row.concepto,
+    category: row.categoria,
+    amount: Number(row.monto || 0),
+    expenseDate: serializeDateOnly(row.fecha_egreso),
+    method: row.metodo_pago,
+    notes: row.observaciones || "",
+    createdAt: row.fecha_registro
+  };
+}
+
+async function getExpenseById(expenseId, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT
+       id_egreso,
+       concepto,
+       categoria,
+       monto,
+       fecha_egreso,
+       metodo_pago,
+       observaciones,
+       fecha_registro
+     FROM egresos_financieros
+     WHERE id_egreso = ?
+     LIMIT 1`,
+    [expenseId]
   );
 
   return rows[0] || null;
@@ -3025,6 +3114,313 @@ app.get("/api/admin/staff-payments/summary", authenticate, requireRoles("admin")
     });
   } catch (error) {
     res.status(500).json({ error: "Error cargando resumen de pagos al personal", detail: error.message });
+  }
+});
+
+app.get("/api/admin/expenses", authenticate, requireRoles("admin"), async (req, res) => {
+  const selectedMonth = normalizeYearMonth(req.query?.month);
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+         id_egreso,
+         concepto,
+         categoria,
+         monto,
+         fecha_egreso,
+         metodo_pago,
+         observaciones,
+         fecha_registro
+       FROM egresos_financieros
+       WHERE DATE_FORMAT(fecha_egreso, '%Y-%m') = ?
+       ORDER BY fecha_egreso DESC, id_egreso DESC`,
+      [selectedMonth]
+    );
+
+    res.json({
+      month: selectedMonth,
+      total: rows.length,
+      categories: EXPENSE_CATEGORIES,
+      methods: EXPENSE_METHODS,
+      expenses: rows.map(normalizeExpenseRow)
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando egresos", detail: error.message });
+  }
+});
+
+app.post("/api/admin/expenses", authenticate, requireRoles("admin"), async (req, res) => {
+  const { concepto, categoria, monto, fechaEgreso, metodoPago, observaciones } = req.body || {};
+  const normalizedConcept = String(concepto || "").trim();
+  const normalizedCategory = String(categoria || "").trim();
+  const normalizedAmount = Number(monto);
+  const normalizedDate = normalizeIsoDate(fechaEgreso);
+  const normalizedMethod = String(metodoPago || "").trim();
+  const normalizedNotes = String(observaciones || "").trim();
+
+  if (!normalizedConcept || normalizedConcept.length < 3) {
+    res.status(400).json({ error: "El concepto debe tener al menos 3 caracteres" });
+    return;
+  }
+
+  if (!EXPENSE_CATEGORIES.includes(normalizedCategory)) {
+    res.status(400).json({ error: "Categoria invalida" });
+    return;
+  }
+
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    res.status(400).json({ error: "El monto debe ser mayor que cero" });
+    return;
+  }
+
+  if (!normalizedDate) {
+    res.status(400).json({ error: "La fecha del egreso es invalida" });
+    return;
+  }
+
+  if (!EXPENSE_METHODS.includes(normalizedMethod)) {
+    res.status(400).json({ error: "Metodo de pago invalido" });
+    return;
+  }
+
+  if (normalizedNotes.length > 255) {
+    res.status(400).json({ error: "Las observaciones no pueden superar 255 caracteres" });
+    return;
+  }
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO egresos_financieros (
+         concepto,
+         categoria,
+         monto,
+         fecha_egreso,
+         metodo_pago,
+         observaciones
+       ) VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        normalizedConcept,
+        normalizedCategory,
+        normalizedAmount,
+        normalizedDate,
+        normalizedMethod,
+        normalizedNotes || null
+      ]
+    );
+
+    res.status(201).json({ ok: true, id: result.insertId });
+  } catch (error) {
+    res.status(500).json({ error: "Error registrando egreso", detail: error.message });
+  }
+});
+
+app.put("/api/admin/expenses/:expenseId", authenticate, requireRoles("admin"), async (req, res) => {
+  const expenseId = Number(req.params.expenseId);
+  const { concepto, categoria, monto, fechaEgreso, metodoPago, observaciones } = req.body || {};
+  const normalizedConcept = String(concepto || "").trim();
+  const normalizedCategory = String(categoria || "").trim();
+  const normalizedAmount = Number(monto);
+  const normalizedDate = normalizeIsoDate(fechaEgreso);
+  const normalizedMethod = String(metodoPago || "").trim();
+  const normalizedNotes = String(observaciones || "").trim();
+
+  if (!Number.isInteger(expenseId) || expenseId <= 0) {
+    res.status(400).json({ error: "Egreso invalido" });
+    return;
+  }
+
+  if (!normalizedConcept || normalizedConcept.length < 3) {
+    res.status(400).json({ error: "El concepto debe tener al menos 3 caracteres" });
+    return;
+  }
+
+  if (!EXPENSE_CATEGORIES.includes(normalizedCategory)) {
+    res.status(400).json({ error: "Categoria invalida" });
+    return;
+  }
+
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    res.status(400).json({ error: "El monto debe ser mayor que cero" });
+    return;
+  }
+
+  if (!normalizedDate) {
+    res.status(400).json({ error: "La fecha del egreso es invalida" });
+    return;
+  }
+
+  if (!EXPENSE_METHODS.includes(normalizedMethod)) {
+    res.status(400).json({ error: "Metodo de pago invalido" });
+    return;
+  }
+
+  if (normalizedNotes.length > 255) {
+    res.status(400).json({ error: "Las observaciones no pueden superar 255 caracteres" });
+    return;
+  }
+
+  try {
+    const existingExpense = await getExpenseById(expenseId);
+
+    if (!existingExpense) {
+      res.status(404).json({ error: "Egreso no encontrado" });
+      return;
+    }
+
+    await pool.query(
+      `UPDATE egresos_financieros
+       SET concepto = ?,
+           categoria = ?,
+           monto = ?,
+           fecha_egreso = ?,
+           metodo_pago = ?,
+           observaciones = ?
+       WHERE id_egreso = ?`,
+      [
+        normalizedConcept,
+        normalizedCategory,
+        normalizedAmount,
+        normalizedDate,
+        normalizedMethod,
+        normalizedNotes || null,
+        expenseId
+      ]
+    );
+
+    res.json({ ok: true, id: expenseId });
+  } catch (error) {
+    res.status(500).json({ error: "Error actualizando egreso", detail: error.message });
+  }
+});
+
+app.delete("/api/admin/expenses/:expenseId", authenticate, requireRoles("admin"), async (req, res) => {
+  const expenseId = Number(req.params.expenseId);
+
+  if (!Number.isInteger(expenseId) || expenseId <= 0) {
+    res.status(400).json({ error: "Egreso invalido" });
+    return;
+  }
+
+  try {
+    const [result] = await pool.query(
+      `DELETE FROM egresos_financieros
+       WHERE id_egreso = ?`,
+      [expenseId]
+    );
+
+    if (!result.affectedRows) {
+      res.status(404).json({ error: "Egreso no encontrado" });
+      return;
+    }
+
+    res.json({ ok: true, id: expenseId });
+  } catch (error) {
+    res.status(500).json({ error: "Error eliminando egreso", detail: error.message });
+  }
+});
+
+app.get("/api/admin/expenses/summary", authenticate, requireRoles("admin"), async (req, res) => {
+  const selectedMonth = normalizeYearMonth(req.query?.month);
+  const rangeStart = shiftYearMonth(selectedMonth, -5);
+
+  try {
+    const [summaryRows] = await pool.query(
+      `SELECT
+         COALESCE(SUM(CASE WHEN DATE_FORMAT(fecha_egreso, '%Y-%m') = ? THEN monto ELSE 0 END), 0) AS total_periodo,
+         COALESCE(COUNT(CASE WHEN DATE_FORMAT(fecha_egreso, '%Y-%m') = ? THEN 1 END), 0) AS movimientos_periodo,
+         COALESCE(AVG(CASE WHEN DATE_FORMAT(fecha_egreso, '%Y-%m') = ? THEN monto END), 0) AS promedio_periodo,
+         COALESCE(SUM(monto), 0) AS total_historico,
+         COALESCE(COUNT(DISTINCT CASE WHEN DATE_FORMAT(fecha_egreso, '%Y-%m') = ? THEN categoria END), 0) AS categorias_activas
+       FROM egresos_financieros`,
+      [selectedMonth, selectedMonth, selectedMonth, selectedMonth]
+    );
+
+    const [byCategory] = await pool.query(
+      `SELECT
+         categoria,
+         COUNT(*) AS cantidad,
+         COALESCE(SUM(monto), 0) AS subtotal
+       FROM egresos_financieros
+       WHERE DATE_FORMAT(fecha_egreso, '%Y-%m') = ?
+       GROUP BY categoria
+       ORDER BY subtotal DESC, categoria ASC`,
+      [selectedMonth]
+    );
+
+    const [byMethod] = await pool.query(
+      `SELECT
+         metodo_pago,
+         COUNT(*) AS cantidad,
+         COALESCE(SUM(monto), 0) AS subtotal
+       FROM egresos_financieros
+       WHERE DATE_FORMAT(fecha_egreso, '%Y-%m') = ?
+       GROUP BY metodo_pago
+       ORDER BY subtotal DESC, metodo_pago ASC`,
+      [selectedMonth]
+    );
+
+    const [monthly] = await pool.query(
+      `SELECT
+         DATE_FORMAT(fecha_egreso, '%Y-%m') AS mes,
+         COALESCE(SUM(monto), 0) AS total
+       FROM egresos_financieros
+       WHERE DATE_FORMAT(fecha_egreso, '%Y-%m') BETWEEN ? AND ?
+       GROUP BY mes
+       ORDER BY mes ASC`,
+      [rangeStart, selectedMonth]
+    );
+
+    const [topExpenses] = await pool.query(
+      `SELECT
+         id_egreso,
+         concepto,
+         categoria,
+         metodo_pago,
+         monto,
+         fecha_egreso,
+         observaciones
+       FROM egresos_financieros
+       WHERE DATE_FORMAT(fecha_egreso, '%Y-%m') = ?
+       ORDER BY monto DESC, fecha_egreso DESC, id_egreso DESC
+       LIMIT 5`,
+      [selectedMonth]
+    );
+
+    res.json({
+      month: selectedMonth,
+      summary: {
+        total_periodo: Number(summaryRows[0]?.total_periodo || 0),
+        movimientos_periodo: Number(summaryRows[0]?.movimientos_periodo || 0),
+        promedio_periodo: Number(summaryRows[0]?.promedio_periodo || 0),
+        total_historico: Number(summaryRows[0]?.total_historico || 0),
+        categorias_activas: Number(summaryRows[0]?.categorias_activas || 0)
+      },
+      byCategory: byCategory.map((row) => ({
+        category: row.categoria,
+        quantity: Number(row.cantidad || 0),
+        subtotal: Number(row.subtotal || 0)
+      })),
+      byMethod: byMethod.map((row) => ({
+        method: row.metodo_pago,
+        quantity: Number(row.cantidad || 0),
+        subtotal: Number(row.subtotal || 0)
+      })),
+      monthly: monthly.map((row) => ({
+        mes: row.mes,
+        total: Number(row.total || 0)
+      })),
+      topExpenses: topExpenses.map((row) => ({
+        id: row.id_egreso,
+        concept: row.concepto,
+        category: row.categoria,
+        method: row.metodo_pago,
+        amount: Number(row.monto || 0),
+        expenseDate: serializeDateOnly(row.fecha_egreso),
+        notes: row.observaciones || ""
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando resumen de egresos", detail: error.message });
   }
 });
 

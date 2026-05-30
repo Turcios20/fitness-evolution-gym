@@ -152,6 +152,20 @@ CREATE TABLE IF NOT EXISTS pagos_personal (
         ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS egresos_financieros (
+    id_egreso INT AUTO_INCREMENT PRIMARY KEY,
+    concepto VARCHAR(120) NOT NULL,
+    categoria ENUM('Servicios', 'Mantenimiento', 'Equipamiento', 'Suministros', 'Marketing', 'Operacion', 'Imprevistos', 'Otros') NOT NULL DEFAULT 'Operacion',
+    monto DECIMAL(10,2) NOT NULL,
+    fecha_egreso DATE NOT NULL,
+    metodo_pago ENUM('Transferencia', 'Efectivo', 'Tarjeta', 'Cheque') NOT NULL DEFAULT 'Transferencia',
+    observaciones VARCHAR(255) NULL,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_egresos_financieros_fecha (fecha_egreso),
+    INDEX idx_egresos_financieros_categoria_fecha (categoria, fecha_egreso),
+    INDEX idx_egresos_financieros_metodo_fecha (metodo_pago, fecha_egreso)
+);
+
 CREATE TABLE IF NOT EXISTS asistencia (
     id_asistencia INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,
