@@ -113,6 +113,19 @@ body[data-theme="light"] .user-avatar {
   gap: 12px;
 }
 
+.back-link {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: color 0.2s ease;
+  margin-right: 8px;
+}
+
+.back-link:hover {
+  color: var(--orange);
+}
+
 .trainer-logout {
   border: 1px solid var(--border);
   background: rgba(232, 124, 42, 0.12);
