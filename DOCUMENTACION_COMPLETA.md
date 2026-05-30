@@ -1,71 +1,91 @@
-﻿# Documentacion Completa - Fitness Evolution Gym
+# Documentacion Completa - Fitness Evolution Gym
 
-## 1. Resumen del proyecto
+## 1. Descripcion general
 
-Fitness Evolution Gym es una aplicacion web con:
-- Frontend estatico (HTML + CSS + JS).
-- Backend Node.js con Express.
-- Base de datos MySQL.
+Fitness Evolution Gym es una aplicacion web para la administracion operativa de un gimnasio.
+El proyecto combina frontend estatico, backend Node.js con Express y base de datos MySQL.
 
-El sistema tiene 2 roles:
-- **Administrador**: gestiona clientes y membresias.
-- **Cliente**: visualiza su panel y puede renovar su suscripcion.
+El sistema cubre estas areas principales:
 
----
+- autenticacion por roles
+- gestion de miembros y membresias
+- panel administrativo
+- panel de recepcion
+- panel de entrenador
+- panel de cliente
+- modulo financiero
+- seguimiento fisico y progreso de miembros
+- clases, reservas y rutinas
 
-## 2. Estructura completa de archivos
+## 2. Stack tecnico
 
-```text
-fitness-evolution-gym/
-  
-  assets/                        # Imagenes e iconos PNG
-  backend/
-    db.js                        # Conexion MySQL (pool)
-    init-db.js                   # Ejecuta database.sql
-    server.js                    # API REST + servidor de archivos estaticos
-  admin.html                     # Vista principal del administrador
-  admin.js                       # Logica admin (CRUD, modales, filtros, kebab)
-  miembros.html                  # Dashboard completo de miembros (tabla paginada)
-  miembros.js                    # Logica del dashboard de miembros
-  form.html                      # Formulario para agregar nuevo cliente
-  form.js                        # Validacion y envio del formulario
-  finanzas-general.html          # Vista general consolidada de finanzas
-  finanzas-general.js            # Dashboard ejecutivo de finanzas
-  finanzas.html                  # Modulo de ingresos financieros
-  finanzas.js                    # Logica del modulo de ingresos
-  pagos-personal.html            # Modulo de pagos al personal
-  pagos-personal.js              # Logica del modulo de pagos al personal
-  egresos.html                   # Modulo de egresos financieros
-  egresos.js                     # Logica del modulo de egresos
-  finance-module.css             # Estilos compartidos del ecosistema financiero
-  ajustes.html                   # Ajustes del sistema (en desarrollo)
-  cliente.html                   # Vista principal del cliente
-  cliente.js                     # Logica cliente (dashboard, renovacion)
-  calendario-cliente.html        # Calendario del cliente (en desarrollo)
-  ajustes-cliente.html           # Ajustes del cliente (en desarrollo)
-  login.html                     # Login compartido
-  login.js                       # Autenticacion + modales de recuperacion
-  common.js                      # Utilidades: API, sesion, toasts, guardRoute
-  styles.css                     # Estilos globales + componentes
-  database.sql                   # Script de BD y datos iniciales
-  .env.example                   # Variables de entorno ejemplo
-  README.md                      # Guia rapida
-  DOCUMENTACION_COMPLETA.md      # Este documento
+### Frontend
+
+- HTML
+- CSS
+- JavaScript vanilla
+
+### Backend
+
+- Node.js
+- Express
+- mysql2
+- dotenv
+- cors
+
+### Base de datos
+
+- MySQL
+
+## 3. Scripts del proyecto
+
+Archivo: `package.json`
+
+```bash
+npm install
+npm run init-db
+npm run init-db:prod
+npm start
 ```
 
----
+Descripcion:
 
-## 3. Requisitos
+- `npm install`: instala dependencias.
+- `npm run init-db`: crea o reinicia la base local con `database.sql`.
+- `npm run init-db:prod`: carga la base para entorno productivo.
+- `npm start`: levanta el servidor en `backend/server.js`.
 
-- Node.js 18+
-- MySQL Server activo
-- Git
+## 4. Variables de entorno
 
----
+Archivo base: `.env.example`
 
-## 4. Instalacion y arranque
+```env
+PORT=3000
+DATABASE_URL=
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=tu_password
+DB_NAME=fit_focus_db
+DB_SSL=false
+DB_SSL_REJECT_UNAUTHORIZED=false
+AUTH_SECRET=cambia-esta-clave
+```
 
-### 4.1 Clonar e instalar
+Descripcion de variables:
+
+- `PORT`: puerto HTTP del servidor.
+- `DATABASE_URL`: cadena de conexion alternativa si el entorno la requiere.
+- `DB_HOST`: host de MySQL.
+- `DB_PORT`: puerto de MySQL.
+- `DB_USER`: usuario de MySQL.
+- `DB_PASSWORD`: contrasena de MySQL.
+- `DB_NAME`: nombre de la base.
+- `DB_SSL`: activa SSL en conexiones remotas.
+- `DB_SSL_REJECT_UNAUTHORIZED`: valida certificado SSL.
+- `AUTH_SECRET`: secreto para firma de tokens.
+
+## 5. Arranque local
 
 ```bash
 git clone https://github.com/Turcios20/fitness-evolution-gym
@@ -73,167 +93,284 @@ cd fitness-evolution-gym
 npm install
 ```
 
-### 4.2 Configurar entorno
+Pasos:
 
-Crear `.env` basado en `.env.example`:
+1. Crear `.env` a partir de `.env.example`.
+2. Configurar las credenciales de MySQL.
+3. Ejecutar `npm run init-db`.
+4. Ejecutar `npm start`.
 
-```env
-PORT=3000
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=tu_password
-DB_NAME=fit_focus_db
-```
+Rutas utiles:
 
-### 4.3 Crear base de datos
+- `http://localhost:3000/`
+- `http://localhost:3000/login.html`
+- `http://localhost:3000/api/health`
 
-```bash
-npm run init-db
-```
+## 6. Roles del sistema
 
-### 4.4 Levantar app
+El sistema trabaja con cuatro roles:
 
-```bash
-npm start
-```
+- `Administrador`
+- `Cliente`
+- `Recepcionista`
+- `Entrenador`
 
-Abrir:
-- `http://localhost:3000` → login
-- `http://localhost:3000/api/health` → estado de API/DB
+Correspondencia usada por el frontend:
 
----
+- `Administrador` -> `admin`
+- `Cliente` -> `cliente`
+- `Recepcionista` -> `recepcionista`
+- `Entrenador` -> `entrenador`
 
-## 5. Credenciales de prueba
+## 7. Usuarios de prueba
 
-| Rol | Correo | Password |
-|-----|--------|----------|
-| Admin | `admin@victorsgym.com` | `admin123` |
-| Cliente | `jhoscar@correo.com` | `cliente123` |
+Estos usuarios se cargan desde `database.sql` y sirven para pruebas locales.
 
----
+| Rol | Nombre | Correo | Contrasena | Pantalla principal |
+| --- | --- | --- | --- | --- |
+| Administrador | Victor Administrator | `admin@victorsgym.com` | `admin123` | `admin.html` |
+| Cliente | Jhoscar Ochoa | `jhoscar@correo.com` | `cliente123` | `cliente.html` |
+| Recepcionista | Maria Recepcion | `recepcion@fitnessgym.com` | `recep123` | `recepcionista.html` |
+| Entrenador | Carlos Entrenador | `entrenador@fitnessgym.com` | `train123` | `entrenador.html` |
 
-## 6. Base de datos
+Notas:
 
-### 6.1 Tablas
+- el cliente de prueba inicia con membresia activa
+- las contrasenas se guardan como texto de prueba en los datos semilla actuales
+- si se reinicializa la base, estos usuarios vuelven a cargarse
 
-- `usuarios`
-- `membresias`
-- `rutinas`
-- `pagos`
-- `pagos_personal`
-- `egresos_financieros`
-- `asistencia`
-- `inventario`
+## 8. Estructura funcional del proyecto
 
-### 6.2 Relaciones relevantes
+### Archivos HTML principales
 
-- `membresias.id_usuario → usuarios.id_usuario`
-- `rutinas.id_usuario → usuarios.id_usuario`
-- `pagos.id_usuario → usuarios.id_usuario`
-- `asistencia.id_usuario → usuarios.id_usuario`
+- `index.html`
+- `login.html`
+- `admin.html`
+- `miembros.html`
+- `form.html`
+- `finanzas-general.html`
+- `finanzas.html`
+- `pagos-personal.html`
+- `egresos.html`
+- `recepcionista.html`
+- `entrenador.html`
+- `entrenador-rutinas.html`
+- `entrenador-medidas.html`
+- `entrenador-progreso.html`
+- `cliente.html`
+- `progreso-cliente.html`
+- `evolucion-cliente.html`
+- `calendario-cliente.html`
+- `mis-rutinas-cliente.html`
+- `ajustes.html`
+- `ajustes-cliente.html`
 
----
+### Archivos JS principales
 
-## 7. Flujo funcional
+- `common.js`
+- `login.js`
+- `admin.js`
+- `miembros.js`
+- `form.js`
+- `finanzas-general.js`
+- `finanzas.js`
+- `pagos-personal.js`
+- `egresos.js`
+- `recepcionista.js`
+- `entrenador.js`
+- `entrenador-rutinas.js`
+- `entrenador-medidas.js`
+- `entrenador-progreso.js`
+- `cliente.js`
+- `progreso.js`
+- `evolucion-cliente.js`
+- `evolution-shared.js`
+- `calendario.js`
+- `mis-rutinas.js`
+- `ajustes.js`
+- `ajustes-cliente.js`
 
-### 7.1 Login
+### Backend
 
-1. Usuario ingresa correo y password (soporta tecla **Enter**).
-2. Frontend llama `POST /api/auth/login`.
-3. Si valida, se guarda sesion en `localStorage` (`gymSession`) con hora de login.
-4. Redireccion segun rol:
-   - `admin` → `admin.html`
-   - `cliente` → `cliente.html`
-5. Links "Olvide mi contrasena" y "Registrate" abren modales propios (no `alert()`).
+- `backend/server.js`
+- `backend/db.js`
+- `backend/security.js`
+- `backend/init-db.js`
+- `backend/init-db-prod.js`
 
-### 7.2 Panel cliente
+## 9. Navegacion por modulo
 
-1. `cliente.js` llama `GymApp.guardRoute("cliente")` — redirige si la sesion expiro.
-2. Consulta `GET /api/client/dashboard?username=<correo>`.
-3. Renderiza nombre, plan y dias restantes reales.
-4. El **avatar** muestra las iniciales del nombre con color unico generado.
-5. Al hacer clic en el avatar se despliega un menu con opcion **Cerrar sesion**.
-6. Boton renovar llama `POST /api/subscription/renew`.
-7. Nav inferior funcional: Inicio, Calendario, Ajustes.
+### Administrador
 
-### 7.3 Panel admin
+- `admin.html`: panel principal
+- `miembros.html`: tabla completa de miembros
+- `form.html`: alta manual de clientes
+- `finanzas-general.html`: vista general financiera
+- `finanzas.html`: ingresos
+- `pagos-personal.html`: pagos al personal
+- `egresos.html`: egresos
+- `ajustes.html`: configuracion del sistema
 
-1. `admin.js` llama `GymApp.guardRoute("admin")`.
-2. **Layout responsivo**: en desktop usa grid de 2 columnas (lista + sidebar).
-3. En movil el sidebar se oculta y los botones de cada tarjeta se reemplazan por un menu kebab (⋮).
-4. El **kebab** se ancla al `<body>` con `position: fixed` para no ser cortado por el `overflow` del card.
+### Recepcion
 
----
+- `recepcionista.html`: control de asistencia y consultas de recepcion
 
-## 8. API REST
+### Entrenador
 
-### 8.1 Salud
+- `entrenador.html`: panel general
+- `entrenador-rutinas.html`: rutinas y planes
+- `entrenador-medidas.html`: registro de medidas
+- `entrenador-progreso.html`: progreso del alumno
 
-```
-GET /api/health
-→ { "ok": true, "message": "DB conectada" }
-```
+### Cliente
 
-### 8.2 Auth
+- `cliente.html`: dashboard principal
+- `calendario-cliente.html`: clases y reservas
+- `mis-rutinas-cliente.html`: rutinas asignadas
+- `progreso-cliente.html`: historial de medidas
+- `evolucion-cliente.html`: evolucion fisica
+- `ajustes-cliente.html`: configuracion personal
 
-```
+## 10. Modulo de finanzas
+
+El area financiera queda dividida en cuatro vistas:
+
+- `finanzas-general.html`: resumen ejecutivo
+- `finanzas.html`: ingresos de clientes
+- `pagos-personal.html`: pagos internos al personal
+- `egresos.html`: gastos operativos
+
+### HU-19 - Registro de ingresos
+
+Responsable funcional original: Carlos
+
+Capacidades:
+
+- resumen de ingresos del dia, mes y total
+- grafica de ingresos de los ultimos 6 meses
+- desglose por metodo de pago
+- historial de ingresos
+- alta manual de ingreso
+- edicion de ingreso
+- eliminacion de ingreso
+
+### HU-20 - Pagos al personal
+
+Responsable funcional original: Alexy
+
+Capacidades:
+
+- seleccion de colaborador por rol
+- registro de concepto, periodo, monto y metodo
+- resumen del periodo
+- grafica por rol
+- historial filtrable
+
+### HU-21 - Egresos financieros
+
+Responsable funcional original: Mario
+
+Capacidades:
+
+- registro de egresos
+- categorias de gasto
+- resumen del periodo
+- grafica de pastel por categoria
+- historial editable
+
+### Vista general financiera
+
+Capacidades:
+
+- consolidacion de ingresos, pagos al personal y egresos
+- balance neto del periodo
+- composicion del flujo del mes
+- tendencia consolidada de los ultimos 6 meses
+- actividad reciente
+
+## 11. Endpoints principales
+
+### Salud y autenticacion
+
+```text
+GET  /api/health
 POST /api/auth/login
-Body: { "username": "...", "password": "..." }
 ```
 
-### 8.3 Cliente
+### Cliente
 
-```
-GET  /api/client/dashboard?username=<correo>
+```text
+GET  /api/client/dashboard
 POST /api/subscription/renew
-Body: { "username": "jhoscar@correo.com" }
+GET  /api/clases
+GET  /api/clases/mis-reservas
+POST /api/clases/:id/reservar
+DELETE /api/clases/reservas/:id
 ```
 
-### 8.4 Admin — Miembros
+### Miembros
 
-```
+```text
 GET    /api/admin/members
 POST   /api/admin/members
 PUT    /api/admin/members/:id
 POST   /api/admin/members/:id/renew
 DELETE /api/admin/members/:id
+GET    /api/trainers
 ```
 
-**Body POST crear:**
-```json
-{
-  "name": "Maria Lopez",
-  "email": "maria@correo.com",
-  "password": "maria123",
-  "role": "cliente",
-  "plan": "Mensual",
-  "price": 20
-}
+### Recepcion
+
+```text
+GET  /api/reception/dashboard
+GET  /api/reception/history
+GET  /api/admin/attendance-report
+POST /api/reception/checkins
 ```
 
-**Body PUT editar:**
-```json
-{
-  "name": "Maria Lopez Editada",
-  "email": "maria2@correo.com",
-  "plan": "Trimestral",
-  "status": "Activo"
-}
+### Entrenador y progreso
+
+```text
+GET    /api/trainer/dashboard
+GET    /api/trainer/:trainerId/clientes
+GET    /api/client/:clientId/evolution
+PUT    /api/client/:clientId/objective
+GET    /api/client/:clientId/measurements
+POST   /api/client/:clientId/measurements
+PUT    /api/client/:clientId/measurements/:measurementId
+DELETE /api/client/:clientId/measurements/:measurementId
+POST   /api/client/:clientId/measurements/:measurementId/photo
+GET    /api/trainer/clients/:clientId/measurements
 ```
 
-**Body renovar:**
-```json
-{ "days": 30, "plan": "Mensual" }
+### Rutas legacy de medidas y fotos
+
+Estas rutas siguen coexistiendo en el backend:
+
+```text
+GET    /api/medidas/:userId
+POST   /api/medidas
+PUT    /api/medidas/:id
+DELETE /api/medidas/:id
+GET    /api/objetivo/:userId
+PUT    /api/objetivo/:userId
+GET    /api/fotos/:medidaId
+POST   /api/fotos
 ```
 
----
+### Ajustes
 
-### 8.5 Admin — Finanzas
+```text
+GET /api/settings
+PUT /api/settings
+```
+
+### Finanzas
 
 ```text
 GET    /api/admin/finance/summary
 GET    /api/admin/finance/overview?month=YYYY-MM
+
 GET    /api/admin/payments
 POST   /api/admin/payments
 PUT    /api/admin/payments/:paymentId
@@ -251,376 +388,97 @@ DELETE /api/admin/expenses/:expenseId
 GET    /api/admin/expenses/summary?month=YYYY-MM
 ```
 
-**Body POST/PUT egresos:**
-```json
-{
-  "concepto": "Pago de energia electrica",
-  "categoria": "Servicios",
-  "monto": 145.50,
-  "fechaEgreso": "2026-05-30",
-  "metodoPago": "Transferencia",
-  "observaciones": "Factura de mayo"
-}
-```
-
-Los modulos financieros quedan separados por dominio:
-- `finanzas-general.html`: tablero ejecutivo consolidado de ingresos, pagos al personal y egresos.
-- `finanzas.html`: ingresos por membresias de clientes.
-- `pagos-personal.html`: pagos internos al personal.
-- `egresos.html`: gastos operativos y extraordinarios del gimnasio.
-
-El endpoint `GET /api/admin/finance/overview?month=YYYY-MM` alimenta la vista general con:
-- resumen del periodo por ingresos, pagos al personal y egresos
-- salidas totales y balance neto
-- composicion del flujo del mes
-- tendencia consolidada de los ultimos 6 meses
-- indicadores destacados y actividad financiera reciente
-
----
-
-## 9. Frontend — descripcion por archivo
-
-### 9.1 `common.js`
-
-Utilidades globales disponibles via `window.GymApp`:
-
-| Funcion | Descripcion |
-|---------|-------------|
-| `GymApp.api(path, options)` | Fetch contra el backend. Adjunta token Bearer automaticamente. Si recibe `401` limpia la sesion y redirige al login. |
-| `GymApp.getSession()` | Lee `gymSession` de localStorage. |
-| `GymApp.setSession(session)` | Guarda sesion e incluye `_loginAt` (timestamp de inicio). |
-| `GymApp.clearSession()` | Elimina la sesion. |
-| `GymApp.isSessionExpired()` | Devuelve `true` si la sesion tiene mas de 8 horas. |
-| `GymApp.guardRoute(rol)` | Verifica sesion, expiracion y rol. Si falla, redirige segun el caso. |
-| `GymApp.toast(mensaje, tipo)` | Muestra un toast en la esquina inferior derecha. Tipos: `"success"`, `"error"`, `"info"`. |
-
-### 9.2 `login.js`
-
-- Soporte de tecla **Enter** en ambos campos (usuario y contrasena).
-- Modal **"Olvide mi contrasena"**: pide correo, valida formato, muestra confirmacion.
-- Modal **"Registrate"**: informa que el registro lo realiza el administrador.
-- Fallback local si no hay backend activo.
-
-### 9.3 `admin.js`
-
-- Proteccion via `GymApp.guardRoute("admin")`.
-- **Skeleton loaders** mientras carga la lista de miembros.
-- **Badges de estado** con colores:
-  - 🟢 Verde: mas de 15 dias
-  - 🟡 Amarillo: 8–15 dias
-  - 🔴 Rojo: 7 dias o menos
-  - Gris: vencido o inactivo
-- **Filtros** por plan y estado con pills combinables con la busqueda.
-- **Modales personalizados** (sin `prompt`/`confirm`/`alert`):
-  - **Eliminar**: muestra avatar con iniciales, nombre y advertencia. Animacion fade-out de la tarjeta al confirmar.
-  - **Renovar**: grid de 4 planes; Mensual activo, los demas con badge "Proximamente".
-  - **Editar**: formulario con nombre, correo, plan y estado. Con validacion antes de guardar.
-- **Toasts** de confirmacion tras cada accion.
-- **Kebab menu (⋮)** en movil: ancla al `body` con `position: fixed`.
-
-### 9.4 `miembros.js` + `miembros.html`
-
-Dashboard completo accesible desde el nav del admin.
-
-- **4 stats superiores**: Total, Activos, Por vencer, Vencidos/Inactivos.
-- **Tabla** con ordenamiento por columna (click en cabecera → ↑↓).
-- **Tabs de filtro rapido**: Todos / Activos / Por vencer / Vencidos / Inactivos.
-- **Busqueda** en tiempo real combinada con tabs.
-- **Paginacion**: 12 filas por pagina con botones numerados e indicador de rango.
-- **Exportar CSV**: descarga todos los miembros del filtro activo.
-- Mismos modales de Editar, Renovar y Eliminar que `admin.js`.
-
-### 9.5 `form.js` + `form.html`
-
-Formulario dedicado para agregar clientes (reemplaza los `prompt()` del admin).
-
-- **Campos**: nombre completo, correo, contrasena, plan (select), precio.
-- **Validaciones** en cliente antes de enviar al backend.
-- Mensaje de exito/error dentro del formulario.
-- Redireccion automatica a `admin.html` al guardar.
-
-### 9.6 `cliente.js`
-
-- Proteccion via `GymApp.guardRoute("cliente")`.
-- Avatar de iniciales con color unico.
-- Dropdown de sesion al hacer clic en el avatar.
-- Toasts en lugar de `alert()`.
-
----
-
-## 10. Sistema de componentes CSS (`styles.css`)
-
-### 10.1 Modales (`gym-modal-*`)
-
-```
-.gym-modal-overlay   Fondo oscuro con blur
-.gym-modal-box       Caja centrada del modal
-.gm-avatar-big       Burbuja de iniciales (64px)
-.gm-title            Titulo del modal
-.gm-body             Texto descriptivo
-.gm-actions          Fila de botones
-.gm-btn              Boton base
-.gm-btn-cancel       Gris
-.gm-btn-primary      Naranja
-.gm-btn-danger       Rojo
-.gm-plans-grid       Grid 2x2 para selector de planes
-.gm-plan-card        Tarjeta de plan clickeable
-.gm-plan-disabled    Plan deshabilitado
-.gm-form / .gm-field Formulario dentro del modal
-.gm-input            Input/select del modal
-```
-
-### 10.2 Toasts (`gym-toast-*`)
-
-```
-#gym-toast-container    Contenedor fixed inferior derecho
-.gym-toast              Toast base (oculto por defecto)
-.gym-toast--show        Visible con animacion
-.gym-toast--hide        Salida con animacion
-.gym-toast--success     Borde verde
-.gym-toast--error       Borde rojo
-.gym-toast--info        Borde naranja
-```
-
-### 10.3 Badges de estado
-
-```
-.member-badge     Base
-.badge-ok         Verde (>15 dias)
-.badge-warn       Amarillo (8–15 dias)
-.badge-danger     Rojo (≤7 dias)
-.badge-expired    Gris (vencido)
-.badge-inactive   Gris (inactivo)
-```
-
-### 10.4 Skeleton loaders
-
-```
-.skeleton-card      Tarjeta fantasma
-.sk-circle          Avatar animado
-.sk-line            Linea de texto animada
-.sk-line--w70       70% de ancho
-.sk-line--w50       50% de ancho
-```
-
-### 10.5 Kebab menu movil
-
-```
-.kebab-wrap           Contenedor del boton
-.kebab-btn            Boton ⋮
-.kebab-menu           Menu flotante (display: none por defecto)
-.kebab-menu--fixed    Version anclada al body con position: fixed
-.kebab-menu.open      Visible
-.kebab-item           Opcion del menu
-.kebab-item--danger   Opcion de eliminar (rojo)
-```
-
-### 10.6 Animaciones
-
-```
-@keyframes shimmer       Efecto de carga de skeletons
-@keyframes cardFadeOut   Fade + scale al eliminar una tarjeta
-.card-fade-out           Aplica la animacion
-```
-
-### 10.7 Avatar de iniciales
-
-```
-.member-avatar-initials   Circulo con iniciales en tarjetas de admin
-.user-avatar              Circulo del topbar del cliente
-.user-avatar-wrap         Contenedor con dropdown de sesion
-.avatar-dropdown          Menu desplegable del avatar
-.avatar-dropdown.open     Visible
-.dropdown-name            Nombre del usuario
-.dropdown-divider         Separador
-.dropdown-item            Opcion del menu
-.dropdown-logout          Opcion de cerrar sesion (rojo)
-```
-
----
-
-## 11. Responsividad
-
-### Desktop (>768px)
-
-- Admin: grid de 2 columnas — lista de miembros (flex) + sidebar con acciones rapidas y resumen del mes.
-- Tarjetas de miembros en grid de 2 columnas.
-- Sidebar con stats del mes pegado al scroll (`position: sticky`).
-- Nav superior horizontal.
-
-### Movil (≤768px)
-
-- El sidebar del admin se oculta.
-- Las tarjetas se apilan en 1 columna.
-- Los botones Editar/Renovar/Eliminar se reemplazan por el menu kebab (⋮).
-- El botton "Agregar cliente" baja a su propia linea.
-- El logo del nav superior NO aparece en el nav inferior movil del admin.
-- Los toasts suben sobre el nav inferior (`bottom: 90px`).
-- Cliente: nav inferior fijo con Inicio, Calendario y Ajustes.
-- Stats de miembros en grid 2x2.
-- Tabla de miembros con scroll horizontal.
-
----
-
-## 12. Paginas en desarrollo
-
-Estas paginas estan creadas con estructura completa y placeholder visual:
-
-| Archivo | Descripcion |
-|---------|-------------|
-| `finanzas-general.html` | Vista general consolidada del area de finanzas |
-| `finanzas.html` | Registro y control de ingresos |
-| `pagos-personal.html` | Registro y analitica de pagos al personal |
-| `egresos.html` | Registro y control de egresos financieros |
-| `ajustes.html` | Configuracion del sistema (admin) |
-| `calendario-cliente.html` | Proximas sesiones del cliente |
-| `ajustes-cliente.html` | Configuracion de cuenta del cliente |
-
-Todas incluyen nav funcional, avatar y boton de cerrar sesion.
-
----
-
-## 13. GitHub e integracion del Sprint 3
-
-Durante el Sprint 3 se utilizo GitHub como plataforma principal para el control de versiones, la integracion de funcionalidades y el seguimiento del avance tecnico del proyecto. El trabajo se organizo con ramas por historia de usuario y ramas de consolidacion del sprint, lo que permitio aislar cambios, reducir conflictos y mantener trazabilidad entre los desarrollos del equipo.
-
-### 13.1 Link del repositorio
-
-- Repositorio oficial: `https://github.com/Turcios20/fitness-evolution-gym`
-- Rama principal actual: `main`
-
-`[Evidencia sugerida: captura de la pagina principal del repositorio en GitHub.]`
-
-### 13.2 Ramas utilizadas
-
-Durante el Sprint 3 se trabajaron ramas funcionales y ramas de integracion. Las ramas principales identificadas en el repositorio fueron:
-
-- `main`: rama principal del proyecto.
-- `sprint-3`: rama de integracion general del sprint.
-- `sprint-3.1`: rama de consolidacion y correcciones finales.
-- `deploy_web`: rama usada para ajustes de despliegue.
-- `HU-12`: trabajo relacionado con control de asistencia.
-- `HU-17`: trabajo relacionado con fotografias de progreso y objetivo del miembro.
-- `HU-18`: trabajo relacionado con la visualizacion de evolucion de resultados.
-
-Ademas, en el repositorio quedaron registradas ramas remotas por historias de usuario como `HU-11`, `HU-13`, `HU-14`, `HU-15` y `HU-16`, evidenciando una organizacion del trabajo por modulo o requerimiento.
-
-`[Evidencia sugerida: captura del listado de ramas locales y remotas.]`
-
-### 13.3 Commits destacados
-
-Entre los commits mas representativos del Sprint 3 se identifican los siguientes:
-
-- `457e0e2` - `Send trainer assignment from admin dashboard`
-- `c03379a` - `Fix trainer routines schema on production`
-- `d487f29` - `bug con el deploy web`
-- `e1dedf2` - `se arreglo el bug que no entraba directamente a login`
-- `723eddf` - `mejores mensajes para respaldar los errores con el puerto`
-- `2adae7e` - `agregando vistas y exportancioon csv recepcionista`
-
-Estos commits muestran que durante el sprint no solo se agregaron funcionalidades, sino que tambien se realizaron mejoras de estabilidad, compatibilidad con produccion y correcciones de integracion entre frontend, backend y base de datos.
-
-`[Evidencia sugerida: captura del historial de commits en GitHub.]`
-
-### 13.4 Merges e integracion de cambios
-
-La integracion del trabajo del equipo se realizo mediante merges y pull requests hacia las ramas de consolidacion del sprint y posteriormente hacia `main`. Algunos merges visibles en el historial son:
-
-- `6f28289` - `Merge pull request #30 from Turcios20/HU-18`
-- `8ec01b4` - `Merge pull request #25 from Turcios20/HU-17`
-- `46b00ec` - `Merge pull request #24 from Turcios20/HU-18`
-
-Adicionalmente, los cambios aprobados en `sprint-3.1` fueron consolidados en la rama `main`, dejando la version estable del sprint en la rama principal del repositorio.
-
-`[Evidencia sugerida: captura de pull requests cerrados o del historial con merges.]`
-
-### 13.5 Problemas encontrados durante la integracion
-
-Durante el Sprint 3 se detectaron varios problemas tecnicos y de integracion:
-
-- Diferencias entre el entorno local y el entorno de produccion en el esquema de base de datos del modulo de rutinas del entrenador.
-- Errores en el despliegue web que afectaban algunas vistas publicadas.
-- Fallo en la redireccion inicial al login.
-- Problema en la asignacion de entrenador desde la vista de administrador, donde visualmente parecia guardarse el cambio, pero no se persistia correctamente en todos los flujos.
-- Necesidad de mejorar mensajes de error para facilitar las pruebas y la depuracion.
-
-`[Evidencia sugerida: capturas de errores en la web, consola o incidencias detectadas.]`
-
-### 13.6 Soluciones aplicadas
-
-Para resolver los problemas de integracion del Sprint 3 se aplicaron las siguientes acciones:
-
-- Se corrigio el flujo de asignacion de entrenador desde el panel de administracion, asegurando que el `trainerId` se enviara al backend y se guardara correctamente.
-- Se agrego compatibilidad del backend con el esquema real de produccion para el modulo de rutinas, incluyendo la creacion y migracion automatica de tablas necesarias.
-- Se realizaron ajustes orientados al despliegue para estabilizar la aplicacion publicada.
-- Se corrigio la entrada directa al login y se mejoraron mensajes para diagnosticar errores relacionados con el puerto y el arranque del servidor.
-- Finalmente, los cambios aprobados fueron integrados a `main`, dejando una base mas estable para continuar el proyecto.
-
-`[Evidencia sugerida: capturas del sistema funcionando despues de las correcciones y de los commits asociados.]`
-
-### 13.7 Flujo basico de trabajo con Git
-
-Para mantener consistencia entre los integrantes, el flujo basico recomendado de trabajo es:
-
-```bash
-git pull origin main
-git checkout -b nombre-de-rama
-git add .
-git commit -m "mensaje descriptivo"
-git push origin nombre-de-rama
-```
-
-Cuando una funcionalidad ha sido validada, se integra mediante merge o pull request hacia la rama de consolidacion correspondiente y luego hacia `main`.
-
-### 13.8 Regla importante
-
-- Como regla del equipo, el archivo `.env` debe mantenerse fuera del control de versiones.
-- Cada integrante debe usar su propio `.env` local con credenciales de su entorno.
-- Si se detectan archivos sensibles o temporales dentro del repositorio, deben limpiarse en la siguiente iteracion tecnica.
-
----
-
-## 14. Troubleshooting
-
-| Problema | Solucion |
-|----------|----------|
-| `Cannot GET /` | Correr `npm start` y abrir `http://localhost:3000` |
-| `Access denied for user 'root'` | Revisar usuario/password en `.env` |
-| `ER_BAD_DB_ERROR` | Ejecutar `npm run init-db` |
-| Login no entra | Verificar credenciales de prueba y consola del servidor |
-| Sesion expirada al recargar | Normal — las sesiones duran 8 horas. Iniciar sesion de nuevo. |
-| Kebab menu cortado | Verificar que `kebab-menu--fixed` tenga `position: fixed` y `z-index: 9999` |
-| Toast no aparece | Verificar que `common.js` cargue antes de los otros scripts |
-
----
-
-## 15. Mejoras recomendadas (siguiente iteracion)
-
-- Hash de passwords con `bcrypt` (actualmente en texto plano).
-- Autenticacion con JWT en lugar de sesion local.
-- Middleware de autorizacion por rol en endpoints admin.
-- Implementar paginas de Finanzas, Ajustes, Calendario con datos reales.
-- Tests de API con Jest/Supertest.
-- Graficos de asistencia e ingresos en el dashboard admin.
-- Notificaciones automaticas a clientes con membresia por vencer.
-
----
-
-## 16. Estado actual
-
-El proyecto permite:
-
-- Login por roles con soporte de Enter y modales propios.
-- Proteccion de rutas con verificacion de rol y expiracion de sesion (8h).
-- Interceptor 401 automatico que redirige al login.
-- Panel cliente con datos reales, avatar de iniciales y dropdown de sesion.
-- Panel admin responsivo con sidebar en desktop y kebab en movil.
-- CRUD completo de miembros con modales personalizados (sin prompt/alert).
-- Badges de estado con colores segun dias restantes.
-- Skeleton loaders y animaciones de eliminacion.
-- Filtros combinables por plan y estado.
-- Toasts de confirmacion en todas las acciones.
-- Dashboard de miembros con tabla ordenable, tabs, busqueda, paginacion y exportacion CSV.
-- Formulario dedicado para agregar clientes.
-- Inicializacion automatica de BD.
-
+## 12. Estructura de datos principal
+
+Tablas declaradas en `database.sql`:
+
+- `usuarios`
+- `ajustes`
+- `membresias`
+- `rutinas`
+- `planes_entrenamiento`
+- `rutinas_entrenamiento`
+- `pagos`
+- `pagos_personal`
+- `egresos_financieros`
+- `asistencia`
+- `inventario`
+- `clases`
+- `reservas`
+- `medidas_progreso`
+- `progreso_fotos`
+
+Relaciones importantes:
+
+- `membresias.id_usuario -> usuarios.id_usuario`
+- `pagos.id_usuario -> usuarios.id_usuario`
+- `pagos_personal.id_usuario -> usuarios.id_usuario`
+- `asistencia.id_usuario -> usuarios.id_usuario`
+- `reservas.id_usuario -> usuarios.id_usuario`
+- `medidas_progreso.id_usuario -> usuarios.id_usuario`
+- `progreso_fotos.id_medida -> medidas_progreso.id_medida`
+
+## 13. Utilidades compartidas del frontend
+
+Archivo: `common.js`
+
+Responsabilidades:
+
+- centraliza llamadas HTTP con `GymApp.api`
+- adjunta token Bearer automaticamente
+- limpia sesion si el backend responde `401`
+- guarda sesion en `localStorage` bajo `gymSession`
+- expira sesion tras 8 horas
+- resuelve la ruta inicial por rol
+- gestiona tema claro/oscuro
+- renderiza toasts del sistema
+
+## 14. Seguridad y sesiones
+
+Puntos actuales del sistema:
+
+- la sesion se almacena en `localStorage`
+- el token se envia en el header `Authorization`
+- si el token expira o es invalido, el frontend redirige a `login.html`
+- `guardRoute` protege vistas por rol
+
+## 15. Flujo rapido de validacion manual
+
+### Login
+
+1. abrir `login.html`
+2. ingresar credenciales de prueba
+3. verificar redireccion correcta segun rol
+
+### Finanzas
+
+1. entrar como administrador
+2. abrir `finanzas-general.html`
+3. revisar balance consolidado
+4. entrar a ingresos y registrar un pago
+5. entrar a pagos al personal y registrar una salida interna
+6. entrar a egresos y registrar un gasto
+7. volver a la vista general y confirmar el impacto
+
+### Progreso
+
+1. entrar como entrenador
+2. abrir `entrenador-medidas.html`
+3. seleccionar cliente
+4. registrar o editar una medicion
+5. abrir `entrenador-progreso.html`
+6. confirmar que el historial y objetivo se muestran correctamente
+
+## 16. Archivos de apoyo documental
+
+- `README.md`: arranque rapido
+- `DOCUMENTACION_COMPLETA.md`: manual tecnico
+- `Credenciales_de_prueba.md`: consulta rapida de usuarios de prueba
+
+## 17. Observaciones importantes
+
+- `.env` no debe subirse al repositorio
+- `npm run init-db` recrea la base local de desarrollo
+- existen rutas nuevas y rutas legacy para progreso, por lo que conviene evitar mezclar integraciones sin revisar primero
+- la vista general de finanzas depende de que existan datos en ingresos, pagos al personal o egresos
+- el sistema usa muchas vistas estaticas enlazadas entre si; cualquier cambio de nombre de archivo debe actualizar la navegacion

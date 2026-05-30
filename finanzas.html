@@ -74,40 +74,135 @@
     .fin-method-count { font-size: 12px; color: var(--text-dim); }
     .fin-method-total { font-weight: 700; font-size: 15px; }
 
+    .fin-monthly-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .fin-monthly-kpi {
+      padding: 14px 14px 12px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.08);
+      display: grid;
+      gap: 4px;
+    }
+    .fin-monthly-kpi-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.9px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .fin-monthly-kpi-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      line-height: 1;
+      color: var(--orange);
+      letter-spacing: 0.8px;
+    }
+    .fin-monthly-kpi-note {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
     .fin-bars {
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      height: 120px;
-      padding-top: 28px;
+      display: grid;
+      gap: 12px;
+    }
+    .fin-bars--enhanced {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      align-items: end;
     }
     .fin-bar-col {
-      flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      height: 100%;
-      justify-content: flex-end;
+      align-items: stretch;
+      gap: 8px;
+    }
+    .fin-bar-top {
+      display: grid;
+      gap: 2px;
+      text-align: center;
     }
     .fin-bar-val {
-      font-size: 9px;
-      color: var(--text-dim);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
       text-align: center;
       white-space: nowrap;
     }
+    .fin-bar-delta {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .fin-bar-delta--up { color: #6bddaa; }
+    .fin-bar-delta--down { color: #ff9d87; }
+    .fin-bar-delta--flat { color: var(--text-dim); }
+    .fin-bar-track {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      min-height: 180px;
+      padding: 10px 8px 0;
+      border-radius: 16px 16px 10px 10px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)),
+        repeating-linear-gradient(
+          to top,
+          rgba(255,255,255,0.07) 0,
+          rgba(255,255,255,0.07) 1px,
+          transparent 1px,
+          transparent 34px
+        );
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+    .fin-bar-track::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 1px;
+      background: rgba(255,255,255,0.08);
+    }
     .fin-bar {
       width: 100%;
-      background: var(--orange);
-      border-radius: 4px 4px 0 0;
-      min-height: 4px;
-      transition: height 0.4s ease;
+      background: linear-gradient(180deg, #ffb36c 0%, #ff8b33 32%, #e87c2a 100%);
+      border-radius: 14px 14px 8px 8px;
+      min-height: 6px;
+      transition: height 0.45s ease;
+      box-shadow: 0 14px 28px rgba(232,124,42,0.26);
+      position: relative;
+    }
+    .fin-bar::after {
+      content: "";
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      width: calc(100% - 18px);
+      height: 1px;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.22);
+    }
+    .fin-bar--peak {
+      background: linear-gradient(180deg, #ffd089 0%, #ff9d43 28%, #e87c2a 100%);
+      box-shadow: 0 18px 32px rgba(232,124,42,0.36);
     }
     .fin-bar-lbl {
-      font-size: 10px;
-      color: var(--text-dim);
+      font-size: 11px;
+      color: var(--text);
       text-transform: uppercase;
       font-weight: 700;
+      text-align: center;
+    }
+    .fin-bar-note {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-align: center;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
     }
 
     .fin-controls {
@@ -189,6 +284,13 @@
     @media (max-width: 768px) {
       .fin-stats { grid-template-columns: repeat(2, 1fr); }
       .fin-grid  { grid-template-columns: 1fr; }
+      .fin-monthly-summary { grid-template-columns: 1fr; }
+      .fin-bars--enhanced { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .fin-bar-track { min-height: 150px; }
+    }
+
+    @media (max-width: 520px) {
+      .fin-bars--enhanced { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>

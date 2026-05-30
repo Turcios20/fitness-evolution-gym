@@ -26,6 +26,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     Transferencia: "TR"
   };
 
+  function getCurrentYearMonth(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  function shiftYearMonth(yearMonth, delta) {
+    const [year, month] = String(yearMonth).split("-").map(Number);
+    const nextDate = new Date(year, month - 1 + delta, 1);
+    return getCurrentYearMonth(nextDate);
+  }
+
   let financeMembers = [];
   let financeMembersPromise = null;
   let financePayments = [];
@@ -127,7 +137,28 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    const maxVal = Math.max(...monthly.map((item) => Number(item.total)), 1);
+    const monthMap = new Map((monthly || []).map((item) => [item.mes, Number(item.total || 0)]));
+    const currentMonth = getCurrentYearMonth();
+    const series = [];
+
+    for (let offset = 5; offset >= 0; offset -= 1) {
+      const mes = shiftYearMonth(currentMonth, -offset);
+      series.push({
+        mes,
+        total: monthMap.get(mes) || 0
+      });
+    }
+
+    if (!series.some((item) => item.total > 0)) {
+      wrap.innerHTML = '<p class="fin-empty">Sin datos de los ultimos 6 meses.</p>';
+      return;
+    }
+
+    const maxVal = Math.max(...series.map((item) => Number(item.total)), 1);
+    const totalAccumulated = series.reduce((sum, item) => sum + Number(item.total || 0), 0);
+    const average = totalAccumulated / series.length;
+    const bestMonth = series.reduce((best, item) => (item.total > best.total ? item : best), series[0]);
+
     const mesLabel = (ym) => {
       const [year, month] = ym.split("-");
       return new Date(Number(year), Number(month) - 1, 1).toLocaleDateString("es-HN", {
@@ -136,15 +167,65 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     };
 
+    const getDeltaInfo = (current, previous) => {
+      if (previous === null) {
+        return { text: "Base", tone: "flat" };
+      }
+
+      if (previous === 0 && current === 0) {
+        return { text: "Sin mov", tone: "flat" };
+      }
+
+      if (previous === 0 && current > 0) {
+        return { text: "Nuevo", tone: "up" };
+      }
+
+      const diff = current - previous;
+      if (diff === 0) {
+        return { text: "Igual", tone: "flat" };
+      }
+
+      const percentage = Math.min(Math.round((Math.abs(diff) / previous) * 100), 999);
+      return {
+        text: `${diff > 0 ? "+" : "-"}${percentage}%`,
+        tone: diff > 0 ? "up" : "down"
+      };
+    };
+
     wrap.innerHTML = `
-      <div class="fin-bars">
-        ${monthly.map((item) => {
-          const pct = Math.max((Number(item.total) / maxVal) * 100, 4);
+      <div class="fin-monthly-summary">
+        <div class="fin-monthly-kpi">
+          <span class="fin-monthly-kpi-label">Mejor mes</span>
+          <strong class="fin-monthly-kpi-value">${fmt(bestMonth.total)}</strong>
+          <span class="fin-monthly-kpi-note">${mesLabel(bestMonth.mes)}</span>
+        </div>
+        <div class="fin-monthly-kpi">
+          <span class="fin-monthly-kpi-label">Promedio mensual</span>
+          <strong class="fin-monthly-kpi-value">${fmt(average)}</strong>
+          <span class="fin-monthly-kpi-note">Ultimos 6 meses</span>
+        </div>
+        <div class="fin-monthly-kpi">
+          <span class="fin-monthly-kpi-label">Acumulado</span>
+          <strong class="fin-monthly-kpi-value">${fmt(totalAccumulated)}</strong>
+          <span class="fin-monthly-kpi-note">Ventana analizada</span>
+        </div>
+      </div>
+      <div class="fin-bars fin-bars--enhanced">
+        ${series.map((item, index) => {
+          const pct = item.total > 0 ? Math.max((Number(item.total) / maxVal) * 100, 12) : 0;
+          const delta = getDeltaInfo(Number(item.total || 0), index > 0 ? Number(series[index - 1].total || 0) : null);
+          const isBestMonth = item.mes === bestMonth.mes && item.total === bestMonth.total;
           return `
             <div class="fin-bar-col">
-              <span class="fin-bar-val">${fmt(item.total)}</span>
-              <div class="fin-bar" style="height:${pct}%"></div>
+              <div class="fin-bar-top">
+                <span class="fin-bar-val">${fmt(item.total)}</span>
+                <span class="fin-bar-delta fin-bar-delta--${delta.tone}">${delta.text}</span>
+              </div>
+              <div class="fin-bar-track">
+                <div class="fin-bar ${isBestMonth ? "fin-bar--peak" : ""}" style="height:${pct}%"></div>
+              </div>
               <span class="fin-bar-lbl">${mesLabel(item.mes)}</span>
+              <span class="fin-bar-note">${isBestMonth ? "Pico" : "Mes"}</span>
             </div>`;
         }).join("")}
       </div>`;

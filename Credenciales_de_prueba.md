@@ -1,34 +1,41 @@
-Credenciales de Usuarios
+# Credenciales de prueba
 
-ADMINISTRADOR
-- Correo:admin@victorsgym.com
-- Contraseña: admin123
-- Nombre Completo: Victor Administrator
-- Rol: Administrador
+Estas credenciales se cargan al ejecutar `npm run init-db` en entorno local.
 
-CLIENTE (nota: Se recomienda crear un nuevo cliente desde administrador para poder asignar un entrenador, o en su defecto, editar el 
-cliente existente y asignarlo al entrenador)
-- Correo: jhoscar@correo.com
-- Contraseña: cliente123
-- Nombre Completo: Jhoscar Ochoa
-- Rol: Cliente
+## Administrador
 
-RECEPCIONISTA
-- Correo: recepcion@fitnessgym.com
-- Contraseña: recep123
-- Nombre Completo: Maria Recepcion
-- Rol: Recepcionista
+- Nombre: Victor Administrator
+- Correo: `admin@victorsgym.com`
+- Contrasena: `admin123`
+- Rol: `Administrador`
+- Pantalla principal: `admin.html`
 
-ENTRENADOR
-- Correo: entrenador@fitnessgym.com
-- Contraseña: train123
-- Nombre Completo: Carlos Entrenador
-- Rol: Entrenador
+## Cliente
 
----
+- Nombre: Jhoscar Ochoa
+- Correo: `jhoscar@correo.com`
+- Contrasena: `cliente123`
+- Rol: `Cliente`
+- Pantalla principal: `cliente.html`
 
-Notas
+## Recepcionista
 
-- Estas credenciales son solo para pruebas locales
-- Los usuarios se crean automáticamente al ejecutar `npm run init-db`
-- Las contraseñas en la aplicación se hashean antes de almacenarse en la BD
+- Nombre: Maria Recepcion
+- Correo: `recepcion@fitnessgym.com`
+- Contrasena: `recep123`
+- Rol: `Recepcionista`
+- Pantalla principal: `recepcionista.html`
+
+## Entrenador
+
+- Nombre: Carlos Entrenador
+- Correo: `entrenador@fitnessgym.com`
+- Contrasena: `train123`
+- Rol: `Entrenador`
+- Pantalla principal: `entrenador.html`
+
+## Notas
+
+- pensadas para pruebas locales
+- si la base se reinicializa, vuelven a cargarse
+- para detalle tecnico completo revisar `DOCUMENTACION_COMPLETA.md`
