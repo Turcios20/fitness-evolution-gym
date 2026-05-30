@@ -180,6 +180,12 @@
         <h1 class="welcome-title">Finanzas</h1>
       </div>
 
+
+       <div class="fin-tabs fadein-2">
+        <button class="fin-tab active" id="tabIngresos">Ingresos</button>
+        <button class="fin-tab egreso-tab" id="tabEgresos">Egresos</button>
+      </div>
+
       <!-- Stats de resumen -->
       <div class="fin-stats fadein-2">
         <div class="fin-stat">
@@ -234,6 +240,70 @@
           </table>
         </div>
       </div>
+
+        <div id="panelEgresos">
+ 
+        <!-- Resumen egresos -->
+        <div class="egr-stats fadein-2">
+          <div class="egr-stat">
+            <div class="egr-stat-num" id="egrTotalMes">$0.00</div>
+            <div class="egr-stat-label">Egresos del mes</div>
+          </div>
+          <div class="egr-stat">
+            <div class="egr-stat-num" id="egrTotalAcum">$0.00</div>
+            <div class="egr-stat-label">Total acumulado</div>
+          </div>
+          <div class="egr-stat">
+            <div class="egr-stat-num" id="egrCantidad">0</div>
+            <div class="egr-stat-label">Registros del mes</div>
+          </div>
+        </div>
+ 
+        <!-- Gráfico + categorías -->
+        <div class="egr-grid fadein-2">
+          <div class="fin-card">
+            <div class="fin-card-title">Egresos últimos 6 meses</div>
+            <div id="egrMonthly"><p class="fin-empty">Sin datos aún.</p></div>
+          </div>
+          <div class="fin-card">
+            <div class="fin-card-title">Por categoría</div>
+            <div id="egrByCategoria"><p class="fin-empty">Sin registros aún.</p></div>
+          </div>
+        </div>
+ 
+        <!-- Registro de egresos -->
+        <div class="fadein-3">
+          <div class="fin-controls">
+            <span class="section-title" style="flex:1">Registro de egresos</span>
+ 
+            <!-- Filtro de mes -->
+            <div class="egr-filter">
+              <label for="egrMesFiltro">Mes:</label>
+              <select id="egrMesFiltro" class="egr-select"></select>
+            </div>
+ 
+            <button class="fin-btn egreso-btn" id="btnNuevoEgreso">+ Registrar egreso</button>
+          </div>
+ 
+          <div class="fin-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Descripción</th>
+                  <th>Categoría</th>
+                  <th>Monto</th>
+                  <th>Fecha</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="egrTbody">
+                <tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:32px">Sin egresos registrados.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+ 
+      </div><!-- fin #panelEgresos -->
 
     </main>
   </div>
