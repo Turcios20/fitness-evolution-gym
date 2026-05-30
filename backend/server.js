@@ -1,6 +1,6 @@
 "use strict";
 
-require("dotenv").config();
+require('dotenv').config({ path: '../.env' });
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
@@ -2711,6 +2711,146 @@ app.delete("/api/clases/reservas/:id", async (req, res) => {
   }
 });
 
+// 1. Resumen financiero 
+app.get(
+  "/api/admin/finance/summary",
+  authenticate,
+  requireRoles("admin", "recepcionista"),
+  async (req, res) => {
+    try {
+      // Query A: Estadísticas numéricas superiores (Mes, Hoy, Total acumulado, Cantidad de pagos)
+      const [summaryRows] = await pool.query(`
+        SELECT 
+          COALESCE(SUM(CASE WHEN MONTH(fecha_pago) = MONTH(CURDATE()) AND YEAR(fecha_pago) = YEAR(CURDATE()) THEN monto ELSE 0 END), 0) AS ingresos_mes,
+          COALESCE(SUM(CASE WHEN DATE(fecha_pago) = CURDATE() THEN monto ELSE 0 END), 0) AS ingresos_hoy,
+          COALESCE(SUM(monto), 0) AS ingresos_total,
+          COUNT(id_pago) AS total_pagos
+        FROM pagos
+      `);
+
+      // Query B: Totales acumulados por Método de Pago
+      const [methodRows] = await pool.query(`
+        SELECT 
+          metodo_pago,
+          COUNT(id_pago) AS cantidad,
+          SUM(monto) AS subtotal
+        FROM pagos
+        GROUP BY metodo_pago
+        ORDER BY subtotal DESC
+      `);
+
+      // Query C: Historial de los últimos 6 meses para el gráfico de barras
+      const [monthlyRows] = await pool.query(`
+        SELECT 
+          DATE_FORMAT(fecha_pago, '%Y-%m') AS mes,
+          SUM(monto) AS total
+        FROM pagos
+        WHERE fecha_pago >= DATE_SUB(DATE_FORMAT(NOW() ,'%Y-%m-01'), INTERVAL 5 MONTH)
+        GROUP BY DATE_FORMAT(fecha_pago, '%Y-%m')
+        ORDER BY mes ASC
+      `);
+
+      res.json({
+        summary: summaryRows[0],
+        byMethod: methodRows,
+        monthly: monthlyRows
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: "Error cargando resumen financiero",
+        detail: error.message
+      });
+    }
+  }
+);
+
+// 2. Obtener listado de todos los pagos registrados
+app.get(
+  "/api/admin/payments",
+  authenticate,
+  requireRoles("admin", "recepcionista"),
+  async (req, res) => {
+    try {
+      const [rows] = await pool.query(`
+        SELECT 
+          p.id_pago,
+          p.monto,
+          p.metodo_pago,
+          p.fecha_pago,
+          u.nombre_completo,
+          u.correo
+        FROM pagos p
+        INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
+        ORDER BY p.fecha_pago DESC, p.id_pago DESC
+      `);
+
+      res.json({
+        payments: rows
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: "Error cargando historial de pagos",
+        detail: error.message
+      });
+    }
+  }
+);
+
+// 3. Registrar un nuevo ingreso manual
+app.post(
+  "/api/admin/payments",
+  authenticate,
+  requireRoles("admin", "recepcionista"),
+  async (req, res) => {
+    const { userId, monto, metodoPago } = req.body || {};
+
+    // Validaciones del servidor
+    if (!userId || !monto || Number(monto) <= 0) {
+      return res.status(400).json({
+        error: "El ID de usuario y un monto válido son requeridos."
+      });
+    }
+
+    // Validar el Enum exacto aceptado en la Base de Datos
+    const metodosAceptados = ["Efectivo", "Tarjeta", "Transferencia"];
+    if (!metodosAceptados.includes(metodoPago)) {
+      return res.status(400).json({
+        error: "Método de pago inválido. Debe ser Efectivo, Tarjeta o Transferencia."
+      });
+    }
+
+    try {
+      // Verificar primero si el usuario/cliente realmente existe para evitar fallos de llave foránea
+      const [userExists] = await pool.query(
+        "SELECT 1 FROM usuarios WHERE id_usuario = ? LIMIT 1",
+        [userId]
+      );
+
+      if (!userExists.length) {
+        return res.status(404).json({
+          error: "El ID de usuario ingresado no existe."
+        });
+      }
+
+      // Insertar el pago en la tabla
+      await pool.query(
+        `INSERT INTO pagos (id_usuario, monto, metodo_pago, fecha_pago)
+         VALUES (?, ?, ?, NOW())`,
+        [userId, monto, metodoPago]
+      );
+
+      res.status(201).json({
+        ok: true,
+        message: "Pago registrado correctamente en el sistema."
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: "Error interno al guardar el pago en la base de datos.",
+        detail: error.message
+      });
+    }
+  }
+);
 
 async function startServer() {
   try {
