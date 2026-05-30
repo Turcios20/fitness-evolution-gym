@@ -61,6 +61,45 @@
   transform: translateY(0);
 }
 
+.finance-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.finance-action-btn {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-family: "Rajdhani", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.finance-action-btn:hover {
+  border-color: rgba(232, 124, 42, 0.38);
+  background: rgba(232, 124, 42, 0.08);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.finance-action-btn--danger {
+  color: #ffcbc3;
+  border-color: rgba(224, 112, 112, 0.2);
+  background: rgba(224, 112, 112, 0.05);
+}
+
+.finance-action-btn--danger:hover {
+  border-color: rgba(224, 112, 112, 0.42);
+  background: rgba(224, 112, 112, 0.12);
+  color: #ffd5d5;
+}
+
 .fin-card {
   background: linear-gradient(180deg, rgba(22, 22, 22, 0.92), rgba(12, 12, 12, 0.92));
   border: 1px solid var(--border);
@@ -621,6 +660,93 @@
 .payroll-modal-box textarea.gm-input {
   min-height: 92px;
   resize: vertical;
+}
+
+.expense-page {
+  --expense-accent: #e05555;
+  --expense-accent-dark: #c84444;
+}
+
+.expense-page .finance-module-link.active {
+  background: linear-gradient(135deg, rgba(224, 85, 85, 0.96), rgba(184, 56, 56, 0.88));
+  border-color: rgba(224, 85, 85, 0.68);
+  box-shadow: 0 14px 36px rgba(224, 85, 85, 0.2);
+}
+
+.expense-page .fin-btn {
+  background: var(--expense-accent);
+  box-shadow: 0 12px 28px rgba(224, 85, 85, 0.18);
+}
+
+.expense-page .fin-btn:hover {
+  background: var(--expense-accent-dark);
+}
+
+.expense-page .payroll-period-input:focus,
+.expense-page .payroll-filter-select:focus,
+.expense-page .gm-input:focus {
+  border-color: var(--expense-accent);
+  box-shadow: 0 0 0 1px rgba(224, 85, 85, 0.14);
+}
+
+.expense-page .fin-stat-num,
+.expense-page .payroll-history-chip strong,
+.expense-page .payroll-top-amount,
+.expense-page .payroll-method-amount,
+.expense-page .payroll-legend-amount,
+.expense-page .payroll-donut-center strong,
+.expense-page .payroll-amount,
+.expense-page .payroll-table th {
+  color: var(--expense-accent);
+}
+
+.expense-page .payroll-avatar,
+.expense-page .payroll-top-rank {
+  background: linear-gradient(135deg, rgba(224, 85, 85, 0.96), rgba(184, 56, 56, 0.88));
+  box-shadow: 0 14px 28px rgba(224, 85, 85, 0.18);
+}
+
+.expense-page .payroll-bar {
+  background: linear-gradient(180deg, rgba(255, 168, 150, 0.94), rgba(224, 85, 85, 0.98));
+  box-shadow: 0 14px 28px rgba(224, 85, 85, 0.18);
+}
+
+.expense-page .finance-action-btn:hover {
+  border-color: rgba(224, 85, 85, 0.36);
+  background: rgba(224, 85, 85, 0.1);
+}
+
+.expense-page .finance-action-btn--danger {
+  border-color: rgba(224, 85, 85, 0.24);
+  background: rgba(224, 85, 85, 0.08);
+  color: #ffd1d1;
+}
+
+.expense-page .finance-action-btn--danger:hover {
+  border-color: rgba(224, 85, 85, 0.42);
+  background: rgba(224, 85, 85, 0.16);
+}
+
+.expense-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--pill-color, var(--text));
+  background: var(--pill-bg, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--pill-border, rgba(255, 255, 255, 0.12));
+}
+
+.expense-category-pill strong {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: 1px;
 }
 
 @media (max-width: 1120px) {

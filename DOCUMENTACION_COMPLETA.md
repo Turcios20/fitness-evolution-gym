@@ -29,7 +29,13 @@ fitness-evolution-gym/
   miembros.js                    # Logica del dashboard de miembros
   form.html                      # Formulario para agregar nuevo cliente
   form.js                        # Validacion y envio del formulario
-  finanzas.html                  # Seccion de finanzas (en desarrollo)
+  finanzas.html                  # Modulo de ingresos financieros
+  finanzas.js                    # Logica del modulo de ingresos
+  pagos-personal.html            # Modulo de pagos al personal
+  pagos-personal.js              # Logica del modulo de pagos al personal
+  egresos.html                   # Modulo de egresos financieros
+  egresos.js                     # Logica del modulo de egresos
+  finance-module.css             # Estilos compartidos del ecosistema financiero
   ajustes.html                   # Ajustes del sistema (en desarrollo)
   cliente.html                   # Vista principal del cliente
   cliente.js                     # Logica cliente (dashboard, renovacion)
@@ -113,6 +119,8 @@ Abrir:
 - `membresias`
 - `rutinas`
 - `pagos`
+- `pagos_personal`
+- `egresos_financieros`
 - `asistencia`
 - `inventario`
 
@@ -216,6 +224,46 @@ DELETE /api/admin/members/:id
 ```json
 { "days": 30, "plan": "Mensual" }
 ```
+
+---
+
+### 8.5 Admin — Finanzas
+
+```text
+GET    /api/admin/finance/summary
+GET    /api/admin/payments
+POST   /api/admin/payments
+PUT    /api/admin/payments/:paymentId
+DELETE /api/admin/payments/:paymentId
+
+GET    /api/admin/staff-members
+GET    /api/admin/staff-payments?period=YYYY-MM
+POST   /api/admin/staff-payments
+GET    /api/admin/staff-payments/summary?period=YYYY-MM
+
+GET    /api/admin/expenses?month=YYYY-MM
+POST   /api/admin/expenses
+PUT    /api/admin/expenses/:expenseId
+DELETE /api/admin/expenses/:expenseId
+GET    /api/admin/expenses/summary?month=YYYY-MM
+```
+
+**Body POST/PUT egresos:**
+```json
+{
+  "concepto": "Pago de energia electrica",
+  "categoria": "Servicios",
+  "monto": 145.50,
+  "fechaEgreso": "2026-05-30",
+  "metodoPago": "Transferencia",
+  "observaciones": "Factura de mayo"
+}
+```
+
+Los modulos financieros quedan separados por dominio:
+- `finanzas.html`: ingresos por membresias de clientes.
+- `pagos-personal.html`: pagos internos al personal.
+- `egresos.html`: gastos operativos y extraordinarios del gimnasio.
 
 ---
 
@@ -409,7 +457,9 @@ Estas paginas estan creadas con estructura completa y placeholder visual:
 
 | Archivo | Descripcion |
 |---------|-------------|
-| `finanzas.html` | Reportes de ingresos del gym |
+| `finanzas.html` | Registro y control de ingresos |
+| `pagos-personal.html` | Registro y analitica de pagos al personal |
+| `egresos.html` | Registro y control de egresos financieros |
 | `ajustes.html` | Configuracion del sistema (admin) |
 | `calendario-cliente.html` | Proximas sesiones del cliente |
 | `ajustes-cliente.html` | Configuracion de cuenta del cliente |
