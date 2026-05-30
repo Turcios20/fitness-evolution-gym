@@ -1,7 +1,11 @@
 "use strict";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  if (!window.GymApp?.guardRoute("admin")) return;
+  // Modificar el guardián para que no bote al recepcionista
+if (!window.GymApp?.guardRoute("admin") && !window.GymApp?.guardRoute("recepcionista")) {
+    // Si no es ninguno de los dos, entonces sí lo bloquea
+    if (!window.GymApp?.hasRole("recepcionista")) return; 
+}
 
   const fmt = (n) => "$" + Number(n || 0).toLocaleString("es-HN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString("es-HN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
