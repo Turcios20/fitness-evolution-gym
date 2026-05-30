@@ -39,3 +39,11 @@ Estas credenciales se cargan al ejecutar `npm run init-db` en entorno local.
 - pensadas para pruebas locales
 - si la base se reinicializa, vuelven a cargarse
 - para detalle tecnico completo revisar `DOCUMENTACION_COMPLETA.md`
+
+## URLs sugeridas
+
+- Login: `http://localhost:3000/login.html`
+- Admin: `http://localhost:3000/admin.html`
+- Recepcion: `http://localhost:3000/recepcionista.html`
+- Entrenador: `http://localhost:3000/entrenador.html`
+- Cliente: `http://localhost:3000/cliente.html`

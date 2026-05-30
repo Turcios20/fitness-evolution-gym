@@ -130,3 +130,9 @@ database.production.sql
 ## Nota
 
 No subir `.env` al repositorio. Para informacion tecnica detallada, flujos, tablas y endpoints, revisar `DOCUMENTACION_COMPLETA.md`.
+
+## Troubleshooting rapido
+
+- Si `http://localhost:3000/api/health` falla, revisar conexion MySQL y variables `DB_*`.
+- Si el login falla con usuarios de prueba, ejecutar `npm run init-db`.
+- Si una vista queda con sesion vieja, limpiar `gymSession` del navegador y volver a entrar.

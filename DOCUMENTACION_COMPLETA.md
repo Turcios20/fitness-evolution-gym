@@ -482,3 +482,34 @@ Puntos actuales del sistema:
 - existen rutas nuevas y rutas legacy para progreso, por lo que conviene evitar mezclar integraciones sin revisar primero
 - la vista general de finanzas depende de que existan datos en ingresos, pagos al personal o egresos
 - el sistema usa muchas vistas estaticas enlazadas entre si; cualquier cambio de nombre de archivo debe actualizar la navegacion
+
+## 18. Troubleshooting rapido
+
+### La app no levanta
+
+- confirmar que MySQL este encendido
+- revisar `.env`
+- verificar que `DB_NAME` coincida con la base esperada
+- ejecutar `npm run init-db` si la base local esta incompleta
+
+### `GET /api/health` responde error
+
+- revisar usuario y contrasena de MySQL
+- confirmar que el puerto de MySQL sea correcto
+- si es remoto, revisar `DB_SSL` y `DB_SSL_REJECT_UNAUTHORIZED`
+
+### No deja iniciar sesion
+
+- volver a cargar los usuarios con `npm run init-db`
+- revisar que se este usando una credencial de prueba valida
+- limpiar `localStorage` si hay una sesion vieja corrupta
+
+### Finanzas aparece vacio
+
+- la vista general depende de datos en ingresos, pagos al personal o egresos
+- si todo esta en cero, primero registrar al menos un movimiento en cada modulo a probar
+
+### El frontend muestra una sesion vieja
+
+- limpiar `gymSession` desde el navegador
+- volver a entrar por `login.html`
