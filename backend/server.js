@@ -191,7 +191,7 @@ function buildAccountCreatedEmail(member) {
       "",
       `Tu cuenta en Fitness Evolutions Gym ya fue creada con el rol ${member.roleLabel}.`,
       `Correo de acceso: ${member.email}`,
-      `Contrasena temporal: ${member.password}`,
+      `Contraseña: ${member.password}`,
       member.plan ? `Plan asignado: ${member.plan}` : null,
       member.membershipEndDate ? `Vencimiento actual: ${formatDateForEmail(member.membershipEndDate)}` : null,
       "",
