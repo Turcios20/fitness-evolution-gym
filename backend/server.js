@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 require("dotenv").config();
 const express = require("express");
@@ -260,8 +260,8 @@ function serializeSettingValue(value) {
   return String(value);
 }
 
-// RUTINAS
-// Obtener rutinas de un cliente
+// ── RUTINAS ────────────────────────────────────────────────────────────────────
+
 app.get(
   "/api/client/:clientId/routines",
   authenticate,
@@ -533,11 +533,11 @@ app.delete(
   }
 );
 
-// ===============================
-// PLANES
-// ===============================
+// ── PLANES DE ENTRENAMIENTO ────────────────────────────────────────────────────
 
-// Obtener planes
+
+
+
 app.get(
   "/api/client/:clientId/plans",
   authenticate,
@@ -2659,7 +2659,7 @@ app.put("/api/client/:clientId/objective", authenticate, requireRoles("admin", "
   }
 });
 
-// Endpoints para medidas de progreso
+// ── MEDIDAS DE CLIENTE ─────────────────────────────────────────────────────────
 app.get("/api/client/:clientId/measurements", authenticate, async (req, res) => {
   const clientId = Number(req.params.clientId);
 
@@ -2854,7 +2854,7 @@ app.get("/api/trainer/clients/:clientId/measurements", authenticate, requireRole
   }
 });
 
-// â”€â”€ PAGOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── PAGOS AL PERSONAL ──────────────────────────────────────────────────────────
 
 app.get("/api/admin/staff-members", authenticate, requireRoles("admin"), async (_req, res) => {
   try {
@@ -3897,7 +3897,7 @@ app.get("/api/admin/finance/summary", authenticate, requireRoles("admin"), async
   }
 });
 
-// â”€â”€ CLASES Y RESERVAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── CLASES Y RESERVAS ──────────────────────────────────────────────────────────
 
 app.get("/api/clases", authenticate, async (_req, res) => {
   try {
@@ -4171,7 +4171,7 @@ app.delete("/api/clases/reservas/:id", authenticate, requireRoles("cliente"), as
   }
 });
 
-// â”€â”€ CLIENTES POR ENTRENADOR (HU-22) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── CLIENTES POR ENTRENADOR ────────────────────────────────────────────────────
 
 app.get("/api/trainer/:trainerId/clientes", authenticate, requireRoles("entrenador", "admin"), async (req, res) => {
   const trainerId = Number(req.params.trainerId);
@@ -4197,7 +4197,7 @@ app.get("/api/trainer/:trainerId/clientes", authenticate, requireRoles("entrenad
   }
 });
 
-// â”€â”€ MEDIDAS DE PROGRESO (HU-22) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── MEDIDAS DE PROGRESO ────────────────────────────────────────────────────────
 
 app.get("/api/medidas/:userId", authenticate, async (req, res) => {
   const userId = Number(req.params.userId);
@@ -4328,7 +4328,7 @@ app.delete("/api/medidas/:id", authenticate, async (req, res) => {
 });
 
 
-// â”€â”€ OBJETIVO PERSONAL (HU-23) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── OBJETIVO PERSONAL Y FOTOS DE PROGRESO ──────────────────────────────────────
 
 app.get("/api/objetivo/:userId", authenticate, async (req, res) => {
   const userId = Number(req.params.userId);
