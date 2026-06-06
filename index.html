@@ -25,9 +25,7 @@
         <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes"> Ajustes
       </a>
 
-      <!-- ── AGREGADO: botón toggle tema día/noche (desktop) ─────────────── -->
       <button class="theme-toggle-btn" id="themeToggleDesktop" aria-label="Cambiar tema">
-        <!-- Ícono sol (día) -->
         <svg class="theme-icon icon-sun" xmlns="http://www.w3.org/2000/svg"
              viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -41,13 +39,11 @@
           <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </svg>
-        <!-- Ícono luna (noche) -->
         <svg class="theme-icon icon-moon" xmlns="http://www.w3.org/2000/svg"
              viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
-        <!-- Pista con knob deslizante -->
         <span class="toggle-track">
           <span class="toggle-knob">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
@@ -65,10 +61,8 @@
         </span>
         <span class="toggle-label"></span>
       </button>
-      <!-- ── FIN AGREGADO ──────────────────────────────────────────────── -->
     </nav>
 
-    <!-- ── AGREGADO: botón solo-ícono fijo en esquina superior derecha (<=768px) -->
     <button class="mobile-theme-btn" id="themeToggleMobile" aria-label="Cambiar tema">
       <svg class="m-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
            fill="none" stroke="currentColor" stroke-width="2"
@@ -89,7 +83,6 @@
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
       </svg>
     </button>
-    <!-- ── FIN AGREGADO ─────────────────────────────────────────────────── -->
 
     <main class="content">
       <div class="fadein">
@@ -108,11 +101,6 @@
 
   </div>
 
-  <!-- ── AGREGADO: Script del toggle día/noche ──────────────────────────────
-       Restaura el tema guardado al cargar. Ambos botones (desktop y mobile)
-       llaman a la misma función. El tema se guarda en localStorage para que
-       se recuerde al navegar entre todas las páginas del sitio.
-  ─────────────────────────────────────────────────────────────────────────── -->
   <script>
     (function () {
       const html = document.documentElement;
@@ -131,7 +119,6 @@
       document.getElementById('themeToggleMobile').addEventListener('click', toggleTheme);
     })();
   </script>
-  <!-- ── FIN AGREGADO ─────────────────────────────────────────────────────── -->
 
   <script src="common.js"></script>
 </body>
