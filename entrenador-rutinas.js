@@ -33,7 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedClientId = null;
   let editingRoutineId = null;
 
-  // ── Avatar ──
   function getInitials(name) {
     return (name || "CO").trim().split(/\s+/)
       .slice(0, 2).map((w) => w[0].toUpperCase()).join("");
@@ -49,13 +48,11 @@ document.addEventListener("DOMContentLoaded", () => {
     trainerAccountHint.textContent = `Cuenta activa: ${session.username || "sin correo"}`;
   }
 
-  // ── Logout ──
   btnLogout.addEventListener("click", () => {
     GymApp.clearSession();
     window.location.href = "login.html";
   });
 
-  // ── Tabs ──
   tabRutinas.addEventListener("click", () => {
     tabRutinas.classList.add("active");
     tabPlanes.classList.remove("active");
@@ -85,7 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (selectedClientId) loadReservasAsignadas(selectedClientId);
   });
 
-  // ── Seleccionar cliente ──
   function selectClient(client) {
     document.querySelectorAll(".client-item")
       .forEach((i) => i.classList.remove("active"));
@@ -100,7 +96,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadRutinas(client.id);
   }
 
-  // ── Render clientes ──
   function renderClients(clients) {
     clientsList.innerHTML    = "";
     clientsCount.textContent = String(clients.length);
@@ -123,7 +118,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ── Cargar rutinas ──
   async function loadRutinas(clientId) {
     listaRutinas.innerHTML = `<div class="client-item-empty"><p>Cargando rutinas...</p></div>`;
     noRutinas.classList.add("hidden");
@@ -180,7 +174,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ── Reset form a modo "crear" ──
   function resetRutinaForm() {
     editingRoutineId = null;
     document.getElementById("inputEjercicio").value    = "";
@@ -192,7 +185,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnCrearRutina.textContent = "Guardar Rutina";
   }
 
-  // ── Cargar rutina existente al form para editar ──
   function startEditRutina(rutina) {
     editingRoutineId = rutina.id_rutina;
     document.getElementById("inputEjercicio").value    = rutina.nombre_ejercicio || "";
@@ -206,7 +198,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("inputEjercicio").focus();
   }
 
-  // ── Eliminar rutina ──
   async function deleteRutina(rutina) {
     if (!confirm(`¿Eliminar la rutina "${rutina.nombre_ejercicio}"?`)) return;
     try {
@@ -227,7 +218,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ── Crear / Actualizar rutina ──
   btnCrearRutina.addEventListener("click", async () => {
     if (!selectedClientId) {
       GymApp.toast("Selecciona un cliente primero", "error");
@@ -275,7 +265,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ── Cargar planes ──
   async function loadPlanes(clientId) {
     listaPlanes.innerHTML = `<div class="client-item-empty"><p>Cargando planes...</p></div>`;
     noPlanes.classList.add("hidden");
@@ -326,7 +315,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ── Crear plan ──
   btnCrearPlan.addEventListener("click", async () => {
     if (!selectedClientId) {
       GymApp.toast("Selecciona un cliente primero", "error");
@@ -372,7 +360,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ── Cargar clientes ──
   async function loadTrainerClients() {
     try {
       const data    = await GymApp.api("/api/trainer/dashboard");
@@ -389,7 +376,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ── RESERVAS: cargar clases disponibles en el dropdown ──
   async function loadClasesDisponibles() {
     selectClase.innerHTML = `<option value="">Cargando clases disponibles...</option>`;
     try {
@@ -410,7 +396,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ── RESERVAS: cargar reservas ya asignadas al cliente ──
   async function loadReservasAsignadas(clientId) {
     listaReservas.innerHTML = `<div class="client-item-empty"><p>Cargando reservas...</p></div>`;
     noReservas.classList.add("hidden");
@@ -489,7 +474,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ── RESERVAS: cancelar reserva asignada (solo entrenador) ──
   async function cancelarReservaAsignada(reserva) {
     if (!confirm(`¿Cancelar la reserva de "${reserva.nombre}"?`)) return;
     try {

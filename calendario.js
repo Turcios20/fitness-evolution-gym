@@ -23,7 +23,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return "#e07070";
   };
 
-  // Avatar setup (igual que otras páginas cliente)
   (function setupAvatar() {
     const av   = document.getElementById("userAvatar");
     const dn   = document.getElementById("dropdownName");
@@ -214,7 +213,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }).join("");
   }
 
-  // Búsqueda en tiempo real
   document.getElementById("calSearch").addEventListener("input", (e) => {
     if (!classesCatalogReady) {
       return;
