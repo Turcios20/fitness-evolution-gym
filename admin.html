@@ -8,12 +8,10 @@
 </head>
 <body>
 
-  <!-- Fondo foto del gym -->
   <div class="gym-bg"></div>
 
   <div class="page">
 
-    <!-- ===== NAV SUPERIOR ===== -->
     <nav class="topnav">
       <div class="logo">
         FITNESS
@@ -45,20 +43,15 @@
       </div>
     </nav>
 
-    <!-- ===== CONTENIDO ===== -->
-    <!-- En desktop usa grid de 2 columnas; en móvil cae a 1 columna -->
     <div class="admin-layout">
 
-      <!-- ── COLUMNA PRINCIPAL ── -->
       <main class="content" style="padding:0;">
 
-        <!-- Bienvenida -->
         <div class="fadein">
           <p class="welcome-sub">Panel de control</p>
           <h1 class="welcome-title">¡Bienvenido, administrador!</h1>
         </div>
 
-        <!-- Resumen del día -->
         <div class="fadein-2">
           <div class="section-header">
             <span class="section-title">Resumen de hoy</span>
@@ -80,7 +73,6 @@
           </div>
         </div>
 
-        <!-- Gestión de miembros -->
         <div class="fadein-2" id="attendance-report" style="margin-bottom: 28px;">
           <div class="section-header section-header--wrap">
             <span class="section-title">Reporte de asistencia</span>
@@ -151,13 +143,11 @@
             <span class="ver-todo">Ver todo</span>
           </div>
 
-          <!-- Buscador + botón agregar -->
           <div class="search-bar">
             <img src="assets/search_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Buscar">
             <input type="text" placeholder="Buscar miembro...">
           </div>
 
-          <!-- Las tarjetas las genera admin.js en un grid de 2 columnas en desktop -->
           <div class="members-grid">
             <div class="member-card">
               <img class="avatar"
@@ -176,10 +166,8 @@
 
       </main>
 
-      <!-- ── SIDEBAR (solo desktop) ── -->
       <aside class="admin-sidebar fadein-2">
 
-        <!-- Acciones rápidas -->
         <div class="sidebar-card">
           <div class="sidebar-card-title">Acciones rápidas</div>
           <a href="form.html" class="quick-link">
@@ -204,7 +192,6 @@
           </a>
         </div>
 
-        <!-- Resumen rápido -->
         <div class="sidebar-card">
           <div class="sidebar-card-title">Resumen del mes</div>
           <div class="sidebar-stat-row">
@@ -227,7 +214,7 @@
 
       </aside>
 
-    </div><!-- fin .admin-layout -->
+    </div>
   </div>
 
   <script src="common.js"></script>
