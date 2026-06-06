@@ -3,6 +3,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
 const { pool } = require("./db");
@@ -16,6 +17,12 @@ const {
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+const SMTP_HOST = String(process.env.SMTP_HOST || "").trim();
+const SMTP_USER = String(process.env.SMTP_USER || "").trim();
+const SMTP_PASS = String(process.env.SMTP_PASS || "").trim();
+const SMTP_FROM = String(process.env.SMTP_FROM || SMTP_USER).trim();
+const SMTP_SECURE = String(process.env.SMTP_SECURE || (SMTP_PORT === 465 ? "true" : "false")).trim().toLowerCase() === "true";
 const OBJECTIVE_MAX_LENGTH = 255;
 const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 const PHOTO_UPLOAD_ROOT = path.join(__dirname, "..", "uploads", "progress");
@@ -60,6 +67,7 @@ const EXPENSE_CATEGORIES = [
 ];
 const YEAR_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 const ISO_DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+let mailTransporter;
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
@@ -120,6 +128,148 @@ function serializeDateOnly(value) {
     return value.toISOString().slice(0, 10);
   }
   return String(value).slice(0, 10);
+}
+
+function isEmailConfigured() {
+  return Boolean(SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS && SMTP_FROM);
+}
+
+function getMailTransporter() {
+  if (!isEmailConfigured()) {
+    return null;
+  }
+
+  if (!mailTransporter) {
+    mailTransporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS
+      }
+    });
+  }
+
+  return mailTransporter;
+}
+
+async function sendMail(message) {
+  const transporter = getMailTransporter();
+  if (!transporter) {
+    console.warn("SMTP no configurado. Se omitio el envio de correo.");
+    return false;
+  }
+
+  await transporter.sendMail({
+    from: SMTP_FROM,
+    ...message
+  });
+  return true;
+}
+
+function formatDateForEmail(value) {
+  if (!value) return "pendiente";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+
+  return new Intl.DateTimeFormat("es-SV", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  }).format(date);
+}
+
+function buildAccountCreatedEmail(member) {
+  return {
+    to: member.email,
+    subject: "Tu cuenta ha sido creada en Fitness Evolutions Gym",
+    text: [
+      `Hola ${member.name},`,
+      "",
+      `Tu cuenta en Fitness Evolutions Gym ya fue creada con el rol ${member.roleLabel}.`,
+      `Correo de acceso: ${member.email}`,
+      `Contrasena temporal: ${member.password}`,
+      member.plan ? `Plan asignado: ${member.plan}` : null,
+      member.membershipEndDate ? `Vencimiento actual: ${formatDateForEmail(member.membershipEndDate)}` : null,
+      "",
+      "Te recomendamos iniciar sesion y cambiar tu contrasena lo antes posible.",
+      "",
+      "Equipo Fitness Evolutions Gym"
+    ].filter(Boolean).join("\n")
+  };
+}
+
+function buildMembershipRenewedEmail(member) {
+  return {
+    to: member.email,
+    subject: "Tu membresia fue renovada en Fitness Evolutions Gym",
+    text: [
+      `Hola ${member.name},`,
+      "",
+      `Tu membresia fue renovada correctamente por ${member.daysRenewed} dias.`,
+      `Plan actual: ${member.plan}`,
+      `Nueva fecha de vencimiento: ${formatDateForEmail(member.membershipEndDate)}`,
+      "",
+      "Gracias por seguir con nosotros.",
+      "",
+      "Equipo Fitness Evolutions Gym"
+    ].join("\n")
+  };
+}
+
+async function sendAccountCreatedEmail(member) {
+  try {
+    await sendMail(buildAccountCreatedEmail(member));
+  } catch (error) {
+    console.error("No se pudo enviar correo de cuenta creada:", error.message);
+  }
+}
+
+async function sendMembershipRenewedEmail(member) {
+  try {
+    await sendMail(buildMembershipRenewedEmail(member));
+  } catch (error) {
+    console.error("No se pudo enviar correo de renovacion:", error.message);
+  }
+}
+
+async function getMemberNotificationData(connection, memberId) {
+  const [rows] = await connection.query(
+    `SELECT
+       u.id_usuario,
+       u.nombre_completo,
+       u.correo,
+       u.rol,
+       m.tipo_plan,
+       m.fecha_vencimiento
+     FROM usuarios u
+     LEFT JOIN membresias m ON m.id_membresia = (
+       SELECT m2.id_membresia
+       FROM membresias m2
+       WHERE m2.id_usuario = u.id_usuario
+       ORDER BY m2.fecha_vencimiento DESC
+       LIMIT 1
+     )
+     WHERE u.id_usuario = ?
+     LIMIT 1`,
+    [memberId]
+  );
+
+  if (!rows.length) {
+    return null;
+  }
+
+  return {
+    id: rows[0].id_usuario,
+    name: rows[0].nombre_completo,
+    email: rows[0].correo,
+    roleLabel: rows[0].rol,
+    plan: rows[0].tipo_plan || null,
+    membershipEndDate: rows[0].fecha_vencimiento || null
+  };
 }
 
 async function tableExists(executor, tableName) {
@@ -1798,7 +1948,16 @@ async function createUserWithMembership(connection, payload) {
     );
   }
 
-  return insertUser.insertId;
+  const member = await getMemberNotificationData(connection, insertUser.insertId);
+  return {
+    id: insertUser.insertId,
+    name: payload.name,
+    email: payload.email,
+    password: payload.password,
+    roleLabel: dbRole,
+    plan: member?.plan || (dbRole === "Cliente" ? safePlan : null),
+    membershipEndDate: member?.membershipEndDate || null
+  };
 }
 
 async function updateClientMember(connection, memberId, payload) {
@@ -1913,7 +2072,12 @@ async function renewClientMembership(connection, memberId, days, plan) {
        WHERE id_membresia = ?`,
       [safePlan, renewalDays, membershipRows[0].id_membresia]
     );
-    return;
+    const member = await getMemberNotificationData(connection, memberId);
+    return {
+      ...(member || {}),
+      daysRenewed: renewalDays,
+      plan: safePlan
+    };
   }
 
   await connection.query(
@@ -1921,6 +2085,13 @@ async function renewClientMembership(connection, memberId, days, plan) {
      VALUES (?, ?, 20.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Activo')`,
     [memberId, safePlan, renewalDays]
   );
+
+  const member = await getMemberNotificationData(connection, memberId);
+  return {
+    ...(member || {}),
+    daysRenewed: renewalDays,
+    plan: safePlan
+  };
 }
 
 app.get("/api/health", async (_req, res) => {
@@ -2031,7 +2202,13 @@ app.post("/api/subscription/renew", authenticate, async (req, res) => {
       [membershipRows[0].id_membresia]
     );
 
+    const renewedMember = await getMemberNotificationData(connection, user.id_usuario);
     await connection.commit();
+    await sendMembershipRenewedEmail({
+      ...(renewedMember || {}),
+      daysRenewed: 30,
+      plan: renewedMember?.plan || "Mensual"
+    });
     res.json({ ok: true, message: "Suscripcion renovada 30 dias" });
   } catch (error) {
     await connection.rollback();
@@ -2139,9 +2316,10 @@ app.post(["/api/members", "/api/admin/members"], authenticate, requireRoles("adm
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    const id = await createUserWithMembership(connection, req.body || {});
+    const createdMember = await createUserWithMembership(connection, req.body || {});
     await connection.commit();
-    res.status(201).json({ ok: true, id });
+    await sendAccountCreatedEmail(createdMember);
+    res.status(201).json({ ok: true, id: createdMember.id });
   } catch (error) {
     await connection.rollback();
     res.status(500).json({ error: "Error creando usuario", detail: error.message });
@@ -2198,8 +2376,9 @@ app.post(["/api/members/:id/renew", "/api/admin/members/:id/renew"], authenticat
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    await renewClientMembership(connection, memberId, days, plan);
+    const renewedMember = await renewClientMembership(connection, memberId, days, plan);
     await connection.commit();
+    await sendMembershipRenewedEmail(renewedMember);
     res.json({ ok: true, message: `Membresia renovada ${days} dias` });
   } catch (error) {
     await connection.rollback();
