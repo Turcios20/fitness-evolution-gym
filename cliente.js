@@ -99,8 +99,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Los links del nav inferior ya apuntan a sus páginas reales
-
   verTodos.forEach((el) => {
     el.style.cursor = "pointer";
     el.addEventListener("click", () => GymApp.toast("Vista completa en construcción.", "info"));

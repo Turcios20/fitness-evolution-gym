@@ -2,7 +2,6 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  // ── Seguridad: solo admins ──────────────────────────────────
   if (!GymApp.guardRoute("admin")) return;
   const session = GymApp.getSession();
 
@@ -39,9 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ─────────────────────────────────────────────
-  // HELPERS DE INICIALES Y COLOR
-  // ─────────────────────────────────────────────
+  // ── Helpers de avatar ──
   function getInitials(name) {
     return (name || "?").trim().split(/\s+/).slice(0, 2)
       .map(w => w[0].toUpperCase()).join("");
@@ -161,9 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ─────────────────────────────────────────────
-  // SISTEMA DE MODALES
-  // ─────────────────────────────────────────────
+  // ── Modales ──
   function createOverlay() {
     const overlay = document.createElement("div");
     overlay.className = "gym-modal-overlay";
@@ -339,10 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // ─────────────────────────────────────────────
-  // BADGE DE ESTADO CON COLOR
-  // daysRemaining: >15 verde, 8-15 amarillo, ≤7 rojo
-  // ─────────────────────────────────────────────
+  // ── Badge de estado (>15 verde, 8-15 amarillo, ≤7 rojo) ──
   function statusBadge(days, status) {
     if (status === "Inactivo") return '<span class="member-badge badge-inactive">Inactivo</span>';
     if (days <= 0)  return '<span class="member-badge badge-expired">Vencido</span>';
@@ -538,9 +530,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ─────────────────────────────────────────────
-  // TARJETA DE MIEMBRO
-  // ─────────────────────────────────────────────
+  // ── Tarjeta de miembro ──
   function createBtn(label, color) {
     const b = document.createElement("button");
     b.type = "button"; b.textContent = label;
@@ -558,14 +548,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const plan   = member.membership?.plan   || "Sin plan";
     const status = member.membership?.status || "Activo";
 
-    // Avatar iniciales
     const initials = getInitials(member.name);
     const avatarEl = document.createElement("div");
     avatarEl.className   = "member-avatar-initials";
     avatarEl.textContent = initials;
     avatarEl.style.background = avatarColor(initials);
 
-    // Info
     const info = document.createElement("div");
     info.className = "member-info";
     info.innerHTML = `
@@ -574,7 +562,6 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="member-trainer">Entrenador: ${member.assignedTrainer?.name || "Sin asignar"}</div>
       <div style="margin-top:4px;">${statusBadge(days, status)}</div>`;
 
-    // Acciones normales (desktop)
     const actions = document.createElement("div");
     actions.className = "member-actions-desktop";
 
@@ -582,7 +569,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const renewBtn = createBtn("Renovar",  "#1f8f4f");
     const delBtn   = createBtn("Eliminar", "#b33a3a");
 
-    // Menú ··· para móvil
     const kebab = document.createElement("button");
     kebab.className = "kebab-btn";
     kebab.innerHTML = "&#8942;"; // ⋮
@@ -598,16 +584,13 @@ document.addEventListener("DOMContentLoaded", () => {
     kebab.addEventListener("click", e => {
       e.stopPropagation();
 
-      // Cierra cualquier menú kebab abierto
       document.querySelectorAll(".kebab-menu.open").forEach(m => m.classList.remove("open"));
 
-      // Posiciona el menú en base al botón (anclado al body para no ser cortado)
       const rect = kebab.getBoundingClientRect();
       kebabMenu.style.top  = (rect.bottom + window.scrollY + 6) + "px";
       kebabMenu.style.left = (rect.right  + window.scrollX - kebabMenu.offsetWidth || rect.left) + "px";
       kebabMenu.classList.add("open");
 
-      // Ajusta horizontal después de que el menú ya tiene ancho real
       requestAnimationFrame(() => {
         const mw = kebabMenu.offsetWidth;
         kebabMenu.style.left = (rect.right + window.scrollX - mw) + "px";
@@ -615,7 +598,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     document.addEventListener("click", () => kebabMenu.classList.remove("open"));
 
-    // Función central de acciones (la usan tanto desktop como kebab)
     function handleAction(action) {
       if (action === "edit") {
         showEditModal(member, async (payload) => {
@@ -641,7 +623,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       } else if (action === "del") {
         showDeleteModal(member, async () => {
-          // Animación fade-out antes de eliminar
           card.classList.add("card-fade-out");
           card.addEventListener("animationend", async () => {
             try {
@@ -672,7 +653,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const kebabWrap = document.createElement("div");
     kebabWrap.className = "kebab-wrap";
     kebabWrap.appendChild(kebab);
-    // El menú va al body para no ser cortado por overflow del card
     kebabMenu.className = "kebab-menu kebab-menu--fixed";
     document.body.appendChild(kebabMenu);
 
@@ -683,9 +663,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return card;
   }
 
-  // ─────────────────────────────────────────────
-  // FILTROS
-  // ─────────────────────────────────────────────
+  // ── Filtros ──
   function buildFilters() {
     const bar = document.querySelector(".search-bar");
     if (!bar || document.querySelector(".filter-row")) return;
@@ -703,7 +681,6 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.onclick = () => {
         setter(value === "Todos" ? "all" : value);
         row.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
-        // Reactiva los de su grupo
         btn.classList.add("active");
         applyFilters();
       };
@@ -736,9 +713,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMembers(filtered);
   }
 
-  // ─────────────────────────────────────────────
-  // RENDER Y CARGA
-  // ─────────────────────────────────────────────
+  // ── Render y carga ──
   function renderMembers(list) {
     memberSection.querySelectorAll(".member-card").forEach(c => c.remove());
     if (!list.length) {
@@ -763,7 +738,6 @@ document.addEventListener("DOMContentLoaded", () => {
     bar.appendChild(btn);
   }
 
-  // Skeleton loader mientras carga
   function showSkeletons(n = 4) {
     memberSection.querySelectorAll(".member-card").forEach(c => c.remove());
     for (let i = 0; i < n; i++) {
