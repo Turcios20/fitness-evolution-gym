@@ -1187,6 +1187,48 @@ async function ensureFinanceFeatureSchema() {
   }
 }
 
+const GYM_CONFIG_DEFAULTS = {
+  nombre: "FITNESS EVOLUTIONS GYM",
+  eslogan: "Evoluciona tu cuerpo, transforma tu vida",
+  nit: "0614-120593-101-1",
+  telefono: "+503 2234-5678",
+  correo: "info@fitnessevolutions.com",
+  sitio_web: "https://fitnessevolutions.com",
+  direccion: "Blvd. del Ejercito, local 12",
+  ciudad: "San Salvador",
+  pais: "El Salvador"
+};
+
+const GYM_CONFIG_KEYS = Object.keys(GYM_CONFIG_DEFAULTS);
+
+async function ensureGymConfigSchema() {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS configuracion_gimnasio (
+        id_config INT AUTO_INCREMENT PRIMARY KEY,
+        clave VARCHAR(100) NOT NULL UNIQUE,
+        valor VARCHAR(500),
+        fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    const [[{ total }]] = await connection.query(
+      "SELECT COUNT(*) AS total FROM configuracion_gimnasio"
+    );
+
+    if (Number(total) === 0) {
+      await connection.query(
+        `INSERT INTO configuracion_gimnasio (clave, valor) VALUES ?`,
+        [Object.entries(GYM_CONFIG_DEFAULTS).map(([clave, valor]) => [clave, valor])]
+      );
+    }
+  } finally {
+    connection.release();
+  }
+}
+
 function serializeSettingValue(value) {
   if (value == null) return null;
   if (typeof value === "object") return JSON.stringify(value);
@@ -3740,6 +3782,64 @@ app.put("/api/settings", authenticate, async (req, res) => {
   }
 });
 
+app.get("/api/gym-settings", async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT clave, valor FROM configuracion_gimnasio"
+    );
+
+    const gym = { ...GYM_CONFIG_DEFAULTS };
+    rows.forEach((row) => {
+      if (GYM_CONFIG_KEYS.includes(row.clave)) {
+        gym[row.clave] = row.valor;
+      }
+    });
+
+    res.json({ gym });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando datos del gimnasio", detail: error.message });
+  }
+});
+
+app.put("/api/gym-settings", authenticate, requireRoles("admin"), async (req, res) => {
+  const gym = req.body?.gym;
+
+  if (!gym || typeof gym !== "object") {
+    res.status(400).json({ error: "Datos del gimnasio requeridos" });
+    return;
+  }
+
+  const entries = Object.entries(gym).filter(([key]) => GYM_CONFIG_KEYS.includes(key));
+  if (!entries.length) {
+    res.status(400).json({ error: "No hay datos validos para guardar" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    for (const [key, value] of entries) {
+      await connection.query(
+        `INSERT INTO configuracion_gimnasio (clave, valor)
+         VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE
+           valor = VALUES(valor),
+           fecha_actualizacion = CURRENT_TIMESTAMP`,
+        [key, serializeSettingValue(value)]
+      );
+    }
+
+    await connection.commit();
+    res.json({ ok: true });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error guardando datos del gimnasio", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
 app.get("/api/client/:clientId/evolution", authenticate, async (req, res) => {
   const clientId = Number(req.params.clientId);
 
@@ -5801,6 +5901,7 @@ async function startServer() {
     await ensureUserAccountSchema();
     await ensureTrainerFeatureSchema();
     await ensureFinanceFeatureSchema();
+    await ensureGymConfigSchema();
     app.listen(PORT, () => {
       console.log(`API corriendo en http://localhost:${PORT}`);
     });

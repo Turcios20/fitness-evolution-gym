@@ -36,6 +36,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const errConfirmPassword = document.getElementById("errConfirmPassword");
   const staffUsersBody = document.getElementById("staffUsersBody");
   const btnAddStaffUser = document.getElementById("btnAddStaffUser");
+  const btnSaveGym = document.getElementById("btnSaveGym");
+  const gymSaveMsg = document.getElementById("gymSaveMsg");
+  const gymFields = {
+    nombre: document.getElementById("gymNombre"),
+    eslogan: document.getElementById("gymEslogan"),
+    nit: document.getElementById("gymNit"),
+    telefono: document.getElementById("gymTelefono"),
+    correo: document.getElementById("gymCorreo"),
+    sitio_web: document.getElementById("gymSitioWeb"),
+    direccion: document.getElementById("gymDireccion"),
+    ciudad: document.getElementById("gymCiudad"),
+    pais: document.getElementById("gymPais")
+  };
   let trainers = [];
 
   const roleLabels = {
@@ -658,6 +671,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function loadGymSettings() {
+    if (!gymFields.nombre) return;
+
+    try {
+      const response = await GymApp.api("/api/gym-settings");
+      const gym = response.gym || {};
+      Object.entries(gymFields).forEach(([key, input]) => {
+        if (input && gym[key] != null) {
+          input.value = gym[key];
+        }
+      });
+    } catch (error) {
+      console.error("No se pudieron cargar los datos del gimnasio:", error);
+    }
+  }
+
+  async function handleSaveGym() {
+    if (!btnSaveGym) return;
+
+    const gym = {};
+    Object.entries(gymFields).forEach(([key, input]) => {
+      if (input) {
+        gym[key] = input.value.trim();
+      }
+    });
+
+    setInlineMessage(gymSaveMsg, "", null);
+    btnSaveGym.disabled = true;
+    try {
+      await GymApp.api("/api/gym-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gym })
+      });
+      setInlineMessage(gymSaveMsg, "Datos del gimnasio guardados correctamente.", "success");
+      GymApp.toast("Datos del gimnasio guardados correctamente.", "success");
+    } catch (error) {
+      setInlineMessage(gymSaveMsg, error.message || "No se pudieron guardar los datos.", "error");
+      GymApp.toast(error.message || "No se pudieron guardar los datos.", "error");
+    } finally {
+      btnSaveGym.disabled = false;
+    }
+  }
+
   hamburgerBtn?.addEventListener("click", toggleSidebar);
   sidebarOverlay?.addEventListener("click", closeSidebar);
   sidebarClose?.addEventListener("click", closeSidebar);
@@ -700,6 +757,8 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "form.html";
   });
 
+  btnSaveGym?.addEventListener("click", handleSaveGym);
+
   window.addEventListener("gym-theme-change", (event) => {
     applyThemeToPage(event.detail?.theme || window.GymApp.getTheme());
   });
@@ -715,4 +774,5 @@ document.addEventListener("DOMContentLoaded", () => {
   setColorSelection("#f07922");
   loadUserThemePreference();
   loadStaffMembers();
+  loadGymSettings();
 });

@@ -108,26 +108,27 @@
           <div class="settings-grid">
             <div class="settings-card">
               <div class="card-label">Informacion basica</div>
-              <div class="field-row"><div class="field-label">Nombre del gimnasio</div><input class="field-input" value="FITNESS EVOLUTIONS GYM"/></div>
-              <div class="field-row"><div class="field-label">Eslogan</div><input class="field-input" value="Evoluciona tu cuerpo, transforma tu vida"/></div>
-              <div class="field-row"><div class="field-label">NIT / RUC</div><input class="field-input" value="0614-120593-101-1"/></div>
+              <div class="field-row"><div class="field-label">Nombre del gimnasio</div><input class="field-input" id="gymNombre" value="FITNESS EVOLUTIONS GYM"/></div>
+              <div class="field-row"><div class="field-label">Eslogan</div><input class="field-input" id="gymEslogan" value="Evoluciona tu cuerpo, transforma tu vida"/></div>
+              <div class="field-row"><div class="field-label">NIT / RUC</div><input class="field-input" id="gymNit" value="0614-120593-101-1"/></div>
             </div>
             <div class="settings-card">
               <div class="card-label">Contacto</div>
-              <div class="field-row"><div class="field-label">Telefono</div><input class="field-input" value="+503 2234-5678"/></div>
-              <div class="field-row"><div class="field-label">Correo electronico</div><input class="field-input" value="info@fitnessevolutions.com"/></div>
-              <div class="field-row"><div class="field-label">Sitio web</div><input class="field-input" value="https://fitnessevolutions.com"/></div>
+              <div class="field-row"><div class="field-label">Telefono</div><input class="field-input" id="gymTelefono" value="+503 2234-5678"/></div>
+              <div class="field-row"><div class="field-label">Correo electronico</div><input class="field-input" id="gymCorreo" value="info@fitnessevolutions.com"/></div>
+              <div class="field-row"><div class="field-label">Sitio web</div><input class="field-input" id="gymSitioWeb" value="https://fitnessevolutions.com"/></div>
             </div>
             <div class="settings-card full">
               <div class="card-label">Direccion y region</div>
               <div class="three-col">
-                <div class="field-row"><div class="field-label">Direccion</div><input class="field-input" value="Blvd. del Ejercito, local 12"/></div>
-                <div class="field-row"><div class="field-label">Ciudad</div><input class="field-input" value="San Salvador"/></div>
-                <div class="field-row"><div class="field-label">Pais</div><select class="field-select"><option>El Salvador</option><option>Guatemala</option><option>Honduras</option><option>Costa Rica</option></select></div>
+                <div class="field-row"><div class="field-label">Direccion</div><input class="field-input" id="gymDireccion" value="Blvd. del Ejercito, local 12"/></div>
+                <div class="field-row"><div class="field-label">Ciudad</div><input class="field-input" id="gymCiudad" value="San Salvador"/></div>
+                <div class="field-row"><div class="field-label">Pais</div><select class="field-select" id="gymPais"><option>El Salvador</option><option>Guatemala</option><option>Honduras</option><option>Costa Rica</option></select></div>
               </div>
             </div>
           </div>
-          <button class="save-btn" type="button">Guardar cambios</button>
+          <div class="settings-inline-msg" id="gymSaveMsg"></div>
+          <button class="save-btn" type="button" id="btnSaveGym">Guardar cambios</button>
         </div>
 
         <div class="section" id="sec-horarios">

@@ -87,6 +87,24 @@ CREATE TABLE IF NOT EXISTS ajustes (
     UNIQUE KEY unique_ajuste (id_usuario, clave)
 );
 
+CREATE TABLE IF NOT EXISTS configuracion_gimnasio (
+    id_config INT AUTO_INCREMENT PRIMARY KEY,
+    clave VARCHAR(100) NOT NULL UNIQUE,
+    valor VARCHAR(500),
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT IGNORE INTO configuracion_gimnasio (clave, valor) VALUES
+('nombre', 'FITNESS EVOLUTIONS GYM'),
+('eslogan', 'Evoluciona tu cuerpo, transforma tu vida'),
+('nit', '0614-120593-101-1'),
+('telefono', '+503 2234-5678'),
+('correo', 'info@fitnessevolutions.com'),
+('sitio_web', 'https://fitnessevolutions.com'),
+('direccion', 'Blvd. del Ejercito, local 12'),
+('ciudad', 'San Salvador'),
+('pais', 'El Salvador');
+
 CREATE TABLE IF NOT EXISTS membresias (
     id_membresia INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,
