@@ -3,7 +3,10 @@
 (function bootstrapGymApp() {
   const fromStorage = localStorage.getItem("gymApiBase");
   const API_BASE = fromStorage || (window.location.protocol === "file:" ? "http://localhost:3000" : "");
-  const FAVICON_PATH = "assets/favicon.svg";
+  const BRAND_LOGO_PATH = "assets/image.png";
+  const BRAND_LOGO_ALT = "Fitness Evolution Gym";
+  const FAVICON_PATH = BRAND_LOGO_PATH;
+  const BRANDING_STYLE_ID = "gym-branding-style";
   const LEGACY_THEME_KEY = "gym-theme";
   const THEME_SETTING_KEY = "theme_preference";
 
@@ -59,6 +62,151 @@
 
   applyTheme(getTheme());
 
+  function ensureBrandingStyles() {
+    const head = document.head || document.getElementsByTagName("head")[0];
+    if (!head || head.querySelector(`#${BRANDING_STYLE_ID}`)) return;
+
+    const style = document.createElement("style");
+    style.id = BRANDING_STYLE_ID;
+    style.textContent = `
+      .logo.brand-logo-host,
+      .login-logo.brand-logo-host {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        letter-spacing: 0 !important;
+        color: transparent !important;
+      }
+
+      .logo.brand-logo-host {
+        width: min(220px, 30vw);
+        max-width: 220px;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 18px;
+        padding: 9px 14px;
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18);
+      }
+
+      .login-logo.brand-logo-host {
+        width: min(320px, 100%);
+        max-width: 320px;
+        margin: 0 auto 24px !important;
+        justify-content: center !important;
+      }
+
+      .brand-logo-image {
+        display: block;
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+      }
+
+      .brand-logo-image--preview {
+        max-width: 180px;
+      }
+
+      .logo.brand-logo-host span,
+      .login-logo.brand-logo-host span {
+        display: none !important;
+      }
+
+      .logo-upload.brand-logo-preview-host {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        background: rgba(255, 255, 255, 0.96);
+        border-color: rgba(240, 121, 34, 0.26);
+      }
+
+      .logo-upload.brand-logo-preview-host svg {
+        display: none;
+      }
+
+      .brand-logo-preview-label {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #f07922;
+      }
+
+      body[data-theme="light"] .logo.brand-logo-host {
+        border-color: rgba(27, 31, 40, 0.08);
+        box-shadow: 0 12px 26px rgba(27, 31, 40, 0.12);
+      }
+
+      @media (max-width: 768px) {
+        .logo.brand-logo-host {
+          width: min(180px, 48vw);
+          max-width: 180px;
+          padding: 8px 10px;
+          border-radius: 14px;
+        }
+
+        .login-logo.brand-logo-host {
+          width: min(260px, 100%);
+          max-width: 260px;
+        }
+
+        .brand-logo-image--preview {
+          max-width: 140px;
+        }
+      }
+    `;
+
+    head.appendChild(style);
+  }
+
+  function createBrandLogoImage(variant = "default") {
+    const image = document.createElement("img");
+    image.src = BRAND_LOGO_PATH;
+    image.alt = BRAND_LOGO_ALT;
+    image.decoding = "async";
+    image.className = "brand-logo-image";
+
+    if (variant === "preview") {
+      image.classList.add("brand-logo-image--preview");
+    }
+
+    return image;
+  }
+
+  function decorateBranding() {
+    ensureBrandingStyles();
+
+    document.querySelectorAll(".logo, .login-logo").forEach((container) => {
+      if (container.dataset.brandLogoApplied === "true") {
+        return;
+      }
+
+      container.textContent = "";
+      container.classList.add("brand-logo-host");
+      container.appendChild(createBrandLogoImage(container.classList.contains("login-logo") ? "login" : "default"));
+      container.dataset.brandLogoApplied = "true";
+    });
+
+    document.querySelectorAll(".logo-upload").forEach((container) => {
+      if (container.dataset.brandPreviewApplied === "true") {
+        return;
+      }
+
+      container.textContent = "";
+      container.classList.add("brand-logo-preview-host");
+      container.appendChild(createBrandLogoImage("preview"));
+
+      const label = document.createElement("span");
+      label.className = "brand-logo-preview-label";
+      label.textContent = "Logo actual";
+      container.appendChild(label);
+
+      container.dataset.brandPreviewApplied = "true";
+    });
+  }
+
   function ensureFavicon() {
     const head = document.head || document.getElementsByTagName("head")[0];
     if (!head) return;
@@ -70,11 +218,16 @@
       head.appendChild(favicon);
     }
 
-    favicon.type = "image/svg+xml";
+    favicon.type = "image/png";
     favicon.href = FAVICON_PATH;
   }
 
   ensureFavicon();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", decorateBranding, { once: true });
+  } else {
+    decorateBranding();
+  }
 
   function getHomeByRole(role) {
     const value = String(role || "").trim().toLowerCase();

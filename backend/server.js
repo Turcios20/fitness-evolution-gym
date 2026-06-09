@@ -33,6 +33,7 @@ const SMTP_SECURE = String(process.env.SMTP_SECURE || (SMTP_PORT === 465 ? "true
 const OBJECTIVE_MAX_LENGTH = 255;
 const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 const PHOTO_UPLOAD_ROOT = path.join(__dirname, "..", "uploads", "progress");
+const BRAND_LOGO_FILE = path.join(__dirname, "..", "assets", "image.png");
 const TEMP_PASSWORD_LENGTH = 10;
 const PHOTO_MIME_EXTENSIONS = {
   "image/jpeg": "jpg",
@@ -197,6 +198,20 @@ function formatDateForEmail(value) {
   }).format(date);
 }
 
+function formatDateForPdfCompact(value) {
+  if (!value) return "--/--/----";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+
+  return new Intl.DateTimeFormat("es-SV", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+
 function formatMoney(value) {
   return "$" + Number(value || 0).toLocaleString("es-SV", {
     minimumFractionDigits: 2,
@@ -316,56 +331,6 @@ function drawInvoiceCard(doc, x, y, width, height, title, rows) {
   });
 }
 
-function drawGymLogo(doc, x, y, size) {
-  const scale = size / 128;
-  const gradient = doc.linearGradient(x, y, x + size, y + size);
-
-  gradient.stop(0, "#ffe27a");
-  gradient.stop(0.45, "#ffd11a");
-  gradient.stop(1, "#c78b00");
-
-  doc.save();
-  doc.translate(x, y);
-  doc.scale(scale);
-
-  doc
-    .lineWidth(7)
-    .circle(64, 64, 60)
-    .fillAndStroke("#050505", gradient);
-
-  doc
-    .lineWidth(2)
-    .path("M17 56h13v-7h6v30h-6v-7H17z")
-    .fillAndStroke("#0d0d0d", gradient);
-
-  doc.roundedRect(30, 44, 8, 40, 2).fill(gradient);
-  doc.roundedRect(39, 38, 10, 52, 2).fill(gradient);
-  doc.roundedRect(50, 31, 12, 66, 2).fill(gradient);
-  doc.roundedRect(62, 51, 18, 6, 3).fill("#ffffff");
-
-  doc
-    .path("M79 54c10-10 27-8 34 4 4 7 5 15 8 22 3 8 6 15 5 24-1 6-12 10-18 7-7-4-11-12-14-19-3-8-4-16-8-23-3-4-7-8-12-9-5-2-9-3-14 0-2 2-5 4-9 4 3-12 16-18 28-16z")
-    .fill("#ffffff");
-
-  doc
-    .path("M60 82c16-7 40-7 58 0")
-    .lineWidth(5)
-    .lineCap("round")
-    .stroke(gradient);
-
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(27)
-    .fillColor("#ffffff")
-    .text("GYM", 0, 92, {
-      width: 128,
-      align: "center",
-      lineBreak: false
-    });
-
-  doc.restore();
-}
-
 function generateInvoicePdfBuffer(payment) {
   return new Promise((resolve, reject) => {
     const invoiceNumber = normalizeInvoiceValue(payment.invoiceNumber, "pendiente");
@@ -375,6 +340,7 @@ function generateInvoicePdfBuffer(payment) {
     const planName = normalizeInvoiceValue(payment.planName || payment.plan_nombre, "No aplica");
     const paymentMethod = normalizeInvoiceValue(payment.method || payment.metodo_pago, "Efectivo");
     const paymentDate = formatDateForEmail(payment.paidAt || payment.fecha_pago);
+    const paymentDateCompact = formatDateForPdfCompact(payment.paidAt || payment.fecha_pago);
     const membershipEndDate = payment.membershipEndDate || payment.vigencia_hasta
       ? formatDateForEmail(payment.membershipEndDate || payment.vigencia_hasta)
       : "Pendiente";
@@ -408,21 +374,24 @@ function generateInvoicePdfBuffer(payment) {
     const headerHeight = 140;
     const titleX = 74;
     const titleY = 74;
-    const titleWidth = 250;
+    const titleWidth = 224;
     const titleText = "Fitness Evolutions Gym";
-    const metaBoxX = 340;
-    const metaBoxY = 72;
-    const metaBoxWidth = 108;
-    const logoSize = 68;
-    const logoX = headerX + headerWidth - logoSize - 18;
-    const logoY = 70;
+    const logoBoxX = 332;
+    const logoBoxY = 62;
+    const logoBoxWidth = 176;
+    const logoBoxHeight = 52;
+    const metaBoxX = 332;
+    const metaBoxY = 122;
+    const metaBoxWidth = 176;
+    const metaBoxHeight = 52;
     const contentGap = 18;
 
     doc.rect(0, 0, pageWidth, pageHeight).fill("#f1f5f9");
     doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 24).fill("#ffffff");
 
     doc.roundedRect(headerX, headerY, headerWidth, headerHeight, 22).fill("#1b1f28");
-    doc.roundedRect(metaBoxX, metaBoxY, metaBoxWidth, 74, 16).fill("#252b36");
+    doc.roundedRect(logoBoxX, logoBoxY, logoBoxWidth, logoBoxHeight, 16).fill("#ffffff");
+    doc.roundedRect(metaBoxX, metaBoxY, metaBoxWidth, metaBoxHeight, 16).fill("#252b36");
 
     doc
       .font("Helvetica-Bold")
@@ -456,19 +425,45 @@ function generateInvoicePdfBuffer(payment) {
       .font("Helvetica")
       .fontSize(9)
       .fillColor("#ffffff")
-      .text(`Fecha de emision:\n${paymentDate}`, metaBoxX + 12, metaBoxY + 12, {
+      .text(`Fecha de emision: ${paymentDateCompact}`, metaBoxX + 12, metaBoxY + 11, {
         width: metaBoxWidth - 24
       });
     doc
-      .text(`Tipo de registro:\n${recordType}`, metaBoxX + 12, metaBoxY + 33, {
+      .text(`Tipo de registro: ${recordType}`, metaBoxX + 12, metaBoxY + 26, {
         width: metaBoxWidth - 24
       });
     doc
-      .text(`Metodo:\n${paymentMethod}`, metaBoxX + 12, metaBoxY + 54, {
+      .text(`Metodo: ${paymentMethod}`, metaBoxX + 12, metaBoxY + 41, {
         width: metaBoxWidth - 24
       });
 
-    drawGymLogo(doc, logoX, logoY, logoSize);
+    try {
+      if (fs.existsSync(BRAND_LOGO_FILE)) {
+        doc.image(BRAND_LOGO_FILE, logoBoxX + 10, logoBoxY + 6, {
+          fit: [logoBoxWidth - 20, logoBoxHeight - 12],
+          align: "center",
+          valign: "center"
+        });
+      } else {
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(16)
+          .fillColor("#f07922")
+          .text("Fitness Evolution", logoBoxX + 12, logoBoxY + 18, {
+            width: logoBoxWidth - 24,
+            align: "center"
+          });
+      }
+    } catch {
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(16)
+        .fillColor("#f07922")
+        .text("Fitness Evolution", logoBoxX + 12, logoBoxY + 18, {
+          width: logoBoxWidth - 24,
+          align: "center"
+        });
+    }
 
     const clientCardY = headerY + headerHeight + contentGap;
     const detailCardY = clientCardY + 150;
