@@ -315,12 +315,13 @@ document.addEventListener("DOMContentLoaded", () => {
         button.addEventListener("click", async () => {
           button.disabled = true;
           try {
-            await GymApp.api(`/api/members/${member.id}/renew`, {
+            const response = await GymApp.api(`/api/members/${member.id}/renew`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ days: 30, plan: "Mensual" })
             });
-            GymApp.toast(`Membresia renovada para ${member.name}.`, "success");
+            const invoiceText = response?.invoiceNumber ? ` Factura: ${response.invoiceNumber}.` : "";
+            GymApp.toast(`Membresia renovada para ${member.name}.${invoiceText}`, "success");
             await loadMembers();
             await Promise.all([loadDashboard(), refreshHistoryIfSelected(member.id)]);
           } catch (error) {

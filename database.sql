@@ -8,6 +8,7 @@ CREATE TABLE usuarios (
     correo VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     rol ENUM('Administrador', 'Cliente', 'Recepcionista', 'Entrenador') NOT NULL DEFAULT 'Cliente',
+    estado_usuario ENUM('Activo', 'Inactivo') NOT NULL DEFAULT 'Activo',
     id_entrenador_asignado INT NULL,
     objetivo_personal ENUM('Bajar de peso', 'Ganar masa muscular', 'Mejorar resistencia', 'Otro') NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -97,6 +98,11 @@ CREATE TABLE pagos (
     monto DECIMAL(10,2) NOT NULL,
     fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     metodo_pago ENUM('Efectivo', 'Tarjeta', 'Transferencia'),
+    numero_factura VARCHAR(40) NULL UNIQUE,
+    concepto VARCHAR(120) NULL,
+    tipo_registro ENUM('Alta', 'Renovacion', 'Manual') NOT NULL DEFAULT 'Manual',
+    plan_nombre VARCHAR(50) NULL,
+    vigencia_hasta DATE NULL,
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
 );
 
@@ -194,10 +200,10 @@ CREATE TABLE progreso_fotos (
 );
 
 INSERT INTO usuarios (nombre_completo, correo, password, rol) VALUES
-('Victor Administrator', 'admin@victorsgym.com', 'admin123', 'Administrador'),
+('Victor Administrator', 'admin@fitness-evolution-gym.pro', 'admin123', 'Administrador'),
 ('Jhoscar Ochoa', 'jhoscar@correo.com', 'cliente123', 'Cliente'),
-('Maria Recepcion', 'recepcion@fitnessgym.com', 'recep123', 'Recepcionista'),
-('Carlos Entrenador', 'entrenador@fitnessgym.com', 'train123', 'Entrenador');
+('Maria Recepcion', 'maria.recepcion@gmail.com', 'recep123', 'Recepcionista'),
+('Carlos Entrenador', 'carlos.entrenador@gmail.com', 'train123', 'Entrenador');
 
 INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)
 VALUES

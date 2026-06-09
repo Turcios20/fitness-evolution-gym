@@ -335,7 +335,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function ensureStaffMembersLoaded() {
     if (state.staffMembers.length) return state.staffMembers;
     const data = await GymApp.api("/api/admin/staff-members");
-    state.staffMembers = Array.isArray(data.staff) ? data.staff : [];
+    state.staffMembers = (Array.isArray(data.staff) ? data.staff : []).filter((member) => member.status !== "Inactivo");
     return state.staffMembers;
   }
 

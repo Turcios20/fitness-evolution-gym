@@ -95,6 +95,81 @@ document.addEventListener("DOMContentLoaded", async () => {
     return financePayments.find((payment) => Number(payment.id_pago) === Number(paymentId)) || null;
   }
 
+  function showInvoiceModal(payment) {
+    const overlay = document.createElement("div");
+    overlay.className = "gym-modal-overlay";
+
+    const box = document.createElement("div");
+    box.className = "gym-modal-box fadein";
+    box.style.maxWidth = "560px";
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        overlay.remove();
+      }
+    });
+
+    const registrationType = payment.tipo_registro || "Ingreso";
+    const invoiceNumber = payment.numero_factura || "Sin numero";
+    const concept = payment.concepto || "Sin detalle";
+    const plan = payment.plan_nombre || "No aplica";
+    const validUntil = payment.vigencia_hasta ? fmtDate(payment.vigencia_hasta) : "--";
+
+    box.innerHTML = `
+      <h3 class="gm-title">Factura ${escapeHtml(invoiceNumber)}</h3>
+      <div class="gm-form" style="gap:14px;">
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+          <div class="gm-field">
+            <label>Cliente</label>
+            <div class="gm-input" style="display:flex;align-items:center;min-height:42px;">${escapeHtml(payment.nombre_completo || "--")}</div>
+          </div>
+          <div class="gm-field">
+            <label>Correo</label>
+            <div class="gm-input" style="display:flex;align-items:center;min-height:42px;">${escapeHtml(payment.correo || "--")}</div>
+          </div>
+          <div class="gm-field">
+            <label>Concepto</label>
+            <div class="gm-input" style="display:flex;align-items:center;min-height:42px;">${escapeHtml(concept)}</div>
+          </div>
+          <div class="gm-field">
+            <label>Tipo</label>
+            <div class="gm-input" style="display:flex;align-items:center;min-height:42px;">${escapeHtml(registrationType)}</div>
+          </div>
+          <div class="gm-field">
+            <label>Plan</label>
+            <div class="gm-input" style="display:flex;align-items:center;min-height:42px;">${escapeHtml(plan)}</div>
+          </div>
+          <div class="gm-field">
+            <label>Vigencia</label>
+            <div class="gm-input" style="display:flex;align-items:center;min-height:42px;">${escapeHtml(validUntil)}</div>
+          </div>
+          <div class="gm-field">
+            <label>Metodo de pago</label>
+            <div class="gm-input" style="display:flex;align-items:center;min-height:42px;">${escapeHtml(payment.metodo_pago || "--")}</div>
+          </div>
+          <div class="gm-field">
+            <label>Fecha de pago</label>
+            <div class="gm-input" style="display:flex;align-items:center;min-height:42px;">${escapeHtml(fmtDate(payment.fecha_pago))}</div>
+          </div>
+        </div>
+        <div class="gm-field">
+          <label>Total</label>
+          <div class="gm-input" style="display:flex;align-items:center;justify-content:center;min-height:56px;font-size:22px;font-weight:700;color:var(--orange);">
+            ${escapeHtml(fmt(payment.monto))}
+          </div>
+        </div>
+      </div>
+      <div class="gm-actions">
+        <button class="gm-btn gm-btn-primary" id="gmCloseInvoice">Cerrar</button>
+      </div>
+    `;
+
+    box.querySelector("#gmCloseInvoice").onclick = () => overlay.remove();
+  }
+
   async function loadSummary() {
     try {
       const data = await GymApp.api("/api/admin/finance/summary");
@@ -295,13 +370,20 @@ document.addEventListener("DOMContentLoaded", async () => {
               </div>
             </div>
           </td>
-          <td><strong style="color:var(--orange)">${fmt(payment.monto)}</strong></td>
+          <td>
+            <strong style="color:var(--orange)">${fmt(payment.monto)}</strong>
+            <div class="td-email">${escapeHtml(payment.concepto || payment.tipo_registro || "Ingreso")}</div>
+          </td>
           <td>
             <span style="color:${METHOD_COLOR[payment.metodo_pago] || "#aaa"}">${METHOD_ICON[payment.metodo_pago] || "--"} ${escapeHtml(payment.metodo_pago || "--")}</span>
           </td>
-          <td>${fmtDate(payment.fecha_pago)}</td>
+          <td>
+            ${fmtDate(payment.fecha_pago)}
+            <div class="td-email">${escapeHtml(payment.numero_factura || "Sin factura")}</div>
+          </td>
           <td>
             <div class="fin-row-actions">
+              ${payment.numero_factura ? `<button class="fin-action-btn" type="button" data-action="invoice" data-id="${payment.id_pago}">Factura</button>` : ""}
               <button class="fin-action-btn" type="button" data-action="edit" data-id="${payment.id_pago}">Editar</button>
               <button class="fin-action-btn fin-action-btn--danger" type="button" data-action="delete" data-id="${payment.id_pago}">Borrar</button>
             </div>
@@ -434,7 +516,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       try {
-        await GymApp.api(submitEndpoint, {
+        const response = await GymApp.api(submitEndpoint, {
           method: submitMethod,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -445,7 +527,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         overlay.remove();
-        GymApp.toast(isEditing ? "Ingreso actualizado correctamente" : "Ingreso registrado correctamente", "success");
+        const invoiceText = response?.invoiceNumber ? ` | Factura: ${response.invoiceNumber}` : "";
+        GymApp.toast(
+          `${isEditing ? "Ingreso actualizado correctamente" : "Ingreso registrado correctamente"}${invoiceText}`,
+          "success"
+        );
         await Promise.all([loadSummary(), loadPayments()]);
       } catch (error) {
         errEl.textContent = error?.message || `Error al ${isEditing ? "actualizar" : "registrar"} el ingreso.`;
@@ -529,6 +615,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       showIncomeModal(payment).catch(() => {
         GymApp.toast("No se pudo abrir la edicion del ingreso", "error");
       });
+      return;
+    }
+
+    if (actionButton.dataset.action === "invoice") {
+      showInvoiceModal(payment);
       return;
     }
 
