@@ -617,13 +617,13 @@ async function buildMemberAccountCreatedEmail(member) {
       "",
       `Tu cuenta en Fitness Evolutions Gym ya fue creada con el rol ${member.roleLabel}.`,
       `Correo de acceso: ${member.email}`,
-      `Contrasena: ${member.password}`,
+      `Contraseña: ${member.password}`,
       member.plan ? `Plan asignado: ${member.plan}` : null,
       member.membershipEndDate ? `Vencimiento actual: ${formatDateForEmail(member.membershipEndDate)}` : null,
       member.payment?.invoiceNumber ? `Factura: ${member.payment.invoiceNumber}` : null,
       member.payment ? "Adjuntamos tu factura en formato PDF." : null,
       "",
-      "Te recomendamos iniciar sesion y cambiar tu contrasena lo antes posible.",
+      "Te recomendamos iniciar sesion y cambiar tu contraseña lo antes posible.",
       "",
       "Equipo Fitness Evolutions Gym"
     ].filter(Boolean).join("\n"),
@@ -643,10 +643,10 @@ function buildEmployeeCreatedEmail(member) {
       "",
       `El administrador creo tu acceso con rol ${member.roleLabel}.`,
       `Correo de acceso: ${member.email}`,
-      `Contrasena temporal: ${member.password}`,
+      `Contraseña temporal: ${member.password}`,
       "",
       `Este correo fue enviado automaticamente desde ${sender.label}.`,
-      "Te recomendamos cambiar tu contrasena en tu primer ingreso.",
+      "Te recomendamos cambiar tu contraseña en tu primer ingreso.",
       "",
       "Equipo Fitness Evolutions Gym"
     ].join("\n")
@@ -755,7 +755,7 @@ function buildForgotPasswordEmail(user, temporaryPassword) {
       `Hola ${user.name},`,
       "",
       "Recibimos una solicitud para recuperar tu acceso.",
-      `Tu nueva contrasena temporal es: ${temporaryPassword}`,
+      `Tu nueva contraseña temporal es: ${temporaryPassword}`,
       "",
       "Usala para ingresar y cambiala inmediatamente desde tu pantalla de ajustes.",
       "",
@@ -3061,7 +3061,7 @@ app.post("/api/auth/forgot-password", async (req, res) => {
 
     res.json({
       ok: true,
-      message: "Si el correo existe, se envio una contrasena temporal."
+      message: "Si el correo existe, se envio una contraseña temporal."
     });
   } catch (error) {
     res.status(500).json({ error: "Error procesando la recuperacion", detail: error.message });
@@ -3078,7 +3078,7 @@ app.post("/api/auth/change-password", authenticate, async (req, res) => {
   }
 
   if (newPassword.length < 6) {
-    res.status(400).json({ error: "La nueva contrasena debe tener al menos 6 caracteres" });
+    res.status(400).json({ error: "La nueva contraseña debe tener al menos 6 caracteres" });
     return;
   }
 
@@ -3091,7 +3091,7 @@ app.post("/api/auth/change-password", authenticate, async (req, res) => {
 
     const passwordMatches = await verifyPassword(currentPassword, user.password);
     if (!passwordMatches) {
-      res.status(400).json({ error: "La contrasena actual no coincide" });
+      res.status(400).json({ error: "La contraseña actual no coincide" });
       return;
     }
 
@@ -3103,9 +3103,9 @@ app.post("/api/auth/change-password", authenticate, async (req, res) => {
       [passwordHash, user.id_usuario]
     );
 
-    res.json({ ok: true, message: "Contrasena actualizada correctamente" });
+    res.json({ ok: true, message: "Contraseña actualizada correctamente" });
   } catch (error) {
-    res.status(500).json({ error: "Error actualizando contrasena", detail: error.message });
+    res.status(500).json({ error: "Error actualizando contraseña", detail: error.message });
   }
 });
 
