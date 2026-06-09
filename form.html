@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
   <div class="gym-bg"></div>
 
   <div class="page">
@@ -46,20 +45,32 @@
 
         <div class="form-group">
           <label class="form-label" for="nombre">Nombre completo</label>
-          <input class="input-field" type="text" id="nombre" name="nombre" placeholder="Ej: Jhoscar Manuel" autocomplete="off" required />
+          <input class="input-field" type="text" id="nombre" name="nombre" placeholder="Ej: Jhoscar Manuel" autocomplete="off" required>
           <span class="form-error" id="err-nombre"></span>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="correo">Correo electronico</label>
-          <input class="input-field" type="email" id="correo" name="correo" placeholder="correo@ejemplo.com" autocomplete="off" required />
+          <input class="input-field" type="email" id="correo" name="correo" placeholder="correo@ejemplo.com" autocomplete="off" required>
           <span class="form-error" id="err-correo"></span>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="password">Contraseña</label>
-          <input class="input-field" type="password" id="password" name="password" placeholder="Minimo 6 caracteres" required />
+          <label class="form-label" for="password">Contrasena</label>
+          <div class="password-field">
+            <input class="input-field" type="password" id="password" name="password" placeholder="Minimo 6 caracteres" required>
+            <button type="button" data-password-toggle="password"></button>
+          </div>
           <span class="form-error" id="err-password"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirmPassword">Confirmar contrasena</label>
+          <div class="password-field">
+            <input class="input-field" type="password" id="confirmPassword" name="confirmPassword" placeholder="Repite la contrasena" required>
+            <button type="button" data-password-toggle="confirmPassword"></button>
+          </div>
+          <span class="form-error" id="err-confirm-password"></span>
         </div>
 
         <div class="form-group">
@@ -85,8 +96,18 @@
 
         <div class="form-group" data-membership-field>
           <label class="form-label" for="precio">Precio ($)</label>
-          <input class="input-field" type="number" id="precio" name="precio" placeholder="20" min="1" />
+          <input class="input-field" type="number" id="precio" name="precio" placeholder="20" min="1">
           <span class="form-error" id="err-precio"></span>
+        </div>
+
+        <div class="form-group" data-membership-field>
+          <label class="form-label" for="metodoPago">Metodo de pago</label>
+          <select class="input-field input-select" id="metodoPago" name="metodoPago">
+            <option value="Efectivo">Efectivo</option>
+            <option value="Tarjeta">Tarjeta</option>
+            <option value="Transferencia">Transferencia</option>
+          </select>
+          <span class="form-error" id="err-metodo-pago"></span>
         </div>
 
         <div class="form-group" data-membership-field data-trainer-field>

@@ -24,6 +24,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnSaveAppearance = document.getElementById("btnSaveAppearance");
   const appearanceSection = document.getElementById("sec-apariencia");
   const appearanceDesc = appearanceSection?.querySelector(".section-desc");
+  const securityDesc = document.querySelector("#sec-seguridad .section-desc");
+
+  const currentPasswordInput = document.getElementById("currentPassword");
+  const newPasswordInput = document.getElementById("newPassword");
+  const confirmPasswordInput = document.getElementById("confirmPassword");
+  const btnChangePassword = document.getElementById("btnChangePassword");
+  const passwordChangeMsg = document.getElementById("passwordChangeMsg");
+  const errCurrentPassword = document.getElementById("errCurrentPassword");
+  const errNewPassword = document.getElementById("errNewPassword");
+  const errConfirmPassword = document.getElementById("errConfirmPassword");
+  const staffUsersBody = document.getElementById("staffUsersBody");
+  const btnAddStaffUser = document.getElementById("btnAddStaffUser");
 
   const roleLabels = {
     admin: "Panel de control",
@@ -39,6 +51,17 @@ document.addEventListener("DOMContentLoaded", () => {
   if (session.role === "cliente") {
     window.location.href = "ajustes-cliente.html";
     return;
+  }
+
+  GymApp.setupPasswordToggles(document);
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function openSidebar() {
@@ -200,14 +223,18 @@ document.addEventListener("DOMContentLoaded", () => {
       pageTitle.textContent = "Preferencias de tu cuenta";
     }
     if (pageSub) {
-      pageSub.textContent = "Usa el mismo ajuste visual del sistema, con permisos limitados para tu rol.";
+      pageSub.textContent = "Puedes cambiar el tema de tu cuenta y tu contrasena desde esta pantalla.";
     }
     if (appearanceDesc) {
-      appearanceDesc.textContent = "Cambia el tema de tu cuenta. El resto de opciones del sistema es solo para administracion.";
+      appearanceDesc.textContent = "Cambia el tema de tu cuenta. El resto de opciones del sistema sigue reservado para administracion.";
+    }
+    if (securityDesc) {
+      securityDesc.textContent = "Actualiza tu contrasena personal sin depender del administrador.";
     }
 
+    const allowedSections = new Set(["apariencia", "seguridad"]);
     sidebarItems.forEach((item) => {
-      if (item.dataset.section !== "apariencia") {
+      if (!allowedSections.has(item.dataset.section)) {
         disableSection(item.dataset.section);
       }
     });
@@ -229,8 +256,183 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    addRoleNotice("Solo puedes cambiar el modo claro u oscuro de tu cuenta desde esta pantalla.");
-    showSection("apariencia");
+    addRoleNotice("Desde esta pantalla puedes cambiar el modo claro u oscuro y tu contrasena personal.");
+    showSection("seguridad");
+  }
+
+  function setInlineMessage(element, message, type) {
+    if (!element) return;
+    element.textContent = message || "";
+    element.className = "settings-inline-msg";
+    if (type) {
+      element.classList.add(`is-${type}`);
+    }
+  }
+
+  function clearPasswordErrors() {
+    [errCurrentPassword, errNewPassword, errConfirmPassword, passwordChangeMsg].forEach((element) => {
+      if (element) {
+        element.textContent = "";
+        element.className = "settings-inline-msg";
+      }
+    });
+  }
+
+  async function handlePasswordChange() {
+    clearPasswordErrors();
+
+    const currentPassword = currentPasswordInput?.value || "";
+    const newPassword = newPasswordInput?.value || "";
+    const confirmPassword = confirmPasswordInput?.value || "";
+    let hasError = false;
+
+    if (!currentPassword) {
+      setInlineMessage(errCurrentPassword, "Ingresa tu contrasena actual.", "error");
+      hasError = true;
+    }
+    if (newPassword.length < 6) {
+      setInlineMessage(errNewPassword, "La nueva contrasena debe tener minimo 6 caracteres.", "error");
+      hasError = true;
+    }
+    if (newPassword !== confirmPassword) {
+      setInlineMessage(errConfirmPassword, "Las contrasenas no coinciden.", "error");
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    btnChangePassword.disabled = true;
+    try {
+      await GymApp.api("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword
+        })
+      });
+
+      [currentPasswordInput, newPasswordInput, confirmPasswordInput].forEach((input) => {
+        if (input) {
+          input.value = "";
+          input.type = "password";
+        }
+      });
+      GymApp.setupPasswordToggles(document);
+      setInlineMessage(passwordChangeMsg, "Contrasena actualizada correctamente.", "success");
+    } catch (error) {
+      setInlineMessage(passwordChangeMsg, error.message || "No se pudo cambiar la contrasena.", "error");
+    } finally {
+      btnChangePassword.disabled = false;
+    }
+  }
+
+  function getRoleBadgeClass(roleLabel) {
+    const normalized = String(roleLabel || "").toLowerCase();
+    if (normalized === "administrador") return "role-badge role-admin";
+    if (normalized === "recepcionista") return "role-badge role-staff";
+    return "role-badge role-trainer";
+  }
+
+  function renderStatus(status) {
+    const isActive = status !== "Inactivo";
+    return `
+      <span class="status-dot ${isActive ? "dot-active" : "dot-inactive"}"></span>
+      ${escapeHtml(isActive ? "Activo" : "Inactivo")}
+    `;
+  }
+
+  function createOverlay() {
+    const overlay = document.createElement("div");
+    overlay.className = "gym-modal-overlay";
+    const box = document.createElement("div");
+    box.className = "gym-modal-box fadein";
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) overlay.remove();
+    });
+    return { overlay, box };
+  }
+
+  function showDismissModal(staffMember) {
+    const { overlay, box } = createOverlay();
+    box.innerHTML = `
+      <h3 class="gm-title">Desactivar empleado</h3>
+      <p class="gm-body">
+        Se desactivara el acceso de <strong>${escapeHtml(staffMember.name)}</strong> y se enviara un correo automatico desde admin@fitness-evolution-gym.pro.
+      </p>
+      <div class="gm-actions">
+        <button class="gm-btn gm-btn-cancel" id="gmCancel">Cancelar</button>
+        <button class="gm-btn gm-btn-danger" id="gmConfirm">Desactivar</button>
+      </div>
+    `;
+
+    box.querySelector("#gmCancel").onclick = () => overlay.remove();
+    box.querySelector("#gmConfirm").onclick = async () => {
+      try {
+        await GymApp.api(`/api/admin/staff-members/${staffMember.id}/dismiss`, {
+          method: "POST"
+        });
+        overlay.remove();
+        GymApp.toast("Empleado desactivado correctamente.", "success");
+        await loadStaffMembers();
+      } catch (error) {
+        GymApp.toast(error.message || "No se pudo desactivar al empleado.", "error");
+      }
+    };
+  }
+
+  function renderStaffTable(staffMembers) {
+    if (!staffUsersBody) return;
+
+    if (!staffMembers.length) {
+      staffUsersBody.innerHTML = '<tr><td colspan="5" class="user-table-empty">No hay personal registrado.</td></tr>';
+      return;
+    }
+
+    staffUsersBody.innerHTML = staffMembers.map((staffMember) => `
+      <tr>
+        <td>
+          <div class="user-name-stack">
+            <strong>${escapeHtml(staffMember.name)}</strong>
+            <span class="user-meta-note">Alta: ${new Date(staffMember.joinedAt).toLocaleDateString("es-SV")}</span>
+          </div>
+        </td>
+        <td>${escapeHtml(staffMember.email)}</td>
+        <td><span class="${getRoleBadgeClass(staffMember.roleLabel)}">${escapeHtml(staffMember.roleLabel)}</span></td>
+        <td>${renderStatus(staffMember.status)}</td>
+        <td>
+          <div class="user-actions">
+            ${staffMember.status === "Activo"
+              ? `<button class="icon-btn danger" type="button" data-action="dismiss" data-id="${staffMember.id}">Desactivar</button>`
+              : '<span class="user-meta-note">Sin acceso</span>'}
+          </div>
+        </td>
+      </tr>
+    `).join("");
+
+    staffUsersBody.querySelectorAll("[data-action='dismiss']").forEach((button) => {
+      button.addEventListener("click", () => {
+        const staffMember = staffMembers.find((item) => String(item.id) === String(button.dataset.id));
+        if (staffMember) {
+          showDismissModal(staffMember);
+        }
+      });
+    });
+  }
+
+  async function loadStaffMembers() {
+    if (session.role !== "admin" || !staffUsersBody) return;
+
+    staffUsersBody.innerHTML = '<tr><td colspan="5" class="user-table-empty">Cargando personal...</td></tr>';
+    try {
+      const response = await GymApp.api("/api/admin/staff-members");
+      renderStaffTable(Array.isArray(response.staff) ? response.staff : []);
+    } catch (error) {
+      staffUsersBody.innerHTML = '<tr><td colspan="5" class="user-table-empty">No se pudo cargar el personal.</td></tr>';
+      GymApp.toast(error.message || "No se pudo cargar el personal.", "error");
+    }
   }
 
   hamburgerBtn?.addEventListener("click", toggleSidebar);
@@ -267,6 +469,14 @@ document.addEventListener("DOMContentLoaded", () => {
     await saveThemePreference();
   });
 
+  btnChangePassword?.addEventListener("click", async () => {
+    await handlePasswordChange();
+  });
+
+  btnAddStaffUser?.addEventListener("click", () => {
+    window.location.href = "form.html";
+  });
+
   window.addEventListener("gym-theme-change", (event) => {
     applyThemeToPage(event.detail?.theme || window.GymApp.getTheme());
   });
@@ -281,4 +491,5 @@ document.addEventListener("DOMContentLoaded", () => {
   configureRoleMode();
   setColorSelection("#f07922");
   loadUserThemePreference();
+  loadStaffMembers();
 });

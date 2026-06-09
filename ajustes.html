@@ -194,49 +194,80 @@
 
         <div class="section" id="sec-usuarios">
           <div class="section-title">Usuarios y roles</div>
-          <div class="section-desc">Gestiona el acceso del personal al sistema</div>
+          <div class="section-desc">Gestiona el acceso del personal al sistema y desactiva empleados cuando sea necesario</div>
           <div class="settings-card" style="margin-bottom:14px">
             <div class="card-label">Personal con acceso</div>
             <div class="table-wrap">
               <table class="user-table">
                 <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
-                <tbody>
-                  <tr><td>Carlos Turcios</td><td>c.turcios@fitnessevolutions.com</td><td><span class="role-badge role-admin">Administrador</span></td><td><span class="status-dot dot-active"></span>Activo</td><td><button class="icon-btn" type="button">Editar</button></td></tr>
-                  <tr><td>Maria Lopez</td><td>m.lopez@fitnessevolutions.com</td><td><span class="role-badge role-trainer">Entrenador</span></td><td><span class="status-dot dot-active"></span>Activo</td><td><button class="icon-btn" type="button">Editar</button></td></tr>
-                  <tr><td>Jose Rivera</td><td>j.rivera@fitnessevolutions.com</td><td><span class="role-badge role-staff">Staff</span></td><td><span class="status-dot dot-active"></span>Activo</td><td><button class="icon-btn" type="button">Editar</button></td></tr>
-                  <tr><td>Ana Martinez</td><td>a.martinez@fitnessevolutions.com</td><td><span class="role-badge role-trainer">Entrenador</span></td><td><span class="status-dot dot-inactive"></span>Inactivo</td><td><button class="icon-btn" type="button">Editar</button></td></tr>
+                <tbody id="staffUsersBody">
+                  <tr><td colspan="5" class="user-table-empty">Cargando personal...</td></tr>
                 </tbody>
               </table>
             </div>
+            <div class="security-help">Los entrenadores y recepcionistas usan sus correos personales. Las notificaciones automaticas se envian desde la cuenta de administrador.</div>
           </div>
-          <button class="add-btn" type="button">+ Agregar usuario</button>
+          <button class="add-btn" type="button" id="btnAddStaffUser">+ Agregar usuario</button>
         </div>
 
         <div class="section" id="sec-seguridad">
           <div class="section-title">Seguridad</div>
-          <div class="section-desc">Opciones de autenticacion y politicas de acceso</div>
+          <div class="section-desc">Cambia tu contrasena y revisa los correos oficiales del sistema</div>
           <div class="settings-grid">
             <div class="settings-card">
-              <div class="card-label">Autenticacion</div>
-              <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Autenticacion de dos factores</div><div class="toggle-desc">SMS o app autenticadora</div></div><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
-              <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Recordar sesion (30 dias)</div><div class="toggle-desc">Permite sesiones persistentes</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Bloqueo tras intentos fallidos</div><div class="toggle-desc">Bloquea tras 5 intentos</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+              <div class="card-label">Cambiar contrasena</div>
+              <div class="field-row">
+                <div class="field-label">Contrasena actual</div>
+                <div class="password-field">
+                  <input class="field-input" id="currentPassword" type="password" autocomplete="current-password" placeholder="Tu contrasena actual">
+                  <button type="button" data-password-toggle="currentPassword"></button>
+                </div>
+                <div class="settings-inline-msg" id="errCurrentPassword"></div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Nueva contrasena</div>
+                <div class="password-field">
+                  <input class="field-input" id="newPassword" type="password" autocomplete="new-password" placeholder="Minimo 6 caracteres">
+                  <button type="button" data-password-toggle="newPassword"></button>
+                </div>
+                <div class="settings-inline-msg" id="errNewPassword"></div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Confirmar nueva contrasena</div>
+                <div class="password-field">
+                  <input class="field-input" id="confirmPassword" type="password" autocomplete="new-password" placeholder="Repite la nueva contrasena">
+                  <button type="button" data-password-toggle="confirmPassword"></button>
+                </div>
+                <div class="settings-inline-msg" id="errConfirmPassword"></div>
+              </div>
+              <div class="settings-inline-msg" id="passwordChangeMsg"></div>
+              <button class="save-btn" type="button" id="btnChangePassword" style="margin-top:4px;">Actualizar contrasena</button>
             </div>
             <div class="settings-card">
-              <div class="card-label">Contrasenas</div>
-              <div class="field-row"><div class="field-label">Longitud minima</div><select class="field-select"><option>8 caracteres</option><option>10 caracteres</option><option>12 caracteres</option></select></div>
-              <div class="field-row"><div class="field-label">Expiracion</div><select class="field-select"><option>Nunca</option><option>90 dias</option><option>180 dias</option></select></div>
-              <div style="margin-top:16px"><button class="danger-btn" type="button">Cerrar todas las sesiones activas</button></div>
+              <div class="card-label">Correos oficiales</div>
+              <div class="system-email-list">
+                <div class="system-email-item">
+                  <span class="system-email-label">Administrador remitente</span>
+                  <span class="system-email-value">admin@fitness-evolution-gym.pro</span>
+                </div>
+                <div class="system-email-item">
+                  <span class="system-email-label">No reply del sistema</span>
+                  <span class="system-email-value">no-reply@fitness-evolution-gym.pro</span>
+                </div>
+              </div>
+              <div class="security-help">
+                Altas, pagos al personal y despidos salen automaticamente desde <strong>admin@fitness-evolution-gym.pro</strong>.
+                Las facturas y mensajes transaccionales a clientes salen desde <strong>no-reply@fitness-evolution-gym.pro</strong>.
+              </div>
             </div>
           </div>
-          <button class="save-btn" type="button">Guardar configuracion</button>
         </div>
 
         <div class="section" id="sec-notificaciones">
           <div class="section-title">Notificaciones</div>
           <div class="section-desc">Configura que eventos generan alertas y por que canal</div>
           <div class="notif-block">
-            <div class="notif-header"><div><div class="notif-title">Correo electronico</div><div class="notif-sub">notificaciones@fitnessevolutions.com</div></div></div>
+            <div class="notif-header"><div><div class="notif-title">Correo automatico a clientes</div><div class="notif-sub">no-reply@fitness-evolution-gym.pro</div></div></div>
             <div class="notif-body">
               <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Nuevo miembro registrado</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
               <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Pago recibido</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
@@ -245,11 +276,11 @@
             </div>
           </div>
           <div class="notif-block">
-            <div class="notif-header"><div><div class="notif-title">WhatsApp / SMS</div><div class="notif-sub">Notificaciones a miembros</div></div></div>
+            <div class="notif-header"><div><div class="notif-title">Correo al personal</div><div class="notif-sub">admin@fitness-evolution-gym.pro</div></div></div>
             <div class="notif-body">
-              <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Recordatorio de pago</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Confirmacion de inscripcion</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Promociones</div></div><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+              <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Cuenta creada para entrenador o recepcion</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+              <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Pago de salario registrado</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+              <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Desactivacion o despido</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
             </div>
           </div>
           <button class="save-btn" type="button">Guardar notificaciones</button>
