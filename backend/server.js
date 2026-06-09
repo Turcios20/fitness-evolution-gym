@@ -316,6 +316,56 @@ function drawInvoiceCard(doc, x, y, width, height, title, rows) {
   });
 }
 
+function drawGymLogo(doc, x, y, size) {
+  const scale = size / 128;
+  const gradient = doc.linearGradient(x, y, x + size, y + size);
+
+  gradient.stop(0, "#ffe27a");
+  gradient.stop(0.45, "#ffd11a");
+  gradient.stop(1, "#c78b00");
+
+  doc.save();
+  doc.translate(x, y);
+  doc.scale(scale);
+
+  doc
+    .lineWidth(7)
+    .circle(64, 64, 60)
+    .fillAndStroke("#050505", gradient);
+
+  doc
+    .lineWidth(2)
+    .path("M17 56h13v-7h6v30h-6v-7H17z")
+    .fillAndStroke("#0d0d0d", gradient);
+
+  doc.roundedRect(30, 44, 8, 40, 2).fill(gradient);
+  doc.roundedRect(39, 38, 10, 52, 2).fill(gradient);
+  doc.roundedRect(50, 31, 12, 66, 2).fill(gradient);
+  doc.roundedRect(62, 51, 18, 6, 3).fill("#ffffff");
+
+  doc
+    .path("M79 54c10-10 27-8 34 4 4 7 5 15 8 22 3 8 6 15 5 24-1 6-12 10-18 7-7-4-11-12-14-19-3-8-4-16-8-23-3-4-7-8-12-9-5-2-9-3-14 0-2 2-5 4-9 4 3-12 16-18 28-16z")
+    .fill("#ffffff");
+
+  doc
+    .path("M60 82c16-7 40-7 58 0")
+    .lineWidth(5)
+    .lineCap("round")
+    .stroke(gradient);
+
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(27)
+    .fillColor("#ffffff")
+    .text("GYM", 0, 92, {
+      width: 128,
+      align: "center",
+      lineBreak: false
+    });
+
+  doc.restore();
+}
+
 function generateInvoicePdfBuffer(payment) {
   return new Promise((resolve, reject) => {
     const invoiceNumber = normalizeInvoiceValue(payment.invoiceNumber, "pendiente");
@@ -352,49 +402,86 @@ function generateInvoicePdfBuffer(payment) {
     const cardY = 28;
     const cardWidth = pageWidth - 56;
     const cardHeight = pageHeight - 56;
+    const headerX = 50;
+    const headerY = 50;
+    const headerWidth = pageWidth - 100;
+    const headerHeight = 140;
+    const titleX = 74;
+    const titleY = 74;
+    const titleWidth = 250;
+    const titleText = "Fitness Evolutions Gym";
+    const metaBoxX = 340;
+    const metaBoxY = 72;
+    const metaBoxWidth = 108;
+    const logoSize = 68;
+    const logoX = headerX + headerWidth - logoSize - 18;
+    const logoY = 70;
+    const contentGap = 18;
 
     doc.rect(0, 0, pageWidth, pageHeight).fill("#f1f5f9");
     doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 24).fill("#ffffff");
 
-    doc.roundedRect(50, 50, pageWidth - 100, 120, 22).fill("#1b1f28");
-    doc.circle(pageWidth - 108, 110, 42).fill("#f07922");
+    doc.roundedRect(headerX, headerY, headerWidth, headerHeight, 22).fill("#1b1f28");
+    doc.roundedRect(metaBoxX, metaBoxY, metaBoxWidth, 74, 16).fill("#252b36");
+
     doc
       .font("Helvetica-Bold")
-      .fontSize(24)
+      .fontSize(21)
       .fillColor("#f07922")
-      .text("Fitness Evolutions Gym", 74, 76);
+      .text(titleText, titleX, titleY, {
+        width: titleWidth
+      });
+
+    const titleHeight = doc.heightOfString(titleText, { width: titleWidth });
+    const subtitleY = titleY + titleHeight + 6;
+    const invoiceY = subtitleY + 26;
+
     doc
       .font("Helvetica")
       .fontSize(11)
       .fillColor("#d7dce5")
-      .text("Factura oficial de membresia", 74, 112);
+      .text("Factura oficial de membresia", titleX, subtitleY, {
+        width: titleWidth
+      });
+
     doc
       .font("Helvetica-Bold")
       .fontSize(12)
       .fillColor("#ffffff")
-      .text(`No. ${invoiceNumber}`, 74, 136);
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(20)
-      .fillColor("#1b1f28")
-      .text("FEG", pageWidth - 140, 97, { width: 64, align: "center" });
+      .text(`No. ${invoiceNumber}`, titleX, invoiceY, {
+        width: titleWidth
+      });
+
     doc
       .font("Helvetica")
-      .fontSize(10)
+      .fontSize(9)
       .fillColor("#ffffff")
-      .text(`Fecha de emision: ${paymentDate}`, 348, 82, { width: 150, align: "right" });
+      .text(`Fecha de emision:\n${paymentDate}`, metaBoxX + 12, metaBoxY + 12, {
+        width: metaBoxWidth - 24
+      });
     doc
-      .text(`Tipo de registro: ${recordType}`, 348, 102, { width: 150, align: "right" });
+      .text(`Tipo de registro:\n${recordType}`, metaBoxX + 12, metaBoxY + 33, {
+        width: metaBoxWidth - 24
+      });
     doc
-      .text(`Metodo: ${paymentMethod}`, 348, 122, { width: 150, align: "right" });
+      .text(`Metodo:\n${paymentMethod}`, metaBoxX + 12, metaBoxY + 54, {
+        width: metaBoxWidth - 24
+      });
 
-    drawInvoiceCard(doc, 50, 196, pageWidth - 100, 132, "Datos del cliente", [
+    drawGymLogo(doc, logoX, logoY, logoSize);
+
+    const clientCardY = headerY + headerHeight + contentGap;
+    const detailCardY = clientCardY + 150;
+    const totalCardY = detailCardY + 240;
+    const contactCardY = totalCardY + 110;
+
+    drawInvoiceCard(doc, 50, clientCardY, pageWidth - 100, 132, "Datos del cliente", [
       { label: "Cliente", value: memberName },
       { label: "Correo", value: memberEmail },
       { label: "Factura", value: invoiceNumber }
     ]);
 
-    drawInvoiceCard(doc, 50, 346, pageWidth - 100, 218, "Detalle de la factura", [
+    drawInvoiceCard(doc, 50, detailCardY, pageWidth - 100, 218, "Detalle de la factura", [
       { label: "Concepto", value: concept },
       { label: "Plan", value: planName },
       { label: "Fecha de pago", value: paymentDate },
@@ -402,17 +489,17 @@ function generateInvoicePdfBuffer(payment) {
       { label: "Metodo de pago", value: paymentMethod }
     ]);
 
-    doc.roundedRect(50, 586, pageWidth - 100, 92, 20).fill("#f07922");
+    doc.roundedRect(50, totalCardY, pageWidth - 100, 92, 20).fill("#f07922");
     doc
       .font("Helvetica")
       .fontSize(11)
       .fillColor("#fff7ed")
-      .text("Total pagado", 74, 608);
+      .text("Total pagado", 74, totalCardY + 22);
     doc
       .font("Helvetica-Bold")
       .fontSize(28)
       .fillColor("#ffffff")
-      .text(totalAmount, 74, 626);
+      .text(totalAmount, 74, totalCardY + 40);
     doc
       .font("Helvetica")
       .fontSize(10)
@@ -420,25 +507,25 @@ function generateInvoicePdfBuffer(payment) {
       .text(
         "Documento generado automaticamente. Conserva este PDF como comprobante de tu pago.",
         278,
-        610,
+        totalCardY + 24,
         { width: 220, align: "right" }
       );
 
-    doc.roundedRect(50, 698, pageWidth - 100, 90, 20).fill("#eef2f7");
+    doc.roundedRect(50, contactCardY, pageWidth - 100, 90, 20).fill("#eef2f7");
     doc
       .font("Helvetica-Bold")
       .fontSize(11)
       .fillColor("#1b1f28")
-      .text("Contacto oficial", 74, 720);
+      .text("Contacto oficial", 74, contactCardY + 22);
     doc
       .font("Helvetica")
       .fontSize(10)
       .fillColor("#475569")
-      .text("admin@fitness-evolution-gym.pro | no-reply@fitness-evolution-gym.pro", 74, 740, {
+      .text("admin@fitness-evolution-gym.pro | no-reply@fitness-evolution-gym.pro", 74, contactCardY + 42, {
         width: pageWidth - 148
       });
     doc
-      .text("Gracias por confiar en Fitness Evolutions Gym.", 74, 758, {
+      .text("Gracias por confiar en Fitness Evolutions Gym.", 74, contactCardY + 60, {
         width: pageWidth - 148
       });
 
