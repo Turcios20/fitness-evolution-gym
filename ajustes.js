@@ -484,7 +484,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="gm-role-toolbar">
           <span class="gm-role-summary" id="gmRoleSummary">Rol actual: ${roleLabels[currentRole] || "Recepcionista"}</span>
         </div>
-        <div id="gmClientFields" hidden>
+        <div id="gmClientFields" class="gm-role-panel" hidden>
           <div class="gm-field">
             <label>Plan de membresia</label>
             <select id="gmPlan" class="gm-input">
