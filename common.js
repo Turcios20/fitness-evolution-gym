@@ -3,7 +3,7 @@
 (function bootstrapGymApp() {
   const fromStorage = localStorage.getItem("gymApiBase");
   const API_BASE = fromStorage || (window.location.protocol === "file:" ? "http://localhost:3000" : "");
-  const FAVICON_PATH = "assets/favicon.svg";
+  const FAVICON_PATH = "assets/image.png";
   const LEGACY_THEME_KEY = "gym-theme";
   const THEME_SETTING_KEY = "theme_preference";
 
@@ -70,7 +70,7 @@
       head.appendChild(favicon);
     }
 
-    favicon.type = "image/svg+xml";
+    favicon.type = "image/png";
     favicon.href = FAVICON_PATH;
   }
 
@@ -224,6 +224,50 @@
     }, 3200);
   }
 
+  const EYE_ICON = `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 5C6.5 5 2 8.6 1 12c1 3.4 5.5 7 11 7s10-3.6 11-7c-1-3.4-5.5-7-11-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"></path>
+      <circle cx="12" cy="12" r="2.2"></circle>
+    </svg>
+  `;
+  const EYE_OFF_ICON = `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M3.3 2.3L2 3.6l3.1 3.1C2.9 8.1 1.4 10 1 12c1 3.4 5.5 7 11 7 1.9 0 3.6-.4 5.2-1.1l3.2 3.2 1.3-1.3L3.3 2.3zM12 16a4 4 0 0 1-4-4c0-.7.2-1.4.5-1.9l5.4 5.4c-.6.3-1.2.5-1.9.5zm4-4c0 .7-.2 1.4-.5 1.9l-5.4-5.4c.6-.3 1.2-.5 1.9-.5a4 4 0 0 1 4 4zm-4-7c5.5 0 10 3.6 11 7-.3 1.1-1 2.2-1.9 3.2l-1.4-1.4c.5-.6.9-1.2 1.1-1.8-1-2.8-4.8-5.7-8.8-5.7-.9 0-1.7.1-2.5.4L8.1 5.3c1.2-.2 2.5-.3 3.9-.3z"></path>
+    </svg>
+  `;
+
+  function renderPasswordToggle(button, isVisible) {
+    button.innerHTML = isVisible ? EYE_OFF_ICON : EYE_ICON;
+    button.setAttribute("aria-label", isVisible ? "Ocultar contrasena" : "Mostrar contrasena");
+    button.setAttribute("title", isVisible ? "Ocultar contrasena" : "Mostrar contrasena");
+    button.setAttribute("aria-pressed", isVisible ? "true" : "false");
+  }
+
+  function setupPasswordToggles(root = document) {
+    root.querySelectorAll("[data-password-toggle]").forEach((button) => {
+      const inputId = button.getAttribute("data-password-toggle");
+      const input = document.getElementById(inputId);
+      if (!input) return;
+
+      const syncState = () => {
+        renderPasswordToggle(button, input.type === "text");
+      };
+
+      if (button.dataset.passwordToggleBound !== "true") {
+        button.type = "button";
+        button.classList.add("password-toggle");
+        button.addEventListener("click", () => {
+          input.type = input.type === "password" ? "text" : "password";
+          syncState();
+          input.focus({ preventScroll: true });
+        });
+        button.dataset.passwordToggleBound = "true";
+      }
+
+      syncState();
+    });
+  }
+
   async function syncThemeFromSettings() {
     const session = getSession();
     if (!session?.username || !session?.token) return;
@@ -258,6 +302,7 @@
     getTheme,
     setTheme,
     syncThemeFromSettings,
+    setupPasswordToggles,
     THEME_SETTING_KEY
   };
 

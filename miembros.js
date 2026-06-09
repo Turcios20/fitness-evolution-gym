@@ -453,12 +453,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (action === "renew") {
       showRenewModal(member, async (days, plan) => {
         try {
-          await GymApp.api(`/api/admin/members/${member.id}/renew`, {
+          const response = await GymApp.api(`/api/admin/members/${member.id}/renew`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ days, plan })
           });
-          GymApp.toast(`Membresia de ${member.name} renovada.`, "success");
+          const invoiceText = response?.invoiceNumber ? ` Factura: ${response.invoiceNumber}.` : "";
+          GymApp.toast(`Membresia de ${member.name} renovada.${invoiceText}`, "success");
           await loadMembers();
         } catch (error) {
           GymApp.toast(`Error: ${error.message}`, "error");

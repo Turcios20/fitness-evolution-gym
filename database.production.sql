@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     correo VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     rol ENUM('Administrador', 'Cliente', 'Recepcionista', 'Entrenador') NOT NULL DEFAULT 'Cliente',
+    estado_usuario ENUM('Activo', 'Inactivo') NOT NULL DEFAULT 'Activo',
     id_entrenador_asignado INT NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -59,6 +60,22 @@ SET @objetivo_col_sql := IF(
 PREPARE objetivo_col_stmt FROM @objetivo_col_sql;
 EXECUTE objetivo_col_stmt;
 DEALLOCATE PREPARE objetivo_col_stmt;
+
+SET @estado_col_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'usuarios'
+      AND COLUMN_NAME = 'estado_usuario'
+);
+SET @estado_col_sql := IF(
+    @estado_col_exists = 0,
+    "ALTER TABLE usuarios ADD COLUMN estado_usuario ENUM('Activo','Inactivo') NOT NULL DEFAULT 'Activo' AFTER rol",
+    'SELECT 1'
+);
+PREPARE estado_col_stmt FROM @estado_col_sql;
+EXECUTE estado_col_stmt;
+DEALLOCATE PREPARE estado_col_stmt;
 
 CREATE TABLE IF NOT EXISTS ajustes (
     id_ajuste INT AUTO_INCREMENT PRIMARY KEY,
@@ -132,8 +149,109 @@ CREATE TABLE IF NOT EXISTS pagos (
     monto DECIMAL(10,2) NOT NULL,
     fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     metodo_pago ENUM('Efectivo', 'Tarjeta', 'Transferencia'),
+    numero_factura VARCHAR(40) NULL UNIQUE,
+    concepto VARCHAR(120) NULL,
+    tipo_registro ENUM('Alta', 'Renovacion', 'Manual') NOT NULL DEFAULT 'Manual',
+    plan_nombre VARCHAR(50) NULL,
+    vigencia_hasta DATE NULL,
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
 );
+
+SET @numero_factura_col_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'pagos'
+      AND COLUMN_NAME = 'numero_factura'
+);
+SET @numero_factura_col_sql := IF(
+    @numero_factura_col_exists = 0,
+    "ALTER TABLE pagos ADD COLUMN numero_factura VARCHAR(40) NULL AFTER metodo_pago",
+    'SELECT 1'
+);
+PREPARE numero_factura_col_stmt FROM @numero_factura_col_sql;
+EXECUTE numero_factura_col_stmt;
+DEALLOCATE PREPARE numero_factura_col_stmt;
+
+SET @concepto_pago_col_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'pagos'
+      AND COLUMN_NAME = 'concepto'
+);
+SET @concepto_pago_col_sql := IF(
+    @concepto_pago_col_exists = 0,
+    "ALTER TABLE pagos ADD COLUMN concepto VARCHAR(120) NULL AFTER numero_factura",
+    'SELECT 1'
+);
+PREPARE concepto_pago_col_stmt FROM @concepto_pago_col_sql;
+EXECUTE concepto_pago_col_stmt;
+DEALLOCATE PREPARE concepto_pago_col_stmt;
+
+SET @tipo_registro_col_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'pagos'
+      AND COLUMN_NAME = 'tipo_registro'
+);
+SET @tipo_registro_col_sql := IF(
+    @tipo_registro_col_exists = 0,
+    "ALTER TABLE pagos ADD COLUMN tipo_registro ENUM('Alta','Renovacion','Manual') NOT NULL DEFAULT 'Manual' AFTER concepto",
+    'SELECT 1'
+);
+PREPARE tipo_registro_col_stmt FROM @tipo_registro_col_sql;
+EXECUTE tipo_registro_col_stmt;
+DEALLOCATE PREPARE tipo_registro_col_stmt;
+
+SET @plan_nombre_col_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'pagos'
+      AND COLUMN_NAME = 'plan_nombre'
+);
+SET @plan_nombre_col_sql := IF(
+    @plan_nombre_col_exists = 0,
+    "ALTER TABLE pagos ADD COLUMN plan_nombre VARCHAR(50) NULL AFTER tipo_registro",
+    'SELECT 1'
+);
+PREPARE plan_nombre_col_stmt FROM @plan_nombre_col_sql;
+EXECUTE plan_nombre_col_stmt;
+DEALLOCATE PREPARE plan_nombre_col_stmt;
+
+SET @vigencia_hasta_col_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'pagos'
+      AND COLUMN_NAME = 'vigencia_hasta'
+);
+SET @vigencia_hasta_col_sql := IF(
+    @vigencia_hasta_col_exists = 0,
+    "ALTER TABLE pagos ADD COLUMN vigencia_hasta DATE NULL AFTER plan_nombre",
+    'SELECT 1'
+);
+PREPARE vigencia_hasta_col_stmt FROM @vigencia_hasta_col_sql;
+EXECUTE vigencia_hasta_col_stmt;
+DEALLOCATE PREPARE vigencia_hasta_col_stmt;
+
+SET @pagos_factura_index_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'pagos'
+      AND INDEX_NAME = 'uq_pagos_numero_factura'
+);
+SET @pagos_factura_index_sql := IF(
+    @pagos_factura_index_exists = 0,
+    "ALTER TABLE pagos ADD UNIQUE KEY uq_pagos_numero_factura (numero_factura)",
+    'SELECT 1'
+);
+PREPARE pagos_factura_index_stmt FROM @pagos_factura_index_sql;
+EXECUTE pagos_factura_index_stmt;
+DEALLOCATE PREPARE pagos_factura_index_stmt;
 
 CREATE TABLE IF NOT EXISTS pagos_personal (
     id_pago_personal INT AUTO_INCREMENT PRIMARY KEY,
@@ -230,9 +348,9 @@ CREATE TABLE IF NOT EXISTS progreso_fotos (
 );
 
 INSERT INTO usuarios (nombre_completo, correo, password, rol)
-SELECT 'Victor Administrator', 'admin@victorsgym.com', 'admin123', 'Administrador'
+SELECT 'Victor Administrator', 'admin@fitness-evolution-gym.pro', 'admin123', 'Administrador'
 WHERE NOT EXISTS (
-    SELECT 1 FROM usuarios WHERE correo = 'admin@victorsgym.com'
+    SELECT 1 FROM usuarios WHERE correo = 'admin@fitness-evolution-gym.pro'
 );
 
 INSERT INTO usuarios (nombre_completo, correo, password, rol)
@@ -242,15 +360,15 @@ WHERE NOT EXISTS (
 );
 
 INSERT INTO usuarios (nombre_completo, correo, password, rol)
-SELECT 'Maria Recepcion', 'recepcion@fitnessgym.com', 'recep123', 'Recepcionista'
+SELECT 'Maria Recepcion', 'maria.recepcion@gmail.com', 'recep123', 'Recepcionista'
 WHERE NOT EXISTS (
-    SELECT 1 FROM usuarios WHERE correo = 'recepcion@fitnessgym.com'
+    SELECT 1 FROM usuarios WHERE correo = 'maria.recepcion@gmail.com'
 );
 
 INSERT INTO usuarios (nombre_completo, correo, password, rol)
-SELECT 'Carlos Entrenador', 'entrenador@fitnessgym.com', 'train123', 'Entrenador'
+SELECT 'Carlos Entrenador', 'carlos.entrenador@gmail.com', 'train123', 'Entrenador'
 WHERE NOT EXISTS (
-    SELECT 1 FROM usuarios WHERE correo = 'entrenador@fitnessgym.com'
+    SELECT 1 FROM usuarios WHERE correo = 'carlos.entrenador@gmail.com'
 );
 
 INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)

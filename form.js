@@ -3,17 +3,27 @@
 document.addEventListener("DOMContentLoaded", () => {
   if (!GymApp.guardRoute(["admin", "recepcionista"])) return;
 
+  const PLAN_PRICES = {
+    Mensual: 35,
+    Trimestral: 90,
+    Semestral: 160,
+    Anual: 300
+  };
+
   const session = GymApp.getSession();
   const homePage = GymApp.getHomeByRole(session.role);
   let trainers = [];
+  let lastSuggestedPrice = null;
 
   const campos = {
     nombre: document.getElementById("nombre"),
     correo: document.getElementById("correo"),
     password: document.getElementById("password"),
+    confirmPassword: document.getElementById("confirmPassword"),
     rol: document.getElementById("rol"),
     plan: document.getElementById("plan"),
     precio: document.getElementById("precio"),
+    metodoPago: document.getElementById("metodoPago"),
     trainerId: document.getElementById("trainerId")
   };
 
@@ -21,8 +31,10 @@ document.addEventListener("DOMContentLoaded", () => {
     nombre: document.getElementById("err-nombre"),
     correo: document.getElementById("err-correo"),
     password: document.getElementById("err-password"),
+    confirmPassword: document.getElementById("err-confirm-password"),
     plan: document.getElementById("err-plan"),
-    precio: document.getElementById("err-precio")
+    precio: document.getElementById("err-precio"),
+    metodoPago: document.getElementById("err-metodo-pago")
   };
 
   const btnGuardar = document.getElementById("btn-guardar");
@@ -36,12 +48,14 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnBack").href = homePage;
   document.getElementById("btnCancel").href = homePage;
 
+  GymApp.setupPasswordToggles(document);
+
   if (session.role === "recepcionista") {
     campos.rol.innerHTML = '<option value="cliente">Cliente</option>';
     campos.rol.value = "cliente";
     campos.rol.disabled = true;
     document.getElementById("linkMembers").href = "recepcionista.html";
-    document.getElementById("linkSettings").href = "recepcionista.html#ajustes";
+    document.getElementById("linkSettings").href = "ajustes.html";
     formSubtitle.textContent = "Recepcion";
   }
 
@@ -53,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function limpiarErrores() {
     Object.values(errores).forEach((el) => {
-      el.textContent = "";
+      if (el) el.textContent = "";
     });
     formMsg.style.display = "none";
   }
@@ -74,6 +88,24 @@ document.addEventListener("DOMContentLoaded", () => {
       .join("");
   }
 
+  function syncSuggestedPrice(force = false) {
+    if (!isClientRole()) return;
+
+    const suggestedPrice = PLAN_PRICES[campos.plan.value] || null;
+    if (!suggestedPrice) return;
+
+    const currentValue = Number(campos.precio.value);
+    if (
+      force ||
+      !campos.precio.value.trim() ||
+      (Number.isFinite(currentValue) && currentValue === lastSuggestedPrice)
+    ) {
+      campos.precio.value = String(suggestedPrice);
+    }
+
+    lastSuggestedPrice = suggestedPrice;
+  }
+
   function syncFormByRole() {
     const clientRole = isClientRole();
     membershipFields.forEach((field) => {
@@ -86,6 +118,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (campos.trainerId) {
       campos.trainerId.disabled = !clientRole || session.role !== "admin";
       if (campos.trainerId.disabled) campos.trainerId.value = "";
+    }
+
+    if (!clientRole) {
+      campos.plan.value = "";
+      campos.precio.value = "";
+      campos.metodoPago.value = "Efectivo";
+    } else {
+      syncSuggestedPrice();
     }
 
     formTitle.textContent = clientRole ? "Agregar nuevo cliente" : "Agregar nuevo colaborador";
@@ -123,6 +163,11 @@ document.addEventListener("DOMContentLoaded", () => {
       valido = false;
     }
 
+    if (campos.password.value !== campos.confirmPassword.value) {
+      errores.confirmPassword.textContent = "Las contrasenas no coinciden.";
+      valido = false;
+    }
+
     if (isClientRole()) {
       if (!campos.plan.value) {
         errores.plan.textContent = "Selecciona un plan.";
@@ -132,6 +177,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const precio = Number(campos.precio.value);
       if (!precio || precio <= 0) {
         errores.precio.textContent = "Ingresa un precio valido mayor a 0.";
+        valido = false;
+      }
+
+      if (!campos.metodoPago.value) {
+        errores.metodoPago.textContent = "Selecciona un metodo de pago.";
         valido = false;
       }
     }
@@ -147,7 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnGuardar.textContent = "Guardando...";
 
     try {
-      await GymApp.api("/api/admin/members", {
+      const response = await GymApp.api("/api/admin/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -157,18 +207,24 @@ document.addEventListener("DOMContentLoaded", () => {
           role: selectedRole(),
           plan: isClientRole() ? campos.plan.value : undefined,
           price: isClientRole() ? Number(campos.precio.value) : undefined,
+          metodoPago: isClientRole() ? campos.metodoPago.value : undefined,
           trainerId: isClientRole() && session.role === "admin" && campos.trainerId.value
             ? Number(campos.trainerId.value)
             : undefined
         })
       });
 
+      const invoiceText = response?.invoiceNumber
+        ? ` Factura: ${response.invoiceNumber}.`
+        : "";
+
       mostrarMensaje(
         isClientRole()
-          ? "Cliente agregado correctamente. Redirigiendo..."
+          ? `Cliente agregado correctamente.${invoiceText} Redirigiendo...`
           : "Usuario agregado correctamente. Redirigiendo...",
         "ok"
       );
+
       setTimeout(() => {
         window.location.href = homePage;
       }, 1500);
@@ -180,6 +236,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   campos.rol.addEventListener("change", syncFormByRole);
+  campos.plan.addEventListener("change", () => syncSuggestedPrice());
+
   loadTrainers();
   syncFormByRole();
 });

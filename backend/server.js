@@ -3,6 +3,8 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const nodemailer = require("nodemailer");
+const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
 const { pool } = require("./db");
@@ -16,9 +18,27 @@ const {
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+const SMTP_HOST = String(process.env.SMTP_HOST || "").trim();
+const SMTP_USER = String(process.env.SMTP_USER || "").trim();
+const SMTP_PASS = String(process.env.SMTP_PASS || "").trim();
+const SMTP_FROM = String(process.env.SMTP_FROM || SMTP_USER).trim();
+const MAIL_FROM_NO_REPLY = String(
+  process.env.MAIL_FROM_NO_REPLY || "Fitness Evolutions Gym <no-reply@fitness-evolution-gym.pro>"
+).trim();
+const MAIL_FROM_ADMIN = String(
+  process.env.MAIL_FROM_ADMIN || "Fitness Evolutions Gym Admin <admin@fitness-evolution-gym.pro>"
+).trim();
+const SMTP_AUTH_EMAIL = extractEmailAddress(SMTP_USER);
+const SMTP_FROM_EMAIL = extractEmailAddress(SMTP_FROM);
+const MAIL_FROM_NO_REPLY_EMAIL = extractEmailAddress(MAIL_FROM_NO_REPLY);
+const MAIL_FROM_ADMIN_EMAIL = extractEmailAddress(MAIL_FROM_ADMIN);
+const SMTP_SECURE = String(process.env.SMTP_SECURE || (SMTP_PORT === 465 ? "true" : "false")).trim().toLowerCase() === "true";
 const OBJECTIVE_MAX_LENGTH = 255;
 const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 const PHOTO_UPLOAD_ROOT = path.join(__dirname, "..", "uploads", "progress");
+const BRAND_LOGO_FILE = path.join(__dirname, "..", "assets", "image.png");
+const TEMP_PASSWORD_LENGTH = 10;
 const PHOTO_MIME_EXTENSIONS = {
   "image/jpeg": "jpg",
   "image/png": "png"
@@ -48,6 +68,13 @@ const ROLE_DB_TO_FRONTEND = {
 const STAFF_DB_ROLES = ["Administrador", "Recepcionista", "Entrenador"];
 const STAFF_PAYMENT_METHODS = ["Transferencia", "Efectivo", "Cheque"];
 const EXPENSE_METHODS = ["Transferencia", "Efectivo", "Tarjeta", "Cheque"];
+const PAYMENT_METHODS = ["Efectivo", "Tarjeta", "Transferencia"];
+const PLAN_CATALOG = {
+  Mensual: { days: 30, price: 35 },
+  Trimestral: { days: 90, price: 90 },
+  Semestral: { days: 180, price: 160 },
+  Anual: { days: 365, price: 300 }
+};
 const EXPENSE_CATEGORIES = [
   "Servicios",
   "Mantenimiento",
@@ -58,8 +85,11 @@ const EXPENSE_CATEGORIES = [
   "Imprevistos",
   "Otros"
 ];
+
+let adminMailFallbackWarned = false;
 const YEAR_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 const ISO_DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+let mailTransporter;
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
@@ -122,6 +152,836 @@ function serializeDateOnly(value) {
   return String(value).slice(0, 10);
 }
 
+function extractEmailAddress(mailbox) {
+  const value = String(mailbox || "").trim();
+  if (!value) return "";
+
+  const wrappedMatch = /<([^>]+)>/.exec(value);
+  if (wrappedMatch?.[1]) {
+    return wrappedMatch[1].trim().toLowerCase();
+  }
+
+  return value.replace(/^["']|["']$/g, "").trim().toLowerCase();
+}
+
+function getConfiguredSenderEmail() {
+  return SMTP_AUTH_EMAIL || SMTP_FROM_EMAIL;
+}
+
+function canSendAsMailbox(mailbox) {
+  const configuredEmail = getConfiguredSenderEmail();
+  const targetEmail = extractEmailAddress(mailbox);
+  return Boolean(configuredEmail && targetEmail && configuredEmail === targetEmail);
+}
+
+function buildNoReplySender() {
+  const from = canSendAsMailbox(MAIL_FROM_NO_REPLY)
+    ? MAIL_FROM_NO_REPLY
+    : (SMTP_FROM || MAIL_FROM_NO_REPLY);
+
+  return {
+    from,
+    label: extractEmailAddress(from) || "no-reply@fitness-evolution-gym.pro"
+  };
+}
+
+function buildAdminSender() {
+  if (canSendAsMailbox(MAIL_FROM_ADMIN)) {
+    return {
+      from: MAIL_FROM_ADMIN,
+      label: extractEmailAddress(MAIL_FROM_ADMIN) || "admin@fitness-evolution-gym.pro"
+    };
+  }
+
+  const fallback = buildNoReplySender();
+  if (!adminMailFallbackWarned) {
+    console.warn(
+      "El SMTP autenticado no coincide con admin@fitness-evolution-gym.pro. " +
+      "Las notificaciones administrativas se enviaran desde no-reply con reply-to administrativo."
+    );
+    adminMailFallbackWarned = true;
+  }
+
+  return {
+    from: fallback.from,
+    replyTo: MAIL_FROM_ADMIN_EMAIL || undefined,
+    label: fallback.label
+  };
+}
+
+function isEmailConfigured() {
+  return Boolean(SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS && SMTP_FROM);
+}
+
+function getMailTransporter() {
+  if (!isEmailConfigured()) {
+    return null;
+  }
+
+  if (!mailTransporter) {
+    mailTransporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS
+      }
+    });
+  }
+
+  return mailTransporter;
+}
+
+async function sendMail(message) {
+  const transporter = getMailTransporter();
+  if (!transporter) {
+    console.warn("SMTP no configurado. Se omitio el envio de correo.");
+    return false;
+  }
+
+  await transporter.sendMail({
+    from: SMTP_FROM,
+    ...message
+  });
+  return true;
+}
+
+function formatDateForEmail(value) {
+  if (!value) return "pendiente";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+
+  return new Intl.DateTimeFormat("es-SV", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  }).format(date);
+}
+
+function formatDateForPdfCompact(value) {
+  if (!value) return "--/--/----";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+
+  return new Intl.DateTimeFormat("es-SV", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+
+function formatMoney(value) {
+  return "$" + Number(value || 0).toLocaleString("es-SV", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function normalizePaymentMethod(method) {
+  return PAYMENT_METHODS.includes(method) ? method : "Efectivo";
+}
+
+function getPlanDefinition(plan, fallbackPlan = "Mensual") {
+  const normalizedPlan = PLAN_CATALOG[plan] ? plan : fallbackPlan;
+  return {
+    label: normalizedPlan,
+    ...(PLAN_CATALOG[normalizedPlan] || PLAN_CATALOG.Mensual)
+  };
+}
+
+function buildInvoiceNumber(paymentId, date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `FEG-${year}${month}${day}-${String(paymentId).padStart(6, "0")}`;
+}
+
+function buildInvoiceSummaryEntries(payment) {
+  return [
+    { label: "Factura", value: payment.invoiceNumber || "pendiente" },
+    { label: "Concepto", value: payment.concept || "Pago de membresia" },
+    { label: "Cliente", value: payment.memberName || payment.nombre_completo || "Cliente" },
+    { label: "Correo", value: payment.memberEmail || payment.correo || "sin correo" },
+    { label: "Monto", value: formatMoney(payment.amount ?? payment.monto) },
+    { label: "Metodo de pago", value: payment.method || payment.metodo_pago || "Efectivo" },
+    { label: "Fecha de pago", value: formatDateForEmail(payment.paidAt || payment.fecha_pago) },
+    payment.planName || payment.plan_nombre
+      ? { label: "Plan", value: payment.planName || payment.plan_nombre }
+      : null,
+    payment.membershipEndDate || payment.vigencia_hasta
+      ? {
+          label: "Vigente hasta",
+          value: formatDateForEmail(payment.membershipEndDate || payment.vigencia_hasta)
+        }
+      : null
+  ].filter(Boolean);
+}
+
+function buildInvoiceSummaryLines(payment) {
+  return buildInvoiceSummaryEntries(payment)
+    .map((entry) => `${entry.label}: ${entry.value}`);
+}
+
+function getInvoiceFileName(payment) {
+  return `factura-${payment.invoiceNumber || payment.id_pago || payment.id || "gym"}.pdf`;
+}
+
+function normalizeInvoiceValue(value, fallback = "No disponible") {
+  const normalized = String(value ?? "").trim();
+  return normalized || fallback;
+}
+
+function drawInvoiceCard(doc, x, y, width, height, title, rows) {
+  const paddingX = 24;
+  const titleY = y + 20;
+  const startY = y + 52;
+  const labelWidth = 112;
+  const valueWidth = width - (paddingX * 2) - labelWidth;
+
+  doc
+    .save()
+    .roundedRect(x, y, width, height, 18)
+    .fillAndStroke("#f8fafc", "#d8e1ec")
+    .restore();
+
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(13)
+    .fillColor("#1b1f28")
+    .text(title, x + paddingX, titleY, { width: width - (paddingX * 2) });
+
+  let currentY = startY;
+
+  rows.forEach((row, index) => {
+    const value = normalizeInvoiceValue(row.value);
+    const rowX = x + paddingX;
+
+    doc.font("Helvetica").fontSize(10);
+    const rowHeight = Math.max(
+      doc.heightOfString(row.label, { width: labelWidth }),
+      doc.heightOfString(value, { width: valueWidth })
+    );
+
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .fillColor("#202939")
+      .text(row.label, rowX, currentY, { width: labelWidth });
+
+    doc
+      .font("Helvetica")
+      .fontSize(10)
+      .fillColor("#475569")
+      .text(value, rowX + labelWidth, currentY, { width: valueWidth });
+
+    currentY += rowHeight + 10;
+
+    if (index < rows.length - 1) {
+      doc
+        .save()
+        .moveTo(rowX, currentY - 5)
+        .lineTo(x + width - paddingX, currentY - 5)
+        .lineWidth(1)
+        .strokeColor("#e2e8f0")
+        .stroke()
+        .restore();
+    }
+  });
+}
+
+function generateInvoicePdfBuffer(payment) {
+  return new Promise((resolve, reject) => {
+    const invoiceNumber = normalizeInvoiceValue(payment.invoiceNumber, "pendiente");
+    const memberName = normalizeInvoiceValue(payment.memberName || payment.nombre_completo, "Cliente");
+    const memberEmail = normalizeInvoiceValue(payment.memberEmail || payment.correo, "sin correo");
+    const concept = normalizeInvoiceValue(payment.concept, "Pago de membresia");
+    const planName = normalizeInvoiceValue(payment.planName || payment.plan_nombre, "No aplica");
+    const paymentMethod = normalizeInvoiceValue(payment.method || payment.metodo_pago, "Efectivo");
+    const paymentDate = formatDateForEmail(payment.paidAt || payment.fecha_pago);
+    const paymentDateCompact = formatDateForPdfCompact(payment.paidAt || payment.fecha_pago);
+    const membershipEndDate = payment.membershipEndDate || payment.vigencia_hasta
+      ? formatDateForEmail(payment.membershipEndDate || payment.vigencia_hasta)
+      : "Pendiente";
+    const recordType = normalizeInvoiceValue(payment.recordType || payment.tipo_registro, "Manual");
+    const totalAmount = formatMoney(payment.amount ?? payment.monto);
+    const doc = new PDFDocument({
+      size: "A4",
+      margins: { top: 0, right: 0, bottom: 0, left: 0 },
+      info: {
+        Title: `Factura ${invoiceNumber}`,
+        Author: "Fitness Evolutions Gym",
+        Subject: "Factura de membresia",
+        Keywords: "factura, gimnasio, membresia"
+      }
+    });
+    const chunks = [];
+
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const cardX = 28;
+    const cardY = 28;
+    const cardWidth = pageWidth - 56;
+    const cardHeight = pageHeight - 56;
+    const headerX = 50;
+    const headerY = 50;
+    const headerWidth = pageWidth - 100;
+    const headerHeight = 140;
+    const titleX = 74;
+    const titleY = 74;
+    const titleWidth = 224;
+    const titleText = "Fitness Evolutions Gym";
+    const logoBoxX = 332;
+    const logoBoxY = 62;
+    const logoBoxWidth = 176;
+    const logoBoxHeight = 52;
+    const metaBoxX = 332;
+    const metaBoxY = 122;
+    const metaBoxWidth = 176;
+    const metaBoxHeight = 52;
+    const contentGap = 18;
+
+    doc.rect(0, 0, pageWidth, pageHeight).fill("#f1f5f9");
+    doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 24).fill("#ffffff");
+
+    doc.roundedRect(headerX, headerY, headerWidth, headerHeight, 22).fill("#1b1f28");
+    doc.roundedRect(logoBoxX, logoBoxY, logoBoxWidth, logoBoxHeight, 16).fill("#ffffff");
+    doc.roundedRect(metaBoxX, metaBoxY, metaBoxWidth, metaBoxHeight, 16).fill("#252b36");
+
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(21)
+      .fillColor("#f07922")
+      .text(titleText, titleX, titleY, {
+        width: titleWidth
+      });
+
+    const titleHeight = doc.heightOfString(titleText, { width: titleWidth });
+    const subtitleY = titleY + titleHeight + 6;
+    const invoiceY = subtitleY + 26;
+
+    doc
+      .font("Helvetica")
+      .fontSize(11)
+      .fillColor("#d7dce5")
+      .text("Factura oficial de membresia", titleX, subtitleY, {
+        width: titleWidth
+      });
+
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(12)
+      .fillColor("#ffffff")
+      .text(`No. ${invoiceNumber}`, titleX, invoiceY, {
+        width: titleWidth
+      });
+
+    doc
+      .font("Helvetica")
+      .fontSize(9)
+      .fillColor("#ffffff")
+      .text(`Fecha de emision: ${paymentDateCompact}`, metaBoxX + 12, metaBoxY + 11, {
+        width: metaBoxWidth - 24
+      });
+    doc
+      .text(`Tipo de registro: ${recordType}`, metaBoxX + 12, metaBoxY + 26, {
+        width: metaBoxWidth - 24
+      });
+    doc
+      .text(`Metodo: ${paymentMethod}`, metaBoxX + 12, metaBoxY + 41, {
+        width: metaBoxWidth - 24
+      });
+
+    try {
+      if (fs.existsSync(BRAND_LOGO_FILE)) {
+        doc.image(BRAND_LOGO_FILE, logoBoxX + 10, logoBoxY + 6, {
+          fit: [logoBoxWidth - 20, logoBoxHeight - 12],
+          align: "center",
+          valign: "center"
+        });
+      } else {
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(16)
+          .fillColor("#f07922")
+          .text("Fitness Evolution", logoBoxX + 12, logoBoxY + 18, {
+            width: logoBoxWidth - 24,
+            align: "center"
+          });
+      }
+    } catch {
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(16)
+        .fillColor("#f07922")
+        .text("Fitness Evolution", logoBoxX + 12, logoBoxY + 18, {
+          width: logoBoxWidth - 24,
+          align: "center"
+        });
+    }
+
+    const clientCardY = headerY + headerHeight + contentGap;
+    const detailCardY = clientCardY + 150;
+    const totalCardY = detailCardY + 240;
+    const contactCardY = totalCardY + 110;
+
+    drawInvoiceCard(doc, 50, clientCardY, pageWidth - 100, 132, "Datos del cliente", [
+      { label: "Cliente", value: memberName },
+      { label: "Correo", value: memberEmail },
+      { label: "Factura", value: invoiceNumber }
+    ]);
+
+    drawInvoiceCard(doc, 50, detailCardY, pageWidth - 100, 218, "Detalle de la factura", [
+      { label: "Concepto", value: concept },
+      { label: "Plan", value: planName },
+      { label: "Fecha de pago", value: paymentDate },
+      { label: "Vigente hasta", value: membershipEndDate },
+      { label: "Metodo de pago", value: paymentMethod }
+    ]);
+
+    doc.roundedRect(50, totalCardY, pageWidth - 100, 92, 20).fill("#f07922");
+    doc
+      .font("Helvetica")
+      .fontSize(11)
+      .fillColor("#fff7ed")
+      .text("Total pagado", 74, totalCardY + 22);
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(28)
+      .fillColor("#ffffff")
+      .text(totalAmount, 74, totalCardY + 40);
+    doc
+      .font("Helvetica")
+      .fontSize(10)
+      .fillColor("#fff7ed")
+      .text(
+        "Documento generado automaticamente. Conserva este PDF como comprobante de tu pago.",
+        278,
+        totalCardY + 24,
+        { width: 220, align: "right" }
+      );
+
+    doc.roundedRect(50, contactCardY, pageWidth - 100, 90, 20).fill("#eef2f7");
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .fillColor("#1b1f28")
+      .text("Contacto oficial", 74, contactCardY + 22);
+    doc
+      .font("Helvetica")
+      .fontSize(10)
+      .fillColor("#475569")
+      .text("admin@fitness-evolution-gym.pro | no-reply@fitness-evolution-gym.pro", 74, contactCardY + 42, {
+        width: pageWidth - 148
+      });
+    doc
+      .text("Gracias por confiar en Fitness Evolutions Gym.", 74, contactCardY + 60, {
+        width: pageWidth - 148
+      });
+
+    doc.end();
+  });
+}
+
+async function buildInvoiceAttachment(payment) {
+  return {
+    filename: getInvoiceFileName(payment),
+    content: await generateInvoicePdfBuffer(payment),
+    contentType: "application/pdf"
+  };
+}
+
+function createTemporaryPassword(length = TEMP_PASSWORD_LENGTH) {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  return Array.from({ length }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+}
+
+async function buildMemberAccountCreatedEmail(member) {
+  const attachments = member.payment ? [await buildInvoiceAttachment(member.payment)] : [];
+  const sender = buildNoReplySender();
+
+  return {
+    from: sender.from,
+    to: member.email,
+    subject: "Tu cuenta ha sido creada en Fitness Evolutions Gym",
+    text: [
+      `Hola ${member.name},`,
+      "",
+      `Tu cuenta en Fitness Evolutions Gym ya fue creada con el rol ${member.roleLabel}.`,
+      `Correo de acceso: ${member.email}`,
+      `Contraseña: ${member.password}`,
+      member.plan ? `Plan asignado: ${member.plan}` : null,
+      member.membershipEndDate ? `Vencimiento actual: ${formatDateForEmail(member.membershipEndDate)}` : null,
+      member.payment?.invoiceNumber ? `Factura: ${member.payment.invoiceNumber}` : null,
+      member.payment ? "Adjuntamos tu factura en formato PDF." : null,
+      "",
+      "Te recomendamos iniciar sesion y cambiar tu contraseña lo antes posible.",
+      "",
+      "Equipo Fitness Evolutions Gym"
+    ].filter(Boolean).join("\n"),
+    attachments
+  };
+}
+
+function buildEmployeeCreatedEmail(member) {
+  const sender = buildAdminSender();
+  return {
+    from: sender.from,
+    replyTo: sender.replyTo,
+    to: member.email,
+    subject: "Tu acceso al sistema fue creado",
+    text: [
+      `Hola ${member.name},`,
+      "",
+      `El administrador creo tu acceso con rol ${member.roleLabel}.`,
+      `Correo de acceso: ${member.email}`,
+      `Contraseña temporal: ${member.password}`,
+      "",
+      `Este correo fue enviado automaticamente desde ${sender.label}.`,
+      "Te recomendamos cambiar tu contraseña en tu primer ingreso.",
+      "",
+      "Equipo Fitness Evolutions Gym"
+    ].join("\n")
+  };
+}
+
+async function buildMembershipRenewedEmail(member, payment) {
+  const invoiceLines = payment ? buildInvoiceSummaryLines(payment) : [];
+  const attachments = payment ? [await buildInvoiceAttachment(payment)] : [];
+  const sender = buildNoReplySender();
+
+  return {
+    from: sender.from,
+    to: member.email,
+    subject: "Tu membresia fue renovada en Fitness Evolutions Gym",
+    text: [
+      `Hola ${member.name},`,
+      "",
+      `Tu membresia fue renovada correctamente por ${member.daysRenewed} dias.`,
+      `Plan actual: ${member.plan}`,
+      `Nueva fecha de vencimiento: ${formatDateForEmail(member.membershipEndDate)}`,
+      payment?.invoiceNumber ? `Factura: ${payment.invoiceNumber}` : null,
+      payment ? "Adjuntamos tu factura en formato PDF." : null,
+      payment ? "" : null,
+      payment ? "Resumen de factura:" : null,
+      ...invoiceLines,
+      "",
+      "Gracias por seguir con nosotros.",
+      "",
+      "Equipo Fitness Evolutions Gym"
+    ].filter(Boolean).join("\n"),
+    attachments
+  };
+}
+
+function buildStaffPaymentEmail(staffMember, payment) {
+  const sender = buildAdminSender();
+  return {
+    from: sender.from,
+    replyTo: sender.replyTo,
+    to: staffMember.email,
+    subject: "Se registro tu pago de personal",
+    text: [
+      `Hola ${staffMember.name},`,
+      "",
+      "Se registro un pago a tu favor en Fitness Evolutions Gym.",
+      `Concepto: ${payment.concept}`,
+      `Periodo: ${payment.period}`,
+      `Monto: ${formatMoney(payment.amount)}`,
+      `Metodo de pago: ${payment.method}`,
+      payment.notes ? `Observaciones: ${payment.notes}` : null,
+      "",
+      `Este correo fue enviado automaticamente desde ${sender.label}.`,
+      "",
+      "Equipo Fitness Evolutions Gym"
+    ].filter(Boolean).join("\n")
+  };
+}
+
+function buildStaffDismissedEmail(staffMember) {
+  const sender = buildAdminSender();
+  return {
+    from: sender.from,
+    replyTo: sender.replyTo,
+    to: staffMember.email,
+    subject: "Tu acceso fue desactivado",
+    text: [
+      `Hola ${staffMember.name},`,
+      "",
+      "Te informamos que tu acceso al sistema de Fitness Evolutions Gym fue desactivado por administracion.",
+      "",
+      "Si necesitas aclaraciones, responde directamente a este correo o comunicate con administracion.",
+      "",
+      "Equipo Fitness Evolutions Gym"
+    ].join("\n")
+  };
+}
+
+function buildStaffReactivatedEmail(staffMember) {
+  const sender = buildAdminSender();
+  return {
+    from: sender.from,
+    replyTo: sender.replyTo,
+    to: staffMember.email,
+    subject: "Tu acceso fue reactivado",
+    text: [
+      `Hola ${staffMember.name},`,
+      "",
+      "Tu acceso al sistema de Fitness Evolutions Gym fue reactivado por administracion.",
+      "Ya puedes volver a ingresar con tus credenciales habituales.",
+      "",
+      `Este correo fue enviado automaticamente desde ${sender.label}.`,
+      "",
+      "Equipo Fitness Evolutions Gym"
+    ].join("\n")
+  };
+}
+
+function buildForgotPasswordEmail(user, temporaryPassword) {
+  const sender = buildNoReplySender();
+  return {
+    from: sender.from,
+    to: user.email,
+    subject: "Recuperacion de acceso a Fitness Evolutions Gym",
+    text: [
+      `Hola ${user.name},`,
+      "",
+      "Recibimos una solicitud para recuperar tu acceso.",
+      `Tu nueva contraseña temporal es: ${temporaryPassword}`,
+      "",
+      "Usala para ingresar y cambiala inmediatamente desde tu pantalla de ajustes.",
+      "",
+      "Equipo Fitness Evolutions Gym"
+    ].join("\n")
+  };
+}
+
+async function sendAccountCreatedEmail(member) {
+  try {
+    const message = member.roleLabel === "Cliente"
+      ? await buildMemberAccountCreatedEmail(member)
+      : buildEmployeeCreatedEmail(member);
+    await sendMail(message);
+  } catch (error) {
+    console.error("No se pudo enviar correo de cuenta creada:", error.message);
+  }
+}
+
+async function sendMembershipRenewedEmail(member, payment) {
+  try {
+    await sendMail(await buildMembershipRenewedEmail(member, payment));
+  } catch (error) {
+    console.error("No se pudo enviar correo de renovacion:", error.message);
+  }
+}
+
+async function sendStaffPaymentNotification(staffMember, payment) {
+  try {
+    await sendMail(buildStaffPaymentEmail(staffMember, payment));
+  } catch (error) {
+    console.error("No se pudo enviar correo de pago al personal:", error.message);
+  }
+}
+
+async function sendStaffDismissedNotification(staffMember) {
+  try {
+    await sendMail(buildStaffDismissedEmail(staffMember));
+  } catch (error) {
+    console.error("No se pudo enviar correo de despido:", error.message);
+  }
+}
+
+async function sendStaffReactivatedNotification(staffMember) {
+  try {
+    await sendMail(buildStaffReactivatedEmail(staffMember));
+  } catch (error) {
+    console.error("No se pudo enviar correo de reactivacion:", error.message);
+  }
+}
+
+async function sendForgotPasswordEmail(user, temporaryPassword) {
+  try {
+    await sendMail(buildForgotPasswordEmail(user, temporaryPassword));
+  } catch (error) {
+    console.error("No se pudo enviar correo de recuperacion:", error.message);
+  }
+}
+
+async function getMemberNotificationData(connection, memberId) {
+  const [rows] = await connection.query(
+    `SELECT
+       u.id_usuario,
+       u.nombre_completo,
+       u.correo,
+       u.rol,
+       m.tipo_plan,
+       m.fecha_vencimiento
+     FROM usuarios u
+     LEFT JOIN membresias m ON m.id_membresia = (
+       SELECT m2.id_membresia
+       FROM membresias m2
+       WHERE m2.id_usuario = u.id_usuario
+       ORDER BY m2.fecha_vencimiento DESC
+       LIMIT 1
+     )
+     WHERE u.id_usuario = ?
+     LIMIT 1`,
+    [memberId]
+  );
+
+  if (!rows.length) {
+    return null;
+  }
+
+  return {
+    id: rows[0].id_usuario,
+    name: rows[0].nombre_completo,
+    email: rows[0].correo,
+    roleLabel: rows[0].rol,
+    plan: rows[0].tipo_plan || null,
+    membershipEndDate: rows[0].fecha_vencimiento || null
+  };
+}
+
+async function columnExists(executor, tableName, columnName) {
+  const [rows] = await executor.query(
+    `SELECT 1
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [tableName, columnName]
+  );
+
+  return rows.length > 0;
+}
+
+async function indexExists(executor, tableName, indexName) {
+  const [rows] = await executor.query(
+    `SELECT 1
+     FROM information_schema.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND INDEX_NAME = ?
+     LIMIT 1`,
+    [tableName, indexName]
+  );
+
+  return rows.length > 0;
+}
+
+async function getUserById(userId, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT id_usuario, nombre_completo, correo, password, rol, estado_usuario, id_entrenador_asignado
+     FROM usuarios
+     WHERE id_usuario = ?
+     LIMIT 1`,
+    [userId]
+  );
+
+  return rows[0] || null;
+}
+
+function normalizePaymentRow(row) {
+  return {
+    id: row.id_pago,
+    userId: row.id_usuario,
+    memberName: row.nombre_completo,
+    memberEmail: row.correo,
+    amount: Number(row.monto || 0),
+    paidAt: row.fecha_pago,
+    method: row.metodo_pago,
+    invoiceNumber: row.numero_factura || null,
+    concept: row.concepto || "Ingreso manual",
+    recordType: row.tipo_registro || "Manual",
+    planName: row.plan_nombre || null,
+    membershipEndDate: row.vigencia_hasta || null
+  };
+}
+
+async function getPaymentById(paymentId, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT
+       p.id_pago,
+       p.id_usuario,
+       u.nombre_completo,
+       u.correo,
+       p.monto,
+       p.fecha_pago,
+       p.metodo_pago,
+       p.numero_factura,
+       p.concepto,
+       p.tipo_registro,
+       p.plan_nombre,
+       p.vigencia_hasta
+     FROM pagos p
+     INNER JOIN usuarios u
+       ON u.id_usuario = p.id_usuario
+     WHERE p.id_pago = ?
+     LIMIT 1`,
+    [paymentId]
+  );
+
+  return rows[0] ? normalizePaymentRow(rows[0]) : null;
+}
+
+async function recordClientPayment(connection, paymentInput) {
+  const normalizedAmount = Number(paymentInput.amount);
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    return null;
+  }
+
+  const normalizedMethod = normalizePaymentMethod(paymentInput.method);
+  const concept = String(paymentInput.concept || "Ingreso manual").trim().slice(0, 120) || "Ingreso manual";
+  const recordType = String(paymentInput.recordType || "Manual").trim().slice(0, 20) || "Manual";
+  const planName = paymentInput.planName ? String(paymentInput.planName).trim().slice(0, 50) : null;
+  const membershipEndDate = paymentInput.membershipEndDate
+    ? serializeDateOnly(paymentInput.membershipEndDate)
+    : null;
+
+  const [result] = await connection.query(
+    `INSERT INTO pagos (
+       id_usuario,
+       monto,
+       metodo_pago,
+       numero_factura,
+       concepto,
+       tipo_registro,
+       plan_nombre,
+       vigencia_hasta
+     )
+     VALUES (?, ?, ?, NULL, ?, ?, ?, ?)`,
+    [
+      paymentInput.userId,
+      normalizedAmount,
+      normalizedMethod,
+      concept,
+      recordType,
+      planName,
+      membershipEndDate
+    ]
+  );
+
+  const invoiceNumber = buildInvoiceNumber(result.insertId);
+  await connection.query(
+    `UPDATE pagos
+     SET numero_factura = ?
+     WHERE id_pago = ?`,
+    [invoiceNumber, result.insertId]
+  );
+
+  return getPaymentById(result.insertId, connection);
+}
+
 async function tableExists(executor, tableName) {
   const [rows] = await executor.query(
     `SELECT 1
@@ -133,6 +993,21 @@ async function tableExists(executor, tableName) {
   );
 
   return rows.length > 0;
+}
+
+async function ensureUserAccountSchema() {
+  const connection = await pool.getConnection();
+
+  try {
+    if (!await columnExists(connection, "usuarios", "estado_usuario")) {
+      await connection.query(
+        `ALTER TABLE usuarios
+         ADD COLUMN estado_usuario ENUM('Activo', 'Inactivo') NOT NULL DEFAULT 'Activo' AFTER rol`
+      );
+    }
+  } finally {
+    connection.release();
+  }
 }
 
 // Keep production databases compatible with the trainer features used by the web app.
@@ -215,6 +1090,64 @@ async function ensureFinanceFeatureSchema() {
   const connection = await pool.getConnection();
 
   try {
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS pagos (
+        id_pago INT AUTO_INCREMENT PRIMARY KEY,
+        id_usuario INT,
+        monto DECIMAL(10,2) NOT NULL,
+        fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        metodo_pago ENUM('Efectivo', 'Tarjeta', 'Transferencia'),
+        numero_factura VARCHAR(40) NULL,
+        concepto VARCHAR(120) NULL,
+        tipo_registro VARCHAR(20) NOT NULL DEFAULT 'Manual',
+        plan_nombre VARCHAR(50) NULL,
+        vigencia_hasta DATE NULL,
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    if (!await columnExists(connection, "pagos", "numero_factura")) {
+      await connection.query(
+        `ALTER TABLE pagos
+         ADD COLUMN numero_factura VARCHAR(40) NULL AFTER metodo_pago`
+      );
+    }
+
+    if (!await columnExists(connection, "pagos", "concepto")) {
+      await connection.query(
+        `ALTER TABLE pagos
+         ADD COLUMN concepto VARCHAR(120) NULL AFTER numero_factura`
+      );
+    }
+
+    if (!await columnExists(connection, "pagos", "tipo_registro")) {
+      await connection.query(
+        `ALTER TABLE pagos
+         ADD COLUMN tipo_registro VARCHAR(20) NOT NULL DEFAULT 'Manual' AFTER concepto`
+      );
+    }
+
+    if (!await columnExists(connection, "pagos", "plan_nombre")) {
+      await connection.query(
+        `ALTER TABLE pagos
+         ADD COLUMN plan_nombre VARCHAR(50) NULL AFTER tipo_registro`
+      );
+    }
+
+    if (!await columnExists(connection, "pagos", "vigencia_hasta")) {
+      await connection.query(
+        `ALTER TABLE pagos
+         ADD COLUMN vigencia_hasta DATE NULL AFTER plan_nombre`
+      );
+    }
+
+    if (!await indexExists(connection, "pagos", "uq_pagos_numero_factura")) {
+      await connection.query(
+        `CREATE UNIQUE INDEX uq_pagos_numero_factura
+         ON pagos (numero_factura)`
+      );
+    }
+
     await connection.query(
       `CREATE TABLE IF NOT EXISTS pagos_personal (
         id_pago_personal INT AUTO_INCREMENT PRIMARY KEY,
@@ -764,7 +1697,7 @@ function getBearerToken(req) {
   return authorization.slice(7).trim();
 }
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   try {
     const token = getBearerToken(req);
     if (!token) {
@@ -772,7 +1705,20 @@ function authenticate(req, res, next) {
       return;
     }
 
-    req.auth = verifyToken(token);
+    const authPayload = verifyToken(token);
+    const user = await getUserById(authPayload.id);
+
+    if (!user || user.estado_usuario === "Inactivo") {
+      res.status(401).json({ error: "Sesion invalida o usuario inactivo" });
+      return;
+    }
+
+    req.auth = {
+      id: user.id_usuario,
+      username: user.correo,
+      name: user.nombre_completo,
+      role: roleToFrontend(user.rol)
+    };
     next();
   } catch (error) {
     res.status(401).json({ error: "Token invalido" });
@@ -884,7 +1830,7 @@ function canManageClientEvolution(auth, client) {
 
 async function getUserByUsername(username, executor = pool) {
   const [rows] = await executor.query(
-    `SELECT id_usuario, nombre_completo, correo, password, rol, id_entrenador_asignado
+    `SELECT id_usuario, nombre_completo, correo, password, rol, estado_usuario, id_entrenador_asignado
      FROM usuarios
      WHERE correo = ?
      LIMIT 1`,
@@ -924,6 +1870,7 @@ async function getTrainerById(trainerId, executor = pool) {
      FROM usuarios
      WHERE id_usuario = ?
        AND rol = 'Entrenador'
+       AND estado_usuario = 'Activo'
      LIMIT 1`,
     [trainerId]
   );
@@ -936,6 +1883,7 @@ async function listTrainers(executor = pool) {
     `SELECT id_usuario, nombre_completo, correo
      FROM usuarios
      WHERE rol = 'Entrenador'
+       AND estado_usuario = 'Activo'
      ORDER BY nombre_completo ASC`
   );
 
@@ -1001,16 +1949,17 @@ function normalizeStaffMember(row) {
     email: row.correo,
     role: roleToFrontend(row.rol),
     roleLabel: row.rol,
+    status: row.estado_usuario || "Activo",
     joinedAt: row.fecha_registro
   };
 }
 
 async function listStaffMembers(executor = pool) {
   const [rows] = await executor.query(
-    `SELECT id_usuario, nombre_completo, correo, rol, fecha_registro
+    `SELECT id_usuario, nombre_completo, correo, rol, estado_usuario, fecha_registro
      FROM usuarios
      WHERE rol IN ('Administrador', 'Recepcionista', 'Entrenador')
-     ORDER BY FIELD(rol, 'Entrenador', 'Recepcionista', 'Administrador'), nombre_completo ASC`
+     ORDER BY FIELD(estado_usuario, 'Activo', 'Inactivo'), FIELD(rol, 'Entrenador', 'Recepcionista', 'Administrador'), nombre_completo ASC`
   );
 
   return rows.map(normalizeStaffMember);
@@ -1018,7 +1967,7 @@ async function listStaffMembers(executor = pool) {
 
 async function getStaffMemberById(staffId, executor = pool) {
   const [rows] = await executor.query(
-    `SELECT id_usuario, nombre_completo, correo, rol, fecha_registro
+    `SELECT id_usuario, nombre_completo, correo, rol, estado_usuario, fecha_registro
      FROM usuarios
      WHERE id_usuario = ?
        AND rol IN ('Administrador', 'Recepcionista', 'Entrenador')
@@ -1776,9 +2725,10 @@ async function resolveTrainerId(connection, trainerId) {
 
 async function createUserWithMembership(connection, payload) {
   const dbRole = roleToDb(payload.role);
-  const safePlan = payload.plan || "Mensual";
+  const planDefinition = getPlanDefinition(payload.plan);
+  const safePlan = planDefinition.label;
   const safePrice = Number(payload.price);
-  const price = Number.isFinite(safePrice) && safePrice > 0 ? safePrice : 20;
+  const price = Number.isFinite(safePrice) && safePrice > 0 ? safePrice : planDefinition.price;
   const safeTrainerId = dbRole === "Cliente"
     ? await resolveTrainerId(connection, payload.trainerId)
     : null;
@@ -1793,29 +2743,51 @@ async function createUserWithMembership(connection, payload) {
   if (dbRole === "Cliente") {
     await connection.query(
       `INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)
-       VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY), 'Activo')`,
-      [insertUser.insertId, safePlan, price]
+       VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Activo')`,
+      [insertUser.insertId, safePlan, price, planDefinition.days]
     );
   }
 
-  return insertUser.insertId;
+  const member = await getMemberNotificationData(connection, insertUser.insertId);
+  const payment = dbRole === "Cliente"
+    ? await recordClientPayment(connection, {
+        userId: insertUser.insertId,
+        amount: price,
+        method: payload.metodoPago,
+        concept: `Inscripcion de membresia ${safePlan}`,
+        recordType: "Alta",
+        planName: safePlan,
+        membershipEndDate: member?.membershipEndDate || null
+      })
+    : null;
+
+  return {
+    id: insertUser.insertId,
+    name: payload.name,
+    email: payload.email,
+    password: payload.password,
+    roleLabel: dbRole,
+    plan: member?.plan || (dbRole === "Cliente" ? safePlan : null),
+    membershipEndDate: member?.membershipEndDate || null,
+    payment
+  };
 }
 
 async function updateClientMember(connection, memberId, payload) {
-  const [memberRows] = await connection.query(
-    `SELECT rol
-     FROM usuarios
-     WHERE id_usuario = ?
-     LIMIT 1`,
-    [memberId]
-  );
-
-  if (!memberRows.length) {
+  const currentUser = await getUserById(memberId, connection);
+  if (!currentUser) {
     throw new Error("Miembro no encontrado");
   }
 
-  const currentDbRole = String(memberRows[0].rol || "");
+  const currentDbRole = String(currentUser.rol || "");
   const nextDbRole = payload.role ? roleToDb(payload.role) : currentDbRole;
+  const nextMembershipStatus = payload.status
+    ? String(payload.status).trim() || "Activo"
+    : "Activo";
+  const nextPlanDefinition = getPlanDefinition(payload.plan || "Mensual");
+  const nextPlanPrice = Number.isFinite(Number(payload.price)) && Number(payload.price) > 0
+    ? Number(payload.price)
+    : nextPlanDefinition.price;
 
   const updates = [];
   const values = [];
@@ -1851,7 +2823,34 @@ async function updateClientMember(connection, memberId, payload) {
     );
   }
 
-  if (payload.plan || payload.price != null || payload.status) {
+  if (currentDbRole === "Entrenador" && nextDbRole !== "Entrenador") {
+    await connection.query(
+      `UPDATE usuarios
+       SET id_entrenador_asignado = NULL
+       WHERE id_entrenador_asignado = ?`,
+      [memberId]
+    );
+  }
+
+  if (nextDbRole === "Cliente") {
+    const trainerIdValue = Object.prototype.hasOwnProperty.call(payload, "trainerId")
+      ? payload.trainerId
+      : currentUser.id_entrenador_asignado;
+    const resolvedTrainerId = trainerIdValue == null || trainerIdValue === ""
+      ? null
+      : await resolveTrainerId(connection, trainerIdValue);
+
+    if (resolvedTrainerId === memberId) {
+      throw new Error("Un cliente no puede asignarse a si mismo como entrenador");
+    }
+
+    await connection.query(
+      `UPDATE usuarios
+       SET id_entrenador_asignado = ?
+       WHERE id_usuario = ?`,
+      [resolvedTrainerId, memberId]
+    );
+
     const [membershipRows] = await connection.query(
       `SELECT id_membresia
        FROM membresias
@@ -1867,15 +2866,15 @@ async function updateClientMember(connection, memberId, payload) {
 
       if (payload.plan) {
         membershipUpdates.push("tipo_plan = ?");
-        membershipValues.push(payload.plan);
+        membershipValues.push(nextPlanDefinition.label);
       }
       if (payload.price != null) {
         membershipUpdates.push("precio = ?");
-        membershipValues.push(Number(payload.price));
+        membershipValues.push(nextPlanPrice);
       }
       if (payload.status) {
         membershipUpdates.push("estado = ?");
-        membershipValues.push(payload.status);
+        membershipValues.push(nextMembershipStatus);
       }
 
       if (membershipUpdates.length) {
@@ -1887,13 +2886,23 @@ async function updateClientMember(connection, memberId, payload) {
           membershipValues
         );
       }
+    } else {
+      await connection.query(
+        `INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)
+         VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), ?)`,
+        [memberId, nextPlanDefinition.label, nextPlanPrice, nextPlanDefinition.days, nextMembershipStatus]
+      );
     }
   }
 }
 
-async function renewClientMembership(connection, memberId, days, plan) {
-  const renewalDays = Number.isFinite(Number(days)) ? Number(days) : 30;
-  const safePlan = plan || "Mensual";
+async function renewClientMembership(connection, memberId, options = {}) {
+  const planDefinition = getPlanDefinition(options.plan);
+  const renewalDays = Number.isFinite(Number(options.days)) ? Number(options.days) : planDefinition.days;
+  const renewalAmount = Number.isFinite(Number(options.amount)) && Number(options.amount) > 0
+    ? Number(options.amount)
+    : planDefinition.price;
+  const safePlan = planDefinition.label;
 
   const [membershipRows] = await connection.query(
     `SELECT id_membresia
@@ -1908,19 +2917,52 @@ async function renewClientMembership(connection, memberId, days, plan) {
     await connection.query(
       `UPDATE membresias
        SET tipo_plan = ?,
+           precio = ?,
            fecha_vencimiento = DATE_ADD(GREATEST(fecha_vencimiento, CURDATE()), INTERVAL ? DAY),
            estado = 'Activo'
        WHERE id_membresia = ?`,
-      [safePlan, renewalDays, membershipRows[0].id_membresia]
+      [safePlan, renewalAmount, renewalDays, membershipRows[0].id_membresia]
     );
-    return;
+    const member = await getMemberNotificationData(connection, memberId);
+    const payment = await recordClientPayment(connection, {
+      userId: memberId,
+      amount: renewalAmount,
+      method: options.method,
+      concept: `Renovacion de membresia ${safePlan}`,
+      recordType: "Renovacion",
+      planName: safePlan,
+      membershipEndDate: member?.membershipEndDate || null
+    });
+    return {
+      ...(member || {}),
+      daysRenewed: renewalDays,
+      plan: safePlan,
+      payment
+    };
   }
 
   await connection.query(
     `INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)
-     VALUES (?, ?, 20.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Activo')`,
-    [memberId, safePlan, renewalDays]
+     VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Activo')`,
+    [memberId, safePlan, renewalAmount, renewalDays]
   );
+
+  const member = await getMemberNotificationData(connection, memberId);
+  const payment = await recordClientPayment(connection, {
+    userId: memberId,
+    amount: renewalAmount,
+    method: options.method,
+    concept: `Renovacion de membresia ${safePlan}`,
+    recordType: "Renovacion",
+    planName: safePlan,
+    membershipEndDate: member?.membershipEndDate || null
+  });
+  return {
+    ...(member || {}),
+    daysRenewed: renewalDays,
+    plan: safePlan,
+    payment
+  };
 }
 
 app.get("/api/health", async (_req, res) => {
@@ -1945,6 +2987,11 @@ app.post("/api/auth/login", async (req, res) => {
 
     if (!user) {
       res.status(401).json({ error: "Credenciales invalidas" });
+      return;
+    }
+
+    if (user.estado_usuario === "Inactivo") {
+      res.status(403).json({ error: "Tu usuario fue desactivado. Contacta a administracion." });
       return;
     }
 
@@ -1984,6 +3031,84 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+app.post("/api/auth/forgot-password", async (req, res) => {
+  const email = String(req.body?.email || "").trim();
+
+  if (!email) {
+    res.status(400).json({ error: "email requerido" });
+    return;
+  }
+
+  try {
+    const user = await getUserByUsername(email);
+
+    if (user && user.estado_usuario !== "Inactivo") {
+      const temporaryPassword = createTemporaryPassword();
+      const passwordHash = await hashPassword(temporaryPassword);
+
+      await pool.query(
+        `UPDATE usuarios
+         SET password = ?
+         WHERE id_usuario = ?`,
+        [passwordHash, user.id_usuario]
+      );
+
+      await sendForgotPasswordEmail({
+        name: user.nombre_completo,
+        email: user.correo
+      }, temporaryPassword);
+    }
+
+    res.json({
+      ok: true,
+      message: "Si el correo existe, se envio una contraseña temporal."
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error procesando la recuperacion", detail: error.message });
+  }
+});
+
+app.post("/api/auth/change-password", authenticate, async (req, res) => {
+  const currentPassword = String(req.body?.currentPassword || "");
+  const newPassword = String(req.body?.newPassword || "");
+
+  if (!currentPassword || !newPassword) {
+    res.status(400).json({ error: "currentPassword y newPassword requeridos" });
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    res.status(400).json({ error: "La nueva contraseña debe tener al menos 6 caracteres" });
+    return;
+  }
+
+  try {
+    const user = await getUserById(req.auth.id);
+    if (!user) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+
+    const passwordMatches = await verifyPassword(currentPassword, user.password);
+    if (!passwordMatches) {
+      res.status(400).json({ error: "La contraseña actual no coincide" });
+      return;
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await pool.query(
+      `UPDATE usuarios
+       SET password = ?
+       WHERE id_usuario = ?`,
+      [passwordHash, user.id_usuario]
+    );
+
+    res.json({ ok: true, message: "Contraseña actualizada correctamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error actualizando contraseña", detail: error.message });
+  }
+});
+
 app.post("/api/subscription/renew", authenticate, async (req, res) => {
   const { username } = req.body || {};
 
@@ -2008,30 +3133,13 @@ app.post("/api/subscription/renew", authenticate, async (req, res) => {
       return;
     }
 
-    const [membershipRows] = await connection.query(
-      `SELECT id_membresia
-       FROM membresias
-       WHERE id_usuario = ?
-       ORDER BY fecha_vencimiento DESC
-       LIMIT 1`,
-      [user.id_usuario]
-    );
-
-    if (!membershipRows.length) {
-      await connection.rollback();
-      res.status(404).json({ error: "Membresia no encontrada" });
-      return;
-    }
-
-    await connection.query(
-      `UPDATE membresias
-       SET fecha_vencimiento = DATE_ADD(GREATEST(fecha_vencimiento, CURDATE()), INTERVAL 30 DAY),
-           estado = 'Activo'
-       WHERE id_membresia = ?`,
-      [membershipRows[0].id_membresia]
-    );
-
+    const renewedMember = await renewClientMembership(connection, user.id_usuario, {
+      days: 30,
+      plan: "Mensual",
+      method: "Efectivo"
+    });
     await connection.commit();
+    await sendMembershipRenewedEmail(renewedMember, renewedMember?.payment || null);
     res.json({ ok: true, message: "Suscripcion renovada 30 dias" });
   } catch (error) {
     await connection.rollback();
@@ -2139,9 +3247,14 @@ app.post(["/api/members", "/api/admin/members"], authenticate, requireRoles("adm
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    const id = await createUserWithMembership(connection, req.body || {});
+    const createdMember = await createUserWithMembership(connection, req.body || {});
     await connection.commit();
-    res.status(201).json({ ok: true, id });
+    await sendAccountCreatedEmail(createdMember);
+    res.status(201).json({
+      ok: true,
+      id: createdMember.id,
+      invoiceNumber: createdMember.payment?.invoiceNumber || null
+    });
   } catch (error) {
     await connection.rollback();
     res.status(500).json({ error: "Error creando usuario", detail: error.message });
@@ -2189,6 +3302,8 @@ app.post(["/api/members/:id/renew", "/api/admin/members/:id/renew"], authenticat
   const memberId = Number(req.params.id);
   const days = Number(req.body?.days || 30);
   const plan = req.body?.plan || "Mensual";
+  const amount = req.body?.monto;
+  const method = req.body?.metodoPago;
 
   if (!Number.isFinite(memberId)) {
     res.status(400).json({ error: "id invalido" });
@@ -2198,9 +3313,19 @@ app.post(["/api/members/:id/renew", "/api/admin/members/:id/renew"], authenticat
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    await renewClientMembership(connection, memberId, days, plan);
+    const renewedMember = await renewClientMembership(connection, memberId, {
+      days,
+      plan,
+      amount,
+      method
+    });
     await connection.commit();
-    res.json({ ok: true, message: `Membresia renovada ${days} dias` });
+    await sendMembershipRenewedEmail(renewedMember, renewedMember?.payment || null);
+    res.json({
+      ok: true,
+      message: `Membresia renovada ${days} dias`,
+      invoiceNumber: renewedMember?.payment?.invoiceNumber || null
+    });
   } catch (error) {
     await connection.rollback();
     res.status(500).json({ error: "Error renovando miembro", detail: error.message });
@@ -2865,6 +3990,210 @@ app.get("/api/admin/staff-members", authenticate, requireRoles("admin"), async (
   }
 });
 
+app.post("/api/admin/staff-members/:staffId/dismiss", authenticate, requireRoles("admin"), async (req, res) => {
+  const staffId = Number(req.params.staffId);
+
+  if (!Number.isInteger(staffId) || staffId <= 0) {
+    res.status(400).json({ error: "staffId invalido" });
+    return;
+  }
+
+  if (staffId === req.auth.id) {
+    res.status(400).json({ error: "No puedes desactivar tu propio acceso" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const staffMember = await getStaffMemberById(staffId, connection);
+    if (!staffMember) {
+      await connection.rollback();
+      res.status(404).json({ error: "Colaborador no encontrado" });
+      return;
+    }
+
+    if (staffMember.estado_usuario === "Inactivo") {
+      await connection.rollback();
+      res.status(400).json({ error: "El colaborador ya esta inactivo" });
+      return;
+    }
+
+    if (staffMember.rol === "Administrador") {
+      const [rows] = await connection.query(
+        `SELECT COUNT(*) AS total
+         FROM usuarios
+         WHERE rol = 'Administrador'
+           AND estado_usuario = 'Activo'`
+      );
+      if (Number(rows[0]?.total || 0) <= 1) {
+        await connection.rollback();
+        res.status(400).json({ error: "Debe existir al menos un administrador activo" });
+        return;
+      }
+    }
+
+    await connection.query(
+      `UPDATE usuarios
+       SET estado_usuario = 'Inactivo'
+       WHERE id_usuario = ?`,
+      [staffId]
+    );
+
+    if (staffMember.rol === "Entrenador") {
+      await connection.query(
+        `UPDATE usuarios
+         SET id_entrenador_asignado = NULL
+         WHERE id_entrenador_asignado = ?`,
+        [staffId]
+      );
+    }
+
+    await connection.commit();
+    await sendStaffDismissedNotification({
+      name: staffMember.nombre_completo,
+      email: staffMember.correo
+    });
+    res.json({ ok: true, message: "Colaborador desactivado correctamente" });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error desactivando colaborador", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+app.post("/api/admin/staff-members/:staffId/reactivate", authenticate, requireRoles("admin"), async (req, res) => {
+  const staffId = Number(req.params.staffId);
+
+  if (!Number.isInteger(staffId) || staffId <= 0) {
+    res.status(400).json({ error: "staffId invalido" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const staffMember = await getStaffMemberById(staffId, connection);
+    if (!staffMember) {
+      await connection.rollback();
+      res.status(404).json({ error: "Colaborador no encontrado" });
+      return;
+    }
+
+    if (staffMember.estado_usuario !== "Inactivo") {
+      await connection.rollback();
+      res.status(400).json({ error: "El colaborador ya esta activo" });
+      return;
+    }
+
+    await connection.query(
+      `UPDATE usuarios
+       SET estado_usuario = 'Activo'
+       WHERE id_usuario = ?`,
+      [staffId]
+    );
+
+    await connection.commit();
+    await sendStaffReactivatedNotification({
+      name: staffMember.nombre_completo,
+      email: staffMember.correo
+    });
+    res.json({ ok: true, message: "Colaborador reactivado correctamente" });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error reactivando colaborador", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+app.put("/api/admin/staff-members/:staffId", authenticate, requireRoles("admin"), async (req, res) => {
+  const staffId = Number(req.params.staffId);
+  const payload = req.body || {};
+
+  if (!Number.isInteger(staffId) || staffId <= 0) {
+    res.status(400).json({ error: "staffId invalido" });
+    return;
+  }
+
+  const accessStatus = payload.accessStatus == null
+    ? null
+    : String(payload.accessStatus).trim();
+
+  if (accessStatus && !["Activo", "Inactivo"].includes(accessStatus)) {
+    res.status(400).json({ error: "Estado de acceso invalido" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const currentStaffMember = await getStaffMemberById(staffId, connection);
+    if (!currentStaffMember) {
+      await connection.rollback();
+      res.status(404).json({ error: "Colaborador no encontrado" });
+      return;
+    }
+
+    const nextDbRole = payload.role ? roleToDb(payload.role) : currentStaffMember.rol;
+    const nextAccessStatus = accessStatus || currentStaffMember.estado_usuario || "Activo";
+
+    if (
+      staffId === req.auth.id &&
+      ((payload.role && nextDbRole !== currentStaffMember.rol) || nextAccessStatus === "Inactivo")
+    ) {
+      await connection.rollback();
+      res.status(400).json({ error: "No puedes cambiar tu propio rol ni desactivar tu acceso desde esta pantalla" });
+      return;
+    }
+
+    if (
+      currentStaffMember.rol === "Administrador" &&
+      (nextDbRole !== "Administrador" || nextAccessStatus === "Inactivo")
+    ) {
+      const [rows] = await connection.query(
+        `SELECT COUNT(*) AS total
+         FROM usuarios
+         WHERE rol = 'Administrador'
+           AND estado_usuario = 'Activo'
+           AND id_usuario <> ?`,
+        [staffId]
+      );
+      if (Number(rows[0]?.total || 0) <= 0) {
+        await connection.rollback();
+        res.status(400).json({ error: "Debe existir al menos un administrador activo" });
+        return;
+      }
+    }
+
+    await updateClientMember(connection, staffId, payload);
+    await connection.query(
+      `UPDATE usuarios
+       SET estado_usuario = ?
+       WHERE id_usuario = ?`,
+      [nextAccessStatus, staffId]
+    );
+
+    await connection.commit();
+    res.json({
+      ok: true,
+      movedToMembers: nextDbRole === "Cliente",
+      message: nextDbRole === "Cliente"
+        ? "Colaborador convertido a cliente correctamente"
+        : "Colaborador actualizado correctamente"
+    });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error actualizando colaborador", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
 app.get("/api/admin/staff-payments", authenticate, requireRoles("admin"), async (req, res) => {
   const selectedPeriod = normalizeYearMonth(req.query?.period);
 
@@ -2962,6 +4291,11 @@ app.post("/api/admin/staff-payments", authenticate, requireRoles("admin"), async
       return;
     }
 
+    if (staffMember.estado_usuario === "Inactivo") {
+      res.status(400).json({ error: "El colaborador esta inactivo y no puede recibir pagos nuevos" });
+      return;
+    }
+
     const [result] = await pool.query(
       `INSERT INTO pagos_personal (
          id_usuario,
@@ -2980,6 +4314,20 @@ app.post("/api/admin/staff-payments", authenticate, requireRoles("admin"), async
         normalizedMethod,
         normalizedNotes || null
       ]
+    );
+
+    await sendStaffPaymentNotification(
+      {
+        name: staffMember.nombre_completo,
+        email: staffMember.correo
+      },
+      {
+        concept: normalizedConcept,
+        period: normalizedPeriod,
+        amount: normalizedAmount,
+        method: normalizedMethod,
+        notes: normalizedNotes
+      }
     );
 
     res.status(201).json({
@@ -3434,24 +4782,35 @@ app.get("/api/admin/payments", authenticate, requireRoles("admin"), async (_req,
          u.correo,
          p.monto,
          p.fecha_pago,
-         p.metodo_pago
-       FROM pagos p
-       JOIN usuarios u ON u.id_usuario = p.id_usuario
-      WHERE u.rol = 'Cliente'
-       ORDER BY p.fecha_pago DESC
-       LIMIT 200`
+         p.metodo_pago,
+         p.numero_factura,
+         p.concepto,
+         p.tipo_registro,
+         p.plan_nombre,
+         p.vigencia_hasta
+        FROM pagos p
+        JOIN usuarios u ON u.id_usuario = p.id_usuario
+       WHERE u.rol = 'Cliente'
+        ORDER BY p.fecha_pago DESC, p.id_pago DESC
+        LIMIT 200`
     );
-    res.json({ payments: rows, total: rows.length });
+    res.json({
+      payments: rows.map((row) => ({
+        ...row,
+        monto: Number(row.monto || 0)
+      })),
+      total: rows.length
+    });
   } catch (error) {
     res.status(500).json({ error: "Error cargando pagos", detail: error.message });
   }
 });
 
 app.post("/api/admin/payments", authenticate, requireRoles("admin"), async (req, res) => {
-  const { userId, monto, metodoPago } = req.body || {};
+  const { userId, monto, metodoPago, concepto, plan, vigenciaHasta, tipoRegistro } = req.body || {};
   const normalizedUserId = Number(userId);
   const normalizedAmount = Number(monto);
-  const metodos = ["Efectivo", "Tarjeta", "Transferencia"];
+  const normalizedConcept = String(concepto || "Ingreso manual").trim();
 
   if (!Number.isInteger(normalizedUserId) || normalizedUserId <= 0) {
     res.status(400).json({ error: "Selecciona un cliente valido" });
@@ -3463,7 +4822,7 @@ app.post("/api/admin/payments", authenticate, requireRoles("admin"), async (req,
     return;
   }
 
-  if (!metodos.includes(metodoPago)) {
+  if (!PAYMENT_METHODS.includes(metodoPago)) {
     res.status(400).json({ error: "Metodo de pago invalido" });
     return;
   }
@@ -3476,11 +4835,25 @@ app.post("/api/admin/payments", authenticate, requireRoles("admin"), async (req,
       return;
     }
 
-    const [result] = await pool.query(
-      `INSERT INTO pagos (id_usuario, monto, metodo_pago) VALUES (?, ?, ?)`,
-      [normalizedUserId, normalizedAmount, metodoPago]
-    );
-    res.status(201).json({ ok: true, id: result.insertId });
+    const connection = await pool.getConnection();
+    try {
+      const payment = await recordClientPayment(connection, {
+        userId: normalizedUserId,
+        amount: normalizedAmount,
+        method: metodoPago,
+        concept: normalizedConcept || "Ingreso manual",
+        recordType: tipoRegistro || "Manual",
+        planName: plan || null,
+        membershipEndDate: vigenciaHasta || null
+      });
+      res.status(201).json({
+        ok: true,
+        id: payment?.id || null,
+        invoiceNumber: payment?.invoiceNumber || null
+      });
+    } finally {
+      connection.release();
+    }
   } catch (error) {
     res.status(500).json({ error: "Error registrando pago", detail: error.message });
   }
@@ -3491,7 +4864,6 @@ app.put("/api/admin/payments/:paymentId", authenticate, requireRoles("admin"), a
   const { userId, monto, metodoPago } = req.body || {};
   const normalizedUserId = Number(userId);
   const normalizedAmount = Number(monto);
-  const metodos = ["Efectivo", "Tarjeta", "Transferencia"];
 
   if (!Number.isInteger(paymentId) || paymentId <= 0) {
     res.status(400).json({ error: "Pago invalido" });
@@ -3508,7 +4880,7 @@ app.put("/api/admin/payments/:paymentId", authenticate, requireRoles("admin"), a
     return;
   }
 
-  if (!metodos.includes(metodoPago)) {
+  if (!PAYMENT_METHODS.includes(metodoPago)) {
     res.status(400).json({ error: "Metodo de pago invalido" });
     return;
   }
@@ -3533,7 +4905,12 @@ app.put("/api/admin/payments/:paymentId", authenticate, requireRoles("admin"), a
       return;
     }
 
-    res.json({ ok: true, id: paymentId });
+    const payment = await getPaymentById(paymentId);
+    res.json({
+      ok: true,
+      id: paymentId,
+      invoiceNumber: payment?.invoiceNumber || null
+    });
   } catch (error) {
     res.status(500).json({ error: "Error actualizando ingreso", detail: error.message });
   }
@@ -4421,6 +5798,7 @@ app.post("/api/fotos", authenticate, requireRoles("admin", "entrenador"), async 
 
 async function startServer() {
   try {
+    await ensureUserAccountSchema();
     await ensureTrainerFeatureSchema();
     await ensureFinanceFeatureSchema();
     app.listen(PORT, () => {

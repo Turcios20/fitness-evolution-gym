@@ -1,16 +1,26 @@
 "use strict";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const inputs = document.querySelectorAll(".input-field");
-  const loginButton = document.querySelector(".btn-orange");
-  const helperLinks = document.querySelectorAll(".login-links a");
+  const usernameInput = document.getElementById("loginUsername");
+  const passwordInput = document.getElementById("loginPassword");
+  const loginButton = document.getElementById("btnLogin");
+  const loginFeedback = document.getElementById("loginFeedback");
+  const forgotPasswordLink = document.getElementById("linkForgotPassword");
+  const registerInfoLink = document.getElementById("linkRegisterInfo");
 
-  if (!loginButton || inputs.length < 2) {
+  if (!loginButton || !usernameInput || !passwordInput) {
     return;
   }
 
-  const usernameInput = inputs[0];
-  const passwordInput = inputs[1];
+  GymApp.setupPasswordToggles(document);
+
+  function setFeedback(message, type = "") {
+    loginFeedback.textContent = message || "";
+    loginFeedback.className = "login-feedback";
+    if (type) {
+      loginFeedback.classList.add(`is-${type}`);
+    }
+  }
 
   loginButton.addEventListener("click", async (event) => {
     event.preventDefault();
@@ -19,7 +29,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   [usernameInput, passwordInput].forEach((input) => {
     input.addEventListener("keydown", async (event) => {
-      if (event.key === "Enter") await doLogin();
+      if (event.key === "Enter") {
+        event.preventDefault();
+        await doLogin();
+      }
     });
   });
 
@@ -28,9 +41,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = passwordInput.value.trim();
 
     if (!username || !password) {
-      alert("Completa usuario y contrasena.");
+      setFeedback("Completa correo y contrasena.", "error");
       return;
     }
+
+    loginButton.disabled = true;
+    loginButton.textContent = "Ingresando...";
+    setFeedback("");
 
     try {
       const data = await GymApp.api("/api/auth/login", {
@@ -50,10 +67,13 @@ document.addEventListener("DOMContentLoaded", () => {
         token: data.token || null
       });
 
+      setFeedback("Acceso correcto. Redirigiendo...", "success");
       window.location.href = GymApp.getHomeByRole(role);
-      return;
     } catch (error) {
-      alert(error.message || "No se pudo iniciar sesion.");
+      setFeedback(error.message || "No se pudo iniciar sesion.", "error");
+    } finally {
+      loginButton.disabled = false;
+      loginButton.textContent = "Iniciar sesion";
     }
   }
 
@@ -74,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const { overlay, box } = createOverlay();
     box.innerHTML = `
       <h3 class="gm-title">Recuperar contrasena</h3>
-      <p class="gm-body">Ingresa tu correo y el administrador te enviara las instrucciones de recuperacion.</p>
+      <p class="gm-body">Ingresa tu correo y enviaremos una contrasena temporal si la cuenta existe.</p>
       <div class="gm-form" style="text-align:left;">
         <div class="gm-field">
           <label>Correo electronico</label>
@@ -84,28 +104,37 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
       <div class="gm-actions">
         <button class="gm-btn gm-btn-cancel" id="gmCancel">Cancelar</button>
-        <button class="gm-btn gm-btn-primary" id="gmSend">Enviar solicitud</button>
+        <button class="gm-btn gm-btn-primary" id="gmSend">Enviar</button>
       </div>
     `;
+
     const emailInput = box.querySelector("#gmForgotEmail");
     const errEl = box.querySelector("#gmForgotErr");
+    const sendButton = box.querySelector("#gmSend");
+
     box.querySelector("#gmCancel").onclick = () => overlay.remove();
-    box.querySelector("#gmSend").onclick = () => {
+    sendButton.onclick = async () => {
       const email = emailInput.value.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         errEl.textContent = "Ingresa un correo valido.";
         return;
       }
-      overlay.remove();
-      const { overlay: confirmOverlay, box: confirmBox } = createOverlay();
-      confirmBox.innerHTML = `
-        <h3 class="gm-title">Solicitud enviada</h3>
-        <p class="gm-body">Se notificara al administrador para restablecer la contrasena de <strong>${email}</strong>.</p>
-        <div class="gm-actions">
-          <button class="gm-btn gm-btn-primary" id="gmOk">Aceptar</button>
-        </div>
-      `;
-      confirmBox.querySelector("#gmOk").onclick = () => confirmOverlay.remove();
+
+      errEl.textContent = "";
+      sendButton.disabled = true;
+
+      try {
+        const response = await GymApp.api("/api/auth/forgot-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+        overlay.remove();
+        GymApp.toast(response?.message || "Revisa tu correo para continuar.", "success");
+      } catch (error) {
+        errEl.textContent = error.message || "No se pudo procesar la recuperacion.";
+        sendButton.disabled = false;
+      }
     };
   }
 
@@ -124,14 +153,13 @@ document.addEventListener("DOMContentLoaded", () => {
     box.querySelector("#gmOk").onclick = () => overlay.remove();
   }
 
-  helperLinks.forEach((link) => {
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      if (link.textContent.toLowerCase().includes("contras")) {
-        showForgotModal();
-      } else {
-        showRegisterModal();
-      }
-    });
+  forgotPasswordLink?.addEventListener("click", (event) => {
+    event.preventDefault();
+    showForgotModal();
+  });
+
+  registerInfoLink?.addEventListener("click", (event) => {
+    event.preventDefault();
+    showRegisterModal();
   });
 });

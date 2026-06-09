@@ -13,7 +13,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   const avatarDropdown = document.getElementById("avatarDropdown");
   const logoutButton = document.getElementById("btnLogout");
   const clientThemeToggle = document.getElementById("clientThemeToggle");
-  const saveButton = document.getElementById("btnSaveClientTheme");
+  const saveThemeButton = document.getElementById("btnSaveClientTheme");
+  const changePasswordButton = document.getElementById("btnChangeClientPassword");
+  const messageBox = document.getElementById("clientPasswordMsg");
+
+  const passwordFields = {
+    current: document.getElementById("clientCurrentPassword"),
+    next: document.getElementById("clientNewPassword"),
+    confirm: document.getElementById("clientConfirmPassword")
+  };
+
+  const passwordErrors = {
+    current: document.getElementById("clientErrCurrentPassword"),
+    next: document.getElementById("clientErrNewPassword"),
+    confirm: document.getElementById("clientErrConfirmPassword")
+  };
+
+  GymApp.setupPasswordToggles(document);
 
   function applyThemeToPage(theme) {
     document.documentElement.setAttribute("data-theme", theme === "light" ? "light" : "dark");
@@ -24,6 +40,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function getSelectedTheme() {
     return clientThemeToggle?.checked ? "dark" : "light";
+  }
+
+  function setPasswordMessage(text, type) {
+    messageBox.textContent = text;
+    messageBox.className = `form-msg form-msg--${type}`;
+    messageBox.style.display = "block";
+  }
+
+  function clearPasswordErrors() {
+    Object.values(passwordErrors).forEach((element) => {
+      if (element) element.textContent = "";
+    });
+    messageBox.style.display = "none";
   }
 
   function initAvatar() {
@@ -80,12 +109,66 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  async function changePassword() {
+    clearPasswordErrors();
+
+    const currentPassword = passwordFields.current.value;
+    const newPassword = passwordFields.next.value;
+    const confirmPassword = passwordFields.confirm.value;
+    let hasError = false;
+
+    if (!currentPassword) {
+      passwordErrors.current.textContent = "Ingresa tu contrasena actual.";
+      hasError = true;
+    }
+
+    if (newPassword.length < 6) {
+      passwordErrors.next.textContent = "La nueva contrasena debe tener minimo 6 caracteres.";
+      hasError = true;
+    }
+
+    if (newPassword !== confirmPassword) {
+      passwordErrors.confirm.textContent = "Las contrasenas no coinciden.";
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    changePasswordButton.disabled = true;
+
+    try {
+      await GymApp.api("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword
+        })
+      });
+
+      Object.values(passwordFields).forEach((field) => {
+        field.value = "";
+        field.type = "password";
+      });
+      GymApp.setupPasswordToggles(document);
+      setPasswordMessage("Contrasena actualizada correctamente.", "ok");
+    } catch (error) {
+      setPasswordMessage(error.message || "No se pudo cambiar la contrasena.", "error");
+    } finally {
+      changePasswordButton.disabled = false;
+    }
+  }
+
   clientThemeToggle?.addEventListener("change", () => {
     applyThemeToPage(getSelectedTheme());
   });
 
-  saveButton?.addEventListener("click", async () => {
+  saveThemeButton?.addEventListener("click", async () => {
     await saveThemePreference();
+  });
+
+  changePasswordButton?.addEventListener("click", async () => {
+    await changePassword();
   });
 
   logoutButton?.addEventListener("click", () => {
