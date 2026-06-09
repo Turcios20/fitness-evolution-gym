@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const errConfirmPassword = document.getElementById("errConfirmPassword");
   const staffUsersBody = document.getElementById("staffUsersBody");
   const btnAddStaffUser = document.getElementById("btnAddStaffUser");
+  let trainers = [];
 
   const roleLabels = {
     admin: "Panel de control",
@@ -329,6 +330,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getRoleBadgeClass(roleLabel) {
     const normalized = String(roleLabel || "").toLowerCase();
+    if (normalized === "cliente") return "role-badge role-client";
     if (normalized === "administrador") return "role-badge role-admin";
     if (normalized === "recepcionista") return "role-badge role-staff";
     return "role-badge role-trainer";
@@ -353,6 +355,29 @@ document.addEventListener("DOMContentLoaded", () => {
       if (event.target === overlay) overlay.remove();
     });
     return { overlay, box };
+  }
+
+  function trainerOptions(selectedTrainerId) {
+    const selectedId = Number(selectedTrainerId || 0);
+    return ['<option value="">Sin asignar</option>']
+      .concat(
+        trainers.map((trainer) => `
+          <option value="${trainer.id}" ${trainer.id === selectedId ? "selected" : ""}>
+            ${escapeHtml(trainer.name)}
+          </option>
+        `)
+      )
+      .join("");
+  }
+
+  async function ensureTrainersLoaded() {
+    if (trainers.length) {
+      return trainers;
+    }
+
+    const response = await GymApp.api("/api/trainers");
+    trainers = Array.isArray(response.trainers) ? response.trainers : [];
+    return trainers;
   }
 
   function showDismissModal(staffMember) {
@@ -383,6 +408,181 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
+  function showReactivateModal(staffMember) {
+    const { overlay, box } = createOverlay();
+    box.innerHTML = `
+      <h3 class="gm-title">Reactivar empleado</h3>
+      <p class="gm-body">
+        Se restaurara el acceso de <strong>${escapeHtml(staffMember.name)}</strong> y se notificara por correo.
+      </p>
+      <div class="gm-actions">
+        <button class="gm-btn gm-btn-cancel" id="gmCancel">Cancelar</button>
+        <button class="gm-btn gm-btn-primary" id="gmConfirm">Reactivar</button>
+      </div>
+    `;
+
+    box.querySelector("#gmCancel").onclick = () => overlay.remove();
+    box.querySelector("#gmConfirm").onclick = async () => {
+      try {
+        await GymApp.api(`/api/admin/staff-members/${staffMember.id}/reactivate`, {
+          method: "POST"
+        });
+        overlay.remove();
+        GymApp.toast("Empleado reactivado correctamente.", "success");
+        await loadStaffMembers();
+      } catch (error) {
+        GymApp.toast(error.message || "No se pudo reactivar al empleado.", "error");
+      }
+    };
+  }
+
+  async function showEditStaffModal(staffMember) {
+    await ensureTrainersLoaded();
+
+    const { overlay, box } = createOverlay();
+    box.classList.add("gm-edit-box");
+    const currentRole = String(staffMember.role || "recepcionista").toLowerCase();
+    const roleLabels = {
+      cliente: "Cliente",
+      entrenador: "Entrenador",
+      recepcionista: "Recepcionista",
+      admin: "Administrador"
+    };
+
+    box.innerHTML = `
+      <h3 class="gm-title">Editar acceso</h3>
+      <div class="gm-form">
+        <div class="gm-field">
+          <label>Nombre completo</label>
+          <input id="gmName" class="gm-input" type="text" value="${escapeHtml(staffMember.name)}">
+        </div>
+        <div class="gm-field">
+          <label>Correo electronico</label>
+          <input id="gmEmail" class="gm-input" type="email" value="${escapeHtml(staffMember.email)}">
+        </div>
+        <div class="gm-field">
+          <label>Rol</label>
+          <select id="gmRole" class="gm-input">
+            ${[
+              ["cliente", "Cliente"],
+              ["entrenador", "Entrenador"],
+              ["recepcionista", "Recepcionista"],
+              ["admin", "Administrador"]
+            ].map(([value, label]) => `
+              <option value="${value}" ${value === currentRole ? "selected" : ""}>${label}</option>
+            `).join("")}
+          </select>
+        </div>
+        <div class="gm-field">
+          <label>Acceso al sistema</label>
+          <select id="gmAccessStatus" class="gm-input">
+            ${["Activo", "Inactivo"].map((status) => `
+              <option value="${status}" ${status === staffMember.status ? "selected" : ""}>${status}</option>
+            `).join("")}
+          </select>
+        </div>
+        <div class="gm-role-toolbar">
+          <span class="gm-role-summary" id="gmRoleSummary">Rol actual: ${roleLabels[currentRole] || "Recepcionista"}</span>
+        </div>
+        <div id="gmClientFields" hidden>
+          <div class="gm-field">
+            <label>Plan de membresia</label>
+            <select id="gmPlan" class="gm-input">
+              ${["Mensual", "Trimestral", "Semestral", "Anual"].map((plan) => `
+                <option value="${plan}">${plan}</option>
+              `).join("")}
+            </select>
+          </div>
+          <div class="gm-field">
+            <label>Estado de membresia</label>
+            <select id="gmMembershipStatus" class="gm-input">
+              ${["Activo", "Inactivo"].map((status) => `
+                <option value="${status}">${status}</option>
+              `).join("")}
+            </select>
+          </div>
+          <div class="gm-field">
+            <label>Entrenador asignado</label>
+            <select id="gmTrainer" class="gm-input">${trainerOptions(null)}</select>
+          </div>
+          <p class="gm-body gm-help-note">
+            Si conviertes este acceso en cliente, dejara de verse en esta tabla y pasara al modulo de miembros.
+          </p>
+        </div>
+        <span class="gm-error" id="gmError"></span>
+      </div>
+      <div class="gm-actions">
+        <button class="gm-btn gm-btn-cancel" id="gmCancel">Cancelar</button>
+        <button class="gm-btn gm-btn-primary" id="gmSave">Guardar cambios</button>
+      </div>
+    `;
+
+    const roleSelect = box.querySelector("#gmRole");
+    const roleSummary = box.querySelector("#gmRoleSummary");
+    const clientFields = box.querySelector("#gmClientFields");
+
+    function syncFields() {
+      const isClientRole = roleSelect.value === "cliente";
+      clientFields.hidden = !isClientRole;
+      roleSummary.textContent = `Rol: ${roleLabels[roleSelect.value] || "Recepcionista"}`;
+    }
+
+    roleSelect.addEventListener("change", syncFields);
+    syncFields();
+
+    box.querySelector("#gmCancel").onclick = () => overlay.remove();
+    box.querySelector("#gmSave").onclick = async () => {
+      const name = box.querySelector("#gmName").value.trim();
+      const email = box.querySelector("#gmEmail").value.trim();
+      const role = roleSelect.value;
+      const accessStatus = box.querySelector("#gmAccessStatus").value;
+      const errEl = box.querySelector("#gmError");
+
+      if (!name) {
+        errEl.textContent = "El nombre es obligatorio.";
+        return;
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errEl.textContent = "Correo invalido.";
+        return;
+      }
+
+      const payload = {
+        name,
+        email,
+        role,
+        accessStatus
+      };
+
+      if (role === "cliente") {
+        payload.plan = box.querySelector("#gmPlan").value;
+        payload.status = box.querySelector("#gmMembershipStatus").value;
+        const trainerIdValue = box.querySelector("#gmTrainer").value;
+        payload.trainerId = trainerIdValue ? Number(trainerIdValue) : null;
+      }
+
+      try {
+        const response = await GymApp.api(`/api/admin/staff-members/${staffMember.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        overlay.remove();
+        GymApp.toast(
+          response?.message || (payload.role === "cliente"
+            ? "El colaborador fue convertido a cliente."
+            : "Colaborador actualizado correctamente."),
+          "success"
+        );
+        await loadStaffMembers();
+      } catch (error) {
+        errEl.textContent = error.message || "No se pudo actualizar el colaborador.";
+      }
+    };
+  }
+
   function renderStaffTable(staffMembers) {
     if (!staffUsersBody) return;
 
@@ -404,19 +604,42 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>${renderStatus(staffMember.status)}</td>
         <td>
           <div class="user-actions">
+            <button class="icon-btn" type="button" data-action="edit" data-id="${staffMember.id}">Editar</button>
             ${staffMember.status === "Activo"
               ? `<button class="icon-btn danger" type="button" data-action="dismiss" data-id="${staffMember.id}">Desactivar</button>`
-              : '<span class="user-meta-note">Sin acceso</span>'}
+              : `<button class="icon-btn success" type="button" data-action="reactivate" data-id="${staffMember.id}">Reactivar</button>`}
           </div>
         </td>
       </tr>
     `).join("");
+
+    staffUsersBody.querySelectorAll("[data-action='edit']").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const staffMember = staffMembers.find((item) => String(item.id) === String(button.dataset.id));
+        if (!staffMember) return;
+
+        try {
+          await showEditStaffModal(staffMember);
+        } catch (error) {
+          GymApp.toast(error.message || "No se pudo abrir la edicion del colaborador.", "error");
+        }
+      });
+    });
 
     staffUsersBody.querySelectorAll("[data-action='dismiss']").forEach((button) => {
       button.addEventListener("click", () => {
         const staffMember = staffMembers.find((item) => String(item.id) === String(button.dataset.id));
         if (staffMember) {
           showDismissModal(staffMember);
+        }
+      });
+    });
+
+    staffUsersBody.querySelectorAll("[data-action='reactivate']").forEach((button) => {
+      button.addEventListener("click", () => {
+        const staffMember = staffMembers.find((item) => String(item.id) === String(button.dataset.id));
+        if (staffMember) {
+          showReactivateModal(staffMember);
         }
       });
     });

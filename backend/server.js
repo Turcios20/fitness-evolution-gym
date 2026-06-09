@@ -29,6 +29,10 @@ const MAIL_FROM_NO_REPLY = String(
 const MAIL_FROM_ADMIN = String(
   process.env.MAIL_FROM_ADMIN || "Fitness Evolutions Gym Admin <admin@fitness-evolution-gym.pro>"
 ).trim();
+const SMTP_AUTH_EMAIL = extractEmailAddress(SMTP_USER);
+const SMTP_FROM_EMAIL = extractEmailAddress(SMTP_FROM);
+const MAIL_FROM_NO_REPLY_EMAIL = extractEmailAddress(MAIL_FROM_NO_REPLY);
+const MAIL_FROM_ADMIN_EMAIL = extractEmailAddress(MAIL_FROM_ADMIN);
 const SMTP_SECURE = String(process.env.SMTP_SECURE || (SMTP_PORT === 465 ? "true" : "false")).trim().toLowerCase() === "true";
 const OBJECTIVE_MAX_LENGTH = 255;
 const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
@@ -81,6 +85,8 @@ const EXPENSE_CATEGORIES = [
   "Imprevistos",
   "Otros"
 ];
+
+let adminMailFallbackWarned = false;
 const YEAR_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 const ISO_DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 let mailTransporter;
@@ -144,6 +150,63 @@ function serializeDateOnly(value) {
     return value.toISOString().slice(0, 10);
   }
   return String(value).slice(0, 10);
+}
+
+function extractEmailAddress(mailbox) {
+  const value = String(mailbox || "").trim();
+  if (!value) return "";
+
+  const wrappedMatch = /<([^>]+)>/.exec(value);
+  if (wrappedMatch?.[1]) {
+    return wrappedMatch[1].trim().toLowerCase();
+  }
+
+  return value.replace(/^["']|["']$/g, "").trim().toLowerCase();
+}
+
+function getConfiguredSenderEmail() {
+  return SMTP_AUTH_EMAIL || SMTP_FROM_EMAIL;
+}
+
+function canSendAsMailbox(mailbox) {
+  const configuredEmail = getConfiguredSenderEmail();
+  const targetEmail = extractEmailAddress(mailbox);
+  return Boolean(configuredEmail && targetEmail && configuredEmail === targetEmail);
+}
+
+function buildNoReplySender() {
+  const from = canSendAsMailbox(MAIL_FROM_NO_REPLY)
+    ? MAIL_FROM_NO_REPLY
+    : (SMTP_FROM || MAIL_FROM_NO_REPLY);
+
+  return {
+    from,
+    label: extractEmailAddress(from) || "no-reply@fitness-evolution-gym.pro"
+  };
+}
+
+function buildAdminSender() {
+  if (canSendAsMailbox(MAIL_FROM_ADMIN)) {
+    return {
+      from: MAIL_FROM_ADMIN,
+      label: extractEmailAddress(MAIL_FROM_ADMIN) || "admin@fitness-evolution-gym.pro"
+    };
+  }
+
+  const fallback = buildNoReplySender();
+  if (!adminMailFallbackWarned) {
+    console.warn(
+      "El SMTP autenticado no coincide con admin@fitness-evolution-gym.pro. " +
+      "Las notificaciones administrativas se enviaran desde no-reply con reply-to administrativo."
+    );
+    adminMailFallbackWarned = true;
+  }
+
+  return {
+    from: fallback.from,
+    replyTo: MAIL_FROM_ADMIN_EMAIL || undefined,
+    label: fallback.label
+  };
 }
 
 function isEmailConfigured() {
@@ -543,9 +606,10 @@ function createTemporaryPassword(length = TEMP_PASSWORD_LENGTH) {
 
 async function buildMemberAccountCreatedEmail(member) {
   const attachments = member.payment ? [await buildInvoiceAttachment(member.payment)] : [];
+  const sender = buildNoReplySender();
 
   return {
-    from: MAIL_FROM_NO_REPLY,
+    from: sender.from,
     to: member.email,
     subject: "Tu cuenta ha sido creada en Fitness Evolutions Gym",
     text: [
@@ -568,8 +632,10 @@ async function buildMemberAccountCreatedEmail(member) {
 }
 
 function buildEmployeeCreatedEmail(member) {
+  const sender = buildAdminSender();
   return {
-    from: MAIL_FROM_ADMIN,
+    from: sender.from,
+    replyTo: sender.replyTo,
     to: member.email,
     subject: "Tu acceso al sistema fue creado",
     text: [
@@ -579,7 +645,7 @@ function buildEmployeeCreatedEmail(member) {
       `Correo de acceso: ${member.email}`,
       `Contrasena temporal: ${member.password}`,
       "",
-      "Este correo fue enviado automaticamente desde admin@fitness-evolution-gym.pro.",
+      `Este correo fue enviado automaticamente desde ${sender.label}.`,
       "Te recomendamos cambiar tu contrasena en tu primer ingreso.",
       "",
       "Equipo Fitness Evolutions Gym"
@@ -590,9 +656,10 @@ function buildEmployeeCreatedEmail(member) {
 async function buildMembershipRenewedEmail(member, payment) {
   const invoiceLines = payment ? buildInvoiceSummaryLines(payment) : [];
   const attachments = payment ? [await buildInvoiceAttachment(payment)] : [];
+  const sender = buildNoReplySender();
 
   return {
-    from: MAIL_FROM_NO_REPLY,
+    from: sender.from,
     to: member.email,
     subject: "Tu membresia fue renovada en Fitness Evolutions Gym",
     text: [
@@ -616,8 +683,10 @@ async function buildMembershipRenewedEmail(member, payment) {
 }
 
 function buildStaffPaymentEmail(staffMember, payment) {
+  const sender = buildAdminSender();
   return {
-    from: MAIL_FROM_ADMIN,
+    from: sender.from,
+    replyTo: sender.replyTo,
     to: staffMember.email,
     subject: "Se registro tu pago de personal",
     text: [
@@ -630,7 +699,7 @@ function buildStaffPaymentEmail(staffMember, payment) {
       `Metodo de pago: ${payment.method}`,
       payment.notes ? `Observaciones: ${payment.notes}` : null,
       "",
-      "Este correo fue enviado automaticamente desde admin@fitness-evolution-gym.pro.",
+      `Este correo fue enviado automaticamente desde ${sender.label}.`,
       "",
       "Equipo Fitness Evolutions Gym"
     ].filter(Boolean).join("\n")
@@ -638,8 +707,10 @@ function buildStaffPaymentEmail(staffMember, payment) {
 }
 
 function buildStaffDismissedEmail(staffMember) {
+  const sender = buildAdminSender();
   return {
-    from: MAIL_FROM_ADMIN,
+    from: sender.from,
+    replyTo: sender.replyTo,
     to: staffMember.email,
     subject: "Tu acceso fue desactivado",
     text: [
@@ -654,9 +725,30 @@ function buildStaffDismissedEmail(staffMember) {
   };
 }
 
-function buildForgotPasswordEmail(user, temporaryPassword) {
+function buildStaffReactivatedEmail(staffMember) {
+  const sender = buildAdminSender();
   return {
-    from: MAIL_FROM_NO_REPLY,
+    from: sender.from,
+    replyTo: sender.replyTo,
+    to: staffMember.email,
+    subject: "Tu acceso fue reactivado",
+    text: [
+      `Hola ${staffMember.name},`,
+      "",
+      "Tu acceso al sistema de Fitness Evolutions Gym fue reactivado por administracion.",
+      "Ya puedes volver a ingresar con tus credenciales habituales.",
+      "",
+      `Este correo fue enviado automaticamente desde ${sender.label}.`,
+      "",
+      "Equipo Fitness Evolutions Gym"
+    ].join("\n")
+  };
+}
+
+function buildForgotPasswordEmail(user, temporaryPassword) {
+  const sender = buildNoReplySender();
+  return {
+    from: sender.from,
     to: user.email,
     subject: "Recuperacion de acceso a Fitness Evolutions Gym",
     text: [
@@ -704,6 +796,14 @@ async function sendStaffDismissedNotification(staffMember) {
     await sendMail(buildStaffDismissedEmail(staffMember));
   } catch (error) {
     console.error("No se pudo enviar correo de despido:", error.message);
+  }
+}
+
+async function sendStaffReactivatedNotification(staffMember) {
+  try {
+    await sendMail(buildStaffReactivatedEmail(staffMember));
+  } catch (error) {
+    console.error("No se pudo enviar correo de reactivacion:", error.message);
   }
 }
 
@@ -2674,20 +2774,20 @@ async function createUserWithMembership(connection, payload) {
 }
 
 async function updateClientMember(connection, memberId, payload) {
-  const [memberRows] = await connection.query(
-    `SELECT rol
-     FROM usuarios
-     WHERE id_usuario = ?
-     LIMIT 1`,
-    [memberId]
-  );
-
-  if (!memberRows.length) {
+  const currentUser = await getUserById(memberId, connection);
+  if (!currentUser) {
     throw new Error("Miembro no encontrado");
   }
 
-  const currentDbRole = String(memberRows[0].rol || "");
+  const currentDbRole = String(currentUser.rol || "");
   const nextDbRole = payload.role ? roleToDb(payload.role) : currentDbRole;
+  const nextMembershipStatus = payload.status
+    ? String(payload.status).trim() || "Activo"
+    : "Activo";
+  const nextPlanDefinition = getPlanDefinition(payload.plan || "Mensual");
+  const nextPlanPrice = Number.isFinite(Number(payload.price)) && Number(payload.price) > 0
+    ? Number(payload.price)
+    : nextPlanDefinition.price;
 
   const updates = [];
   const values = [];
@@ -2723,7 +2823,34 @@ async function updateClientMember(connection, memberId, payload) {
     );
   }
 
-  if (payload.plan || payload.price != null || payload.status) {
+  if (currentDbRole === "Entrenador" && nextDbRole !== "Entrenador") {
+    await connection.query(
+      `UPDATE usuarios
+       SET id_entrenador_asignado = NULL
+       WHERE id_entrenador_asignado = ?`,
+      [memberId]
+    );
+  }
+
+  if (nextDbRole === "Cliente") {
+    const trainerIdValue = Object.prototype.hasOwnProperty.call(payload, "trainerId")
+      ? payload.trainerId
+      : currentUser.id_entrenador_asignado;
+    const resolvedTrainerId = trainerIdValue == null || trainerIdValue === ""
+      ? null
+      : await resolveTrainerId(connection, trainerIdValue);
+
+    if (resolvedTrainerId === memberId) {
+      throw new Error("Un cliente no puede asignarse a si mismo como entrenador");
+    }
+
+    await connection.query(
+      `UPDATE usuarios
+       SET id_entrenador_asignado = ?
+       WHERE id_usuario = ?`,
+      [resolvedTrainerId, memberId]
+    );
+
     const [membershipRows] = await connection.query(
       `SELECT id_membresia
        FROM membresias
@@ -2739,15 +2866,15 @@ async function updateClientMember(connection, memberId, payload) {
 
       if (payload.plan) {
         membershipUpdates.push("tipo_plan = ?");
-        membershipValues.push(payload.plan);
+        membershipValues.push(nextPlanDefinition.label);
       }
       if (payload.price != null) {
         membershipUpdates.push("precio = ?");
-        membershipValues.push(Number(payload.price));
+        membershipValues.push(nextPlanPrice);
       }
       if (payload.status) {
         membershipUpdates.push("estado = ?");
-        membershipValues.push(payload.status);
+        membershipValues.push(nextMembershipStatus);
       }
 
       if (membershipUpdates.length) {
@@ -2759,6 +2886,12 @@ async function updateClientMember(connection, memberId, payload) {
           membershipValues
         );
       }
+    } else {
+      await connection.query(
+        `INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)
+         VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), ?)`,
+        [memberId, nextPlanDefinition.label, nextPlanPrice, nextPlanDefinition.days, nextMembershipStatus]
+      );
     }
   }
 }
@@ -3926,6 +4059,136 @@ app.post("/api/admin/staff-members/:staffId/dismiss", authenticate, requireRoles
   } catch (error) {
     await connection.rollback();
     res.status(500).json({ error: "Error desactivando colaborador", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+app.post("/api/admin/staff-members/:staffId/reactivate", authenticate, requireRoles("admin"), async (req, res) => {
+  const staffId = Number(req.params.staffId);
+
+  if (!Number.isInteger(staffId) || staffId <= 0) {
+    res.status(400).json({ error: "staffId invalido" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const staffMember = await getStaffMemberById(staffId, connection);
+    if (!staffMember) {
+      await connection.rollback();
+      res.status(404).json({ error: "Colaborador no encontrado" });
+      return;
+    }
+
+    if (staffMember.estado_usuario !== "Inactivo") {
+      await connection.rollback();
+      res.status(400).json({ error: "El colaborador ya esta activo" });
+      return;
+    }
+
+    await connection.query(
+      `UPDATE usuarios
+       SET estado_usuario = 'Activo'
+       WHERE id_usuario = ?`,
+      [staffId]
+    );
+
+    await connection.commit();
+    await sendStaffReactivatedNotification({
+      name: staffMember.nombre_completo,
+      email: staffMember.correo
+    });
+    res.json({ ok: true, message: "Colaborador reactivado correctamente" });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error reactivando colaborador", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+app.put("/api/admin/staff-members/:staffId", authenticate, requireRoles("admin"), async (req, res) => {
+  const staffId = Number(req.params.staffId);
+  const payload = req.body || {};
+
+  if (!Number.isInteger(staffId) || staffId <= 0) {
+    res.status(400).json({ error: "staffId invalido" });
+    return;
+  }
+
+  const accessStatus = payload.accessStatus == null
+    ? null
+    : String(payload.accessStatus).trim();
+
+  if (accessStatus && !["Activo", "Inactivo"].includes(accessStatus)) {
+    res.status(400).json({ error: "Estado de acceso invalido" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const currentStaffMember = await getStaffMemberById(staffId, connection);
+    if (!currentStaffMember) {
+      await connection.rollback();
+      res.status(404).json({ error: "Colaborador no encontrado" });
+      return;
+    }
+
+    const nextDbRole = payload.role ? roleToDb(payload.role) : currentStaffMember.rol;
+    const nextAccessStatus = accessStatus || currentStaffMember.estado_usuario || "Activo";
+
+    if (
+      staffId === req.auth.id &&
+      ((payload.role && nextDbRole !== currentStaffMember.rol) || nextAccessStatus === "Inactivo")
+    ) {
+      await connection.rollback();
+      res.status(400).json({ error: "No puedes cambiar tu propio rol ni desactivar tu acceso desde esta pantalla" });
+      return;
+    }
+
+    if (
+      currentStaffMember.rol === "Administrador" &&
+      (nextDbRole !== "Administrador" || nextAccessStatus === "Inactivo")
+    ) {
+      const [rows] = await connection.query(
+        `SELECT COUNT(*) AS total
+         FROM usuarios
+         WHERE rol = 'Administrador'
+           AND estado_usuario = 'Activo'
+           AND id_usuario <> ?`,
+        [staffId]
+      );
+      if (Number(rows[0]?.total || 0) <= 0) {
+        await connection.rollback();
+        res.status(400).json({ error: "Debe existir al menos un administrador activo" });
+        return;
+      }
+    }
+
+    await updateClientMember(connection, staffId, payload);
+    await connection.query(
+      `UPDATE usuarios
+       SET estado_usuario = ?
+       WHERE id_usuario = ?`,
+      [nextAccessStatus, staffId]
+    );
+
+    await connection.commit();
+    res.json({
+      ok: true,
+      movedToMembers: nextDbRole === "Cliente",
+      message: nextDbRole === "Cliente"
+        ? "Colaborador convertido a cliente correctamente"
+        : "Colaborador actualizado correctamente"
+    });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error actualizando colaborador", detail: error.message });
   } finally {
     connection.release();
   }
