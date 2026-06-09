@@ -4,6 +4,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
+const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
 const { pool } = require("./db");
@@ -222,53 +223,234 @@ function buildInvoiceNumber(paymentId, date = new Date()) {
   return `FEG-${year}${month}${day}-${String(paymentId).padStart(6, "0")}`;
 }
 
-function buildInvoiceSummaryLines(payment) {
+function buildInvoiceSummaryEntries(payment) {
   return [
-    `Factura: ${payment.invoiceNumber || "pendiente"}`,
-    `Concepto: ${payment.concept || "Pago de membresia"}`,
-    `Cliente: ${payment.memberName || payment.nombre_completo || "Cliente"}`,
-    `Correo: ${payment.memberEmail || payment.correo || "sin correo"}`,
-    `Monto: ${formatMoney(payment.amount ?? payment.monto)}`,
-    `Metodo de pago: ${payment.method || payment.metodo_pago || "Efectivo"}`,
-    `Fecha de pago: ${formatDateForEmail(payment.paidAt || payment.fecha_pago)}`,
-    payment.planName || payment.plan_nombre ? `Plan: ${payment.planName || payment.plan_nombre}` : null,
+    { label: "Factura", value: payment.invoiceNumber || "pendiente" },
+    { label: "Concepto", value: payment.concept || "Pago de membresia" },
+    { label: "Cliente", value: payment.memberName || payment.nombre_completo || "Cliente" },
+    { label: "Correo", value: payment.memberEmail || payment.correo || "sin correo" },
+    { label: "Monto", value: formatMoney(payment.amount ?? payment.monto) },
+    { label: "Metodo de pago", value: payment.method || payment.metodo_pago || "Efectivo" },
+    { label: "Fecha de pago", value: formatDateForEmail(payment.paidAt || payment.fecha_pago) },
+    payment.planName || payment.plan_nombre
+      ? { label: "Plan", value: payment.planName || payment.plan_nombre }
+      : null,
     payment.membershipEndDate || payment.vigencia_hasta
-      ? `Vigente hasta: ${formatDateForEmail(payment.membershipEndDate || payment.vigencia_hasta)}`
+      ? {
+          label: "Vigente hasta",
+          value: formatDateForEmail(payment.membershipEndDate || payment.vigencia_hasta)
+        }
       : null
   ].filter(Boolean);
 }
 
-function buildInvoiceHtml(payment) {
-  const invoiceLines = buildInvoiceSummaryLines(payment)
-    .map((line) => `<li style="margin:0 0 8px 0;">${line}</li>`)
-    .join("");
-
-  return `
-    <!DOCTYPE html>
-    <html lang="es">
-      <head>
-        <meta charset="UTF-8">
-        <title>Factura ${payment.invoiceNumber || ""}</title>
-      </head>
-      <body style="font-family:Arial,sans-serif;background:#111318;color:#f5f5f5;padding:24px;">
-        <div style="max-width:640px;margin:0 auto;background:#1b1f28;border:1px solid #2f3643;border-radius:16px;padding:24px;">
-          <h1 style="margin:0 0 6px 0;color:#f07922;font-size:28px;">Fitness Evolutions Gym</h1>
-          <p style="margin:0 0 18px 0;color:#cbd3df;">Factura de pago</p>
-          <ul style="padding-left:18px;margin:0 0 20px 0;color:#f5f5f5;">
-            ${invoiceLines}
-          </ul>
-          <p style="margin:0;color:#cbd3df;">Gracias por tu confianza.</p>
-        </div>
-      </body>
-    </html>
-  `;
+function buildInvoiceSummaryLines(payment) {
+  return buildInvoiceSummaryEntries(payment)
+    .map((entry) => `${entry.label}: ${entry.value}`);
 }
 
-function buildInvoiceAttachment(payment) {
+function getInvoiceFileName(payment) {
+  return `factura-${payment.invoiceNumber || payment.id_pago || payment.id || "gym"}.pdf`;
+}
+
+function normalizeInvoiceValue(value, fallback = "No disponible") {
+  const normalized = String(value ?? "").trim();
+  return normalized || fallback;
+}
+
+function drawInvoiceCard(doc, x, y, width, height, title, rows) {
+  const paddingX = 24;
+  const titleY = y + 20;
+  const startY = y + 52;
+  const labelWidth = 112;
+  const valueWidth = width - (paddingX * 2) - labelWidth;
+
+  doc
+    .save()
+    .roundedRect(x, y, width, height, 18)
+    .fillAndStroke("#f8fafc", "#d8e1ec")
+    .restore();
+
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(13)
+    .fillColor("#1b1f28")
+    .text(title, x + paddingX, titleY, { width: width - (paddingX * 2) });
+
+  let currentY = startY;
+
+  rows.forEach((row, index) => {
+    const value = normalizeInvoiceValue(row.value);
+    const rowX = x + paddingX;
+
+    doc.font("Helvetica").fontSize(10);
+    const rowHeight = Math.max(
+      doc.heightOfString(row.label, { width: labelWidth }),
+      doc.heightOfString(value, { width: valueWidth })
+    );
+
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .fillColor("#202939")
+      .text(row.label, rowX, currentY, { width: labelWidth });
+
+    doc
+      .font("Helvetica")
+      .fontSize(10)
+      .fillColor("#475569")
+      .text(value, rowX + labelWidth, currentY, { width: valueWidth });
+
+    currentY += rowHeight + 10;
+
+    if (index < rows.length - 1) {
+      doc
+        .save()
+        .moveTo(rowX, currentY - 5)
+        .lineTo(x + width - paddingX, currentY - 5)
+        .lineWidth(1)
+        .strokeColor("#e2e8f0")
+        .stroke()
+        .restore();
+    }
+  });
+}
+
+function generateInvoicePdfBuffer(payment) {
+  return new Promise((resolve, reject) => {
+    const invoiceNumber = normalizeInvoiceValue(payment.invoiceNumber, "pendiente");
+    const memberName = normalizeInvoiceValue(payment.memberName || payment.nombre_completo, "Cliente");
+    const memberEmail = normalizeInvoiceValue(payment.memberEmail || payment.correo, "sin correo");
+    const concept = normalizeInvoiceValue(payment.concept, "Pago de membresia");
+    const planName = normalizeInvoiceValue(payment.planName || payment.plan_nombre, "No aplica");
+    const paymentMethod = normalizeInvoiceValue(payment.method || payment.metodo_pago, "Efectivo");
+    const paymentDate = formatDateForEmail(payment.paidAt || payment.fecha_pago);
+    const membershipEndDate = payment.membershipEndDate || payment.vigencia_hasta
+      ? formatDateForEmail(payment.membershipEndDate || payment.vigencia_hasta)
+      : "Pendiente";
+    const recordType = normalizeInvoiceValue(payment.recordType || payment.tipo_registro, "Manual");
+    const totalAmount = formatMoney(payment.amount ?? payment.monto);
+    const doc = new PDFDocument({
+      size: "A4",
+      margins: { top: 0, right: 0, bottom: 0, left: 0 },
+      info: {
+        Title: `Factura ${invoiceNumber}`,
+        Author: "Fitness Evolutions Gym",
+        Subject: "Factura de membresia",
+        Keywords: "factura, gimnasio, membresia"
+      }
+    });
+    const chunks = [];
+
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const cardX = 28;
+    const cardY = 28;
+    const cardWidth = pageWidth - 56;
+    const cardHeight = pageHeight - 56;
+
+    doc.rect(0, 0, pageWidth, pageHeight).fill("#f1f5f9");
+    doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 24).fill("#ffffff");
+
+    doc.roundedRect(50, 50, pageWidth - 100, 120, 22).fill("#1b1f28");
+    doc.circle(pageWidth - 108, 110, 42).fill("#f07922");
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(24)
+      .fillColor("#f07922")
+      .text("Fitness Evolutions Gym", 74, 76);
+    doc
+      .font("Helvetica")
+      .fontSize(11)
+      .fillColor("#d7dce5")
+      .text("Factura oficial de membresia", 74, 112);
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(12)
+      .fillColor("#ffffff")
+      .text(`No. ${invoiceNumber}`, 74, 136);
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(20)
+      .fillColor("#1b1f28")
+      .text("FEG", pageWidth - 140, 97, { width: 64, align: "center" });
+    doc
+      .font("Helvetica")
+      .fontSize(10)
+      .fillColor("#ffffff")
+      .text(`Fecha de emision: ${paymentDate}`, 348, 82, { width: 150, align: "right" });
+    doc
+      .text(`Tipo de registro: ${recordType}`, 348, 102, { width: 150, align: "right" });
+    doc
+      .text(`Metodo: ${paymentMethod}`, 348, 122, { width: 150, align: "right" });
+
+    drawInvoiceCard(doc, 50, 196, pageWidth - 100, 132, "Datos del cliente", [
+      { label: "Cliente", value: memberName },
+      { label: "Correo", value: memberEmail },
+      { label: "Factura", value: invoiceNumber }
+    ]);
+
+    drawInvoiceCard(doc, 50, 346, pageWidth - 100, 218, "Detalle de la factura", [
+      { label: "Concepto", value: concept },
+      { label: "Plan", value: planName },
+      { label: "Fecha de pago", value: paymentDate },
+      { label: "Vigente hasta", value: membershipEndDate },
+      { label: "Metodo de pago", value: paymentMethod }
+    ]);
+
+    doc.roundedRect(50, 586, pageWidth - 100, 92, 20).fill("#f07922");
+    doc
+      .font("Helvetica")
+      .fontSize(11)
+      .fillColor("#fff7ed")
+      .text("Total pagado", 74, 608);
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(28)
+      .fillColor("#ffffff")
+      .text(totalAmount, 74, 626);
+    doc
+      .font("Helvetica")
+      .fontSize(10)
+      .fillColor("#fff7ed")
+      .text(
+        "Documento generado automaticamente. Conserva este PDF como comprobante de tu pago.",
+        278,
+        610,
+        { width: 220, align: "right" }
+      );
+
+    doc.roundedRect(50, 698, pageWidth - 100, 90, 20).fill("#eef2f7");
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .fillColor("#1b1f28")
+      .text("Contacto oficial", 74, 720);
+    doc
+      .font("Helvetica")
+      .fontSize(10)
+      .fillColor("#475569")
+      .text("admin@fitness-evolution-gym.pro | no-reply@fitness-evolution-gym.pro", 74, 740, {
+        width: pageWidth - 148
+      });
+    doc
+      .text("Gracias por confiar en Fitness Evolutions Gym.", 74, 758, {
+        width: pageWidth - 148
+      });
+
+    doc.end();
+  });
+}
+
+async function buildInvoiceAttachment(payment) {
   return {
-    filename: `factura-${payment.invoiceNumber || payment.id || "gym"}.html`,
-    content: buildInvoiceHtml(payment),
-    contentType: "text/html; charset=utf-8"
+    filename: getInvoiceFileName(payment),
+    content: await generateInvoicePdfBuffer(payment),
+    contentType: "application/pdf"
   };
 }
 
@@ -277,7 +459,9 @@ function createTemporaryPassword(length = TEMP_PASSWORD_LENGTH) {
   return Array.from({ length }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
 }
 
-function buildMemberAccountCreatedEmail(member) {
+async function buildMemberAccountCreatedEmail(member) {
+  const attachments = member.payment ? [await buildInvoiceAttachment(member.payment)] : [];
+
   return {
     from: MAIL_FROM_NO_REPLY,
     to: member.email,
@@ -290,11 +474,14 @@ function buildMemberAccountCreatedEmail(member) {
       `Contrasena: ${member.password}`,
       member.plan ? `Plan asignado: ${member.plan}` : null,
       member.membershipEndDate ? `Vencimiento actual: ${formatDateForEmail(member.membershipEndDate)}` : null,
+      member.payment?.invoiceNumber ? `Factura: ${member.payment.invoiceNumber}` : null,
+      member.payment ? "Adjuntamos tu factura en formato PDF." : null,
       "",
       "Te recomendamos iniciar sesion y cambiar tu contrasena lo antes posible.",
       "",
       "Equipo Fitness Evolutions Gym"
-    ].filter(Boolean).join("\n")
+    ].filter(Boolean).join("\n"),
+    attachments
   };
 }
 
@@ -318,8 +505,9 @@ function buildEmployeeCreatedEmail(member) {
   };
 }
 
-function buildMembershipRenewedEmail(member, payment) {
+async function buildMembershipRenewedEmail(member, payment) {
   const invoiceLines = payment ? buildInvoiceSummaryLines(payment) : [];
+  const attachments = payment ? [await buildInvoiceAttachment(payment)] : [];
 
   return {
     from: MAIL_FROM_NO_REPLY,
@@ -331,6 +519,8 @@ function buildMembershipRenewedEmail(member, payment) {
       `Tu membresia fue renovada correctamente por ${member.daysRenewed} dias.`,
       `Plan actual: ${member.plan}`,
       `Nueva fecha de vencimiento: ${formatDateForEmail(member.membershipEndDate)}`,
+      payment?.invoiceNumber ? `Factura: ${payment.invoiceNumber}` : null,
+      payment ? "Adjuntamos tu factura en formato PDF." : null,
       payment ? "" : null,
       payment ? "Resumen de factura:" : null,
       ...invoiceLines,
@@ -339,7 +529,7 @@ function buildMembershipRenewedEmail(member, payment) {
       "",
       "Equipo Fitness Evolutions Gym"
     ].filter(Boolean).join("\n"),
-    attachments: payment ? [buildInvoiceAttachment(payment)] : []
+    attachments
   };
 }
 
@@ -403,7 +593,7 @@ function buildForgotPasswordEmail(user, temporaryPassword) {
 async function sendAccountCreatedEmail(member) {
   try {
     const message = member.roleLabel === "Cliente"
-      ? buildMemberAccountCreatedEmail(member)
+      ? await buildMemberAccountCreatedEmail(member)
       : buildEmployeeCreatedEmail(member);
     await sendMail(message);
   } catch (error) {
@@ -413,7 +603,7 @@ async function sendAccountCreatedEmail(member) {
 
 async function sendMembershipRenewedEmail(member, payment) {
   try {
-    await sendMail(buildMembershipRenewedEmail(member, payment));
+    await sendMail(await buildMembershipRenewedEmail(member, payment));
   } catch (error) {
     console.error("No se pudo enviar correo de renovacion:", error.message);
   }
