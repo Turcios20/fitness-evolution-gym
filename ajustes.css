@@ -371,6 +371,10 @@ body.no-scroll { overflow: hidden; }
   gap: 12px;
 }
 
+.appearance-grid {
+  max-width: 520px;
+}
+
 .settings-card {
   background: var(--panel);
   border: 1px solid var(--panel-border-soft);
@@ -1247,6 +1251,7 @@ body.no-scroll { overflow: hidden; }
   .header { padding: 22px 20px 18px; }
   .main { padding: 20px; }
   .settings-grid { grid-template-columns: 1fr 1fr; }
+  .appearance-grid { grid-template-columns: 1fr; }
   .settings-card.full { grid-column: 1 / -1; }
   .three-col { grid-template-columns: 1fr 1fr; }
   .hours-header { display: grid; }
@@ -1279,6 +1284,7 @@ body.no-scroll { overflow: hidden; }
   .main { padding: 24px; }
   .page-title { font-size: 26px; }
   .settings-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .appearance-grid { grid-template-columns: 1fr; }
   .three-col { grid-template-columns: 1fr 1fr 1fr; }
   .plan-grid { grid-template-columns: repeat(3, 1fr); }
   .hours-header { display: grid; }

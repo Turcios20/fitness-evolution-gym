@@ -18,8 +18,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const pageSub = document.querySelector(".page-sub");
   const sidebarItems = [...document.querySelectorAll(".sidebar-item[data-section]")];
   const sections = [...document.querySelectorAll(".section")];
-  const swatches = [...document.querySelectorAll(".color-swatch")];
-  const hexInput = document.getElementById("hexInput");
   const darkModeToggle = document.getElementById("darkModeToggle");
   const btnSaveAppearance = document.getElementById("btnSaveAppearance");
   const appearanceSection = document.getElementById("sec-apariencia");
@@ -125,15 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (window.innerWidth < 900) {
       closeSidebar();
-    }
-  }
-
-  function setColorSelection(hex) {
-    swatches.forEach((swatch) => {
-      swatch.classList.toggle("selected", swatch.dataset.color === hex);
-    });
-    if (hexInput) {
-      hexInput.value = hex;
     }
   }
 
@@ -812,13 +801,6 @@ document.addEventListener("DOMContentLoaded", () => {
     item.addEventListener("click", () => showSection(item.dataset.section));
   });
 
-  swatches.forEach((swatch) => {
-    swatch.addEventListener("click", () => {
-      if (swatch.closest(".settings-card")?.classList.contains("is-disabled")) return;
-      setColorSelection(swatch.dataset.color);
-    });
-  });
-
   darkModeToggle?.addEventListener("change", () => {
     applyThemeToPage(getSelectedTheme());
   });
@@ -851,7 +833,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   configureRoleMode();
-  setColorSelection("#f07922");
   loadUserThemePreference();
   loadStaffMembers();
   loadGymSettings();
