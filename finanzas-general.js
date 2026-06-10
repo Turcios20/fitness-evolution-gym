@@ -3,6 +3,11 @@
 document.addEventListener("DOMContentLoaded", async () => {
   if (!window.GymApp?.guardRoute("admin")) return;
 
+  document.getElementById("btnAdminLogout")?.addEventListener("click", () => {
+    window.GymApp.clearSession();
+    window.location.href = "login.html";
+  });
+
   const MODULE_STYLES = {
     ingresos: { color: "#63e0c5", label: "Ingresos" },
     pagos_personal: { color: "#6bb8ff", label: "Pagos al personal" },

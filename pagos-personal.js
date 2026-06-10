@@ -3,6 +3,11 @@
 document.addEventListener("DOMContentLoaded", async () => {
   if (!window.GymApp?.guardRoute("admin")) return;
 
+  document.getElementById("btnAdminLogout")?.addEventListener("click", () => {
+    window.GymApp.clearSession();
+    window.location.href = "login.html";
+  });
+
   const ROLE_COLORS = {
     Administrador: "#ffbf70",
     Recepcionista: "#5fa8ff",

@@ -124,6 +124,24 @@ INSERT IGNORE INTO horarios_gimnasio (dia_semana, nombre_dia, hora_apertura, hor
 (6, 'Sabado', '07:00', '18:00', 1),
 (7, 'Domingo', '08:00', '13:00', 0);
 
+CREATE TABLE IF NOT EXISTS planes_membresia (
+    id_plan INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    precio DECIMAL(10,2) NOT NULL,
+    duracion_dias INT NOT NULL,
+    periodo VARCHAR(30) NOT NULL DEFAULT '/mes',
+    caracteristicas VARCHAR(500) NOT NULL DEFAULT '[]',
+    popular TINYINT(1) NOT NULL DEFAULT 0,
+    activo TINYINT(1) NOT NULL DEFAULT 1,
+    orden INT NOT NULL DEFAULT 0,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT IGNORE INTO planes_membresia (nombre, precio, duracion_dias, periodo, caracteristicas, popular, orden) VALUES
+('Mensual', 35, 30, '/mes', '["Acceso completo","Clases grupales","Vestuarios"]', 1, 1),
+('Trimestral', 90, 90, '/3 meses', '["Acceso completo","Clases grupales","1 sesion con trainer"]', 0, 2),
+('Anual', 300, 365, '/ano', '["Acceso completo","Clases ilimitadas","4 sesiones con trainer"]', 0, 3);
+
 CREATE TABLE IF NOT EXISTS membresias (
     id_membresia INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,

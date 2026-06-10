@@ -6,7 +6,7 @@
   <title>Ajustes - FITNESS EVOLUTIONS GYM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="ajustes.css" />
 </head>
 <body>
@@ -30,6 +30,8 @@
         <button class="nav-toggle" id="navToggle" aria-label="Mas opciones">
           <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><circle cx="10" cy="4" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="10" cy="16" r="1.8"/></svg>
         </button>
+
+        <button type="button" class="logout-btn" id="btnSettingsLogout">Salir</button>
       </div>
     </div>
 
@@ -290,28 +292,13 @@
 
         <div class="section" id="sec-planes">
           <div class="section-title">Planes de membresia</div>
-          <div class="section-desc">Define los tipos de membresia y sus precios</div>
-          <div class="plan-grid">
-            <div class="plan-card selected">
-              <div class="plan-badge">Mas popular</div>
-              <div class="plan-name">Mensual</div>
-              <div class="plan-price">$35 <span>/mes</span></div>
-              <ul class="plan-features"><li>Acceso completo</li><li>Clases grupales</li><li>Vestuarios</li></ul>
-            </div>
-            <div class="plan-card">
-              <div class="plan-name">Trimestral</div>
-              <div class="plan-price">$90 <span>/3 meses</span></div>
-              <ul class="plan-features"><li>Acceso completo</li><li>Clases grupales</li><li>1 sesion con trainer</li></ul>
-            </div>
-            <div class="plan-card">
-              <div class="plan-name">Anual</div>
-              <div class="plan-price">$300 <span>/ano</span></div>
-              <ul class="plan-features"><li>Acceso completo</li><li>Clases ilimitadas</li><li>4 sesiones con trainer</li></ul>
-            </div>
+          <div class="section-desc">Define los tipos de membresia y sus precios. Los cambios se reflejan en altas, renovaciones y todas las pantallas que muestran planes.</div>
+          <div class="plan-grid" id="planGrid">
+            <div class="plan-empty">Cargando planes...</div>
           </div>
+          <div class="settings-inline-msg" id="planSaveMsg"></div>
           <div class="btn-row">
-            <button class="add-btn" type="button">+ Agregar plan</button>
-            <button class="save-btn" style="margin-top:0" type="button">Guardar planes</button>
+            <button class="add-btn" type="button" id="btnAddPlan">+ Agregar plan</button>
           </div>
         </div>
       </main>

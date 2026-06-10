@@ -3,6 +3,11 @@
 document.addEventListener("DOMContentLoaded", async () => {
   if (!window.GymApp?.guardRoute("admin")) return;
 
+  document.getElementById("btnAdminLogout")?.addEventListener("click", () => {
+    window.GymApp.clearSession();
+    window.location.href = "login.html";
+  });
+
   const CATEGORY_STYLES = {
     Servicios: { code: "SV", color: "#ff9a76", bg: "rgba(255, 154, 118, 0.12)", border: "rgba(255, 154, 118, 0.24)" },
     Mantenimiento: { code: "MT", color: "#ffd166", bg: "rgba(255, 209, 102, 0.12)", border: "rgba(255, 209, 102, 0.24)" },

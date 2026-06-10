@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let allMembers = [];
   let filtered = [];
   let trainers = [];
+  let planCatalog = [];
   let sortCol = "name";
   let sortAsc = true;
   let activeTab = "todos";
@@ -110,9 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="gm-field" id="gmPlanField">
           <label>Plan</label>
           <select id="gmPlan" class="gm-input">
-            ${["Mensual", "Trimestral", "Semestral", "Anual"].map((plan) => `
-              <option value="${plan}" ${plan === currentPlan ? "selected" : ""}>${plan}</option>
-            `).join("")}
+            ${planOptions(currentPlan)}
           </select>
         </div>
         <div class="gm-field" id="gmStatusField">
@@ -233,28 +232,38 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
+  function planOptions(currentPlan) {
+    const names = planCatalog.filter((plan) => plan.activo).map((plan) => plan.nombre);
+    if (currentPlan && !names.includes(currentPlan)) {
+      names.unshift(currentPlan);
+    }
+    if (!names.length && currentPlan) {
+      names.push(currentPlan);
+    }
+    return names
+      .map((name) => `<option value="${name}" ${name === currentPlan ? "selected" : ""}>${name}</option>`)
+      .join("");
+  }
+
   function showRenewModal(member, onConfirm) {
     const { overlay, box } = createOverlay();
     const initials = getInitials(member.name);
-    const plans = [
-      { label: "Mensual", days: 30, price: "$35" },
-      { label: "Trimestral", days: 90, price: "$90" },
-      { label: "Semestral", days: 180, price: "$160" },
-      { label: "Anual", days: 365, price: "$300" }
-    ];
+    const activePlans = planCatalog.filter((plan) => plan.activo);
 
     box.innerHTML = `
       <div class="gm-avatar-big" style="background:${avatarColor(initials)};">${initials}</div>
       <h3 class="gm-title">Renovar membresia</h3>
       <p class="gm-body">Selecciona el plan para <strong>${member.name}</strong>:</p>
       <div class="gm-plans-grid">
-        ${plans.map((plan) => `
-          <button class="gm-plan-card" data-days="${plan.days}" data-plan="${plan.label}">
-            <span class="gm-plan-name">${plan.label}</span>
-            <span class="gm-plan-price">${plan.price}</span>
-            <span class="gm-plan-days">${plan.days} dias</span>
-          </button>
-        `).join("")}
+        ${activePlans.length
+          ? activePlans.map((plan) => `
+            <button class="gm-plan-card" data-days="${plan.duracionDias}" data-plan="${plan.nombre}">
+              <span class="gm-plan-name">${plan.nombre}</span>
+              <span class="gm-plan-price">${GymApp.formatPlanPrice(plan)}</span>
+              <span class="gm-plan-days">${plan.duracionDias} dias</span>
+            </button>
+          `).join("")
+          : '<p class="gm-body">No hay planes activos. Crea uno en Ajustes &gt; Planes de membresia.</p>'}
       </div>
       <div class="gm-actions">
         <button class="gm-btn gm-btn-cancel" id="gmCancel">Cancelar</button>
@@ -413,12 +422,14 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadMembers() {
     showSkeletons();
     try {
-      const [memberData, trainerData] = await Promise.all([
+      const [memberData, trainerData, planData] = await Promise.all([
         GymApp.api("/api/admin/members"),
-        GymApp.api("/api/trainers")
+        GymApp.api("/api/trainers"),
+        GymApp.getPlans({ force: true })
       ]);
       allMembers = memberData.members || [];
       trainers = trainerData.trainers || [];
+      planCatalog = planData || [];
       updateStats();
       applyFilters();
     } catch (error) {

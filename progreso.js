@@ -11,6 +11,8 @@
     return;
   }
 
+  window.GymApp.setupUserMenu();
+
   const historyList = document.getElementById("historialList");
 
   const latestMap = {

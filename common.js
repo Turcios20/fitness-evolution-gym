@@ -268,6 +268,107 @@
     });
   }
 
+  const AVATAR_PALETTE = [
+    "#c45e1a", "#b0390e", "#7b2d8b", "#1a6fbf",
+    "#1a8f5a", "#8a4f0d", "#3d5a9e", "#8b1a1a"
+  ];
+
+  function getInitials(name) {
+    return String(name || "?")
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((word) => (word[0] || "").toUpperCase())
+      .join("") || "?";
+  }
+
+  function getAvatarColor(initials) {
+    const safe = initials || "?";
+    const index = (safe.charCodeAt(0) + (safe.charCodeAt(1) || 0)) % AVATAR_PALETTE.length;
+    return AVATAR_PALETTE[index];
+  }
+
+  function setupUserMenu(options = {}) {
+    const session = getSession();
+    if (!session) return;
+
+    const avatarId = options.avatarId || "userAvatar";
+    const anchorId = options.anchorId || "avatarWrap";
+
+    const avatar = document.getElementById(avatarId);
+    const anchor = document.getElementById(anchorId) || avatar?.parentElement;
+    if (!anchor) return;
+
+    const name = options.name || session.displayName || session.username || "Usuario";
+    const initials = getInitials(name);
+
+    if (avatar) {
+      avatar.textContent = initials;
+      if (!avatar.style.background) {
+        avatar.style.background = getAvatarColor(initials);
+      }
+    }
+
+    if (getComputedStyle(anchor).position === "static") {
+      anchor.style.position = "relative";
+    }
+
+    let dropdown = anchor.querySelector(".avatar-dropdown");
+    if (!dropdown) {
+      dropdown = document.createElement("div");
+      dropdown.className = "avatar-dropdown";
+      dropdown.innerHTML = `
+        <div class="dropdown-name"></div>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item dropdown-logout" type="button">Cerrar sesion</button>
+      `;
+      anchor.appendChild(dropdown);
+    }
+
+    const nameEl = dropdown.querySelector(".dropdown-name");
+    if (nameEl) nameEl.textContent = name;
+
+    if (anchor.dataset.userMenuBound === "true") return;
+    anchor.dataset.userMenuBound = "true";
+
+    anchor.style.cursor = "pointer";
+    anchor.addEventListener("click", (event) => {
+      event.stopPropagation();
+      dropdown.classList.toggle("open");
+    });
+
+    dropdown.addEventListener("click", (event) => event.stopPropagation());
+
+    document.addEventListener("click", () => dropdown.classList.remove("open"));
+
+    const logoutBtn = dropdown.querySelector(".dropdown-logout");
+    logoutBtn?.addEventListener("click", () => {
+      clearSession();
+      window.location.href = "login.html";
+    });
+  }
+
+  let plansCache = null;
+
+  async function getPlans({ force = false, activeOnly = false } = {}) {
+    if (!plansCache || force) {
+      const response = await api("/api/membership-plans");
+      plansCache = Array.isArray(response.plans) ? response.plans : [];
+    }
+    return activeOnly ? plansCache.filter((plan) => plan.activo) : plansCache;
+  }
+
+  function clearPlansCache() {
+    plansCache = null;
+  }
+
+  function formatPlanPrice(plan) {
+    if (!plan) return "";
+    const price = Number(plan.precio);
+    const amount = Number.isInteger(price) ? price : price.toFixed(2);
+    return `$${amount}`;
+  }
+
   async function syncThemeFromSettings() {
     const session = getSession();
     if (!session?.username || !session?.token) return;
@@ -303,6 +404,10 @@
     setTheme,
     syncThemeFromSettings,
     setupPasswordToggles,
+    setupUserMenu,
+    getPlans,
+    clearPlansCache,
+    formatPlanPrice,
     THEME_SETTING_KEY
   };
 

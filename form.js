@@ -3,12 +3,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   if (!GymApp.guardRoute(["admin", "recepcionista"])) return;
 
-  const PLAN_PRICES = {
-    Mensual: 35,
-    Trimestral: 90,
-    Semestral: 160,
-    Anual: 300
-  };
+  let PLAN_PRICES = {};
 
   const session = GymApp.getSession();
   const homePage = GymApp.getHomeByRole(session.role);
@@ -144,6 +139,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function loadPlans() {
+    if (!campos.plan) return;
+
+    try {
+      const planList = await GymApp.getPlans({ activeOnly: true });
+      PLAN_PRICES = {};
+      campos.plan.innerHTML = ['<option value="">Seleccionar plan...</option>']
+        .concat(planList.map((plan) => {
+          PLAN_PRICES[plan.nombre] = Number(plan.precio);
+          return `<option value="${plan.nombre}">${plan.nombre}</option>`;
+        }))
+        .join("");
+    } catch (error) {
+      GymApp.toast(`No se pudieron cargar los planes: ${error.message}`, "error");
+    }
+  }
+
   function validar() {
     let valido = true;
 
@@ -239,5 +251,6 @@ document.addEventListener("DOMContentLoaded", () => {
   campos.plan.addEventListener("change", () => syncSuggestedPrice());
 
   loadTrainers();
+  loadPlans().then(() => syncFormByRole());
   syncFormByRole();
 });

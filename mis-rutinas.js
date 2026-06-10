@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!window.GymApp?.guardRoute("cliente")) return;
 
   const session = window.GymApp.getSession();
+  window.GymApp.setupUserMenu();
   const userAvatar = document.getElementById("userAvatar");
   const container = document.getElementById("rutinasContainer");
 

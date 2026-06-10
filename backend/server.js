@@ -69,12 +69,26 @@ const STAFF_DB_ROLES = ["Administrador", "Recepcionista", "Entrenador"];
 const STAFF_PAYMENT_METHODS = ["Transferencia", "Efectivo", "Cheque"];
 const EXPENSE_METHODS = ["Transferencia", "Efectivo", "Tarjeta", "Cheque"];
 const PAYMENT_METHODS = ["Efectivo", "Tarjeta", "Transferencia"];
-const PLAN_CATALOG = {
-  Mensual: { days: 30, price: 35 },
-  Trimestral: { days: 90, price: 90 },
-  Semestral: { days: 180, price: 160 },
-  Anual: { days: 365, price: 300 }
-};
+const PLAN_DEFAULTS = [
+  { nombre: "Mensual", precio: 35, duracion_dias: 30, periodo: "/mes", caracteristicas: ["Acceso completo", "Clases grupales", "Vestuarios"], popular: 1, orden: 1 },
+  { nombre: "Trimestral", precio: 90, duracion_dias: 90, periodo: "/3 meses", caracteristicas: ["Acceso completo", "Clases grupales", "1 sesion con trainer"], popular: 0, orden: 2 },
+  { nombre: "Anual", precio: 300, duracion_dias: 365, periodo: "/ano", caracteristicas: ["Acceso completo", "Clases ilimitadas", "4 sesiones con trainer"], popular: 0, orden: 3 }
+];
+
+let PLAN_CATALOG = Object.fromEntries(
+  PLAN_DEFAULTS.map((plan) => [plan.nombre, { days: plan.duracion_dias, price: plan.precio }])
+);
+let PLAN_LIST = PLAN_DEFAULTS.map((plan, index) => ({
+  id: index + 1,
+  nombre: plan.nombre,
+  precio: plan.precio,
+  duracionDias: plan.duracion_dias,
+  periodo: plan.periodo,
+  caracteristicas: plan.caracteristicas,
+  popular: Boolean(plan.popular),
+  activo: true,
+  orden: plan.orden
+}));
 const EXPENSE_CATEGORIES = [
   "Servicios",
   "Mantenimiento",
@@ -287,11 +301,17 @@ function normalizePaymentMethod(method) {
 }
 
 function getPlanDefinition(plan, fallbackPlan = "Mensual") {
-  const normalizedPlan = PLAN_CATALOG[plan] ? plan : fallbackPlan;
-  return {
-    label: normalizedPlan,
-    ...(PLAN_CATALOG[normalizedPlan] || PLAN_CATALOG.Mensual)
-  };
+  if (PLAN_CATALOG[plan]) {
+    return { label: plan, ...PLAN_CATALOG[plan] };
+  }
+  if (PLAN_CATALOG[fallbackPlan]) {
+    return { label: fallbackPlan, ...PLAN_CATALOG[fallbackPlan] };
+  }
+  const firstPlan = Object.keys(PLAN_CATALOG)[0];
+  if (firstPlan) {
+    return { label: firstPlan, ...PLAN_CATALOG[firstPlan] };
+  }
+  return { label: plan || "Mensual", days: 30, price: 0 };
 }
 
 function buildInvoiceNumber(paymentId, date = new Date()) {
@@ -1293,6 +1313,94 @@ function normalizeTimeValue(value) {
   if (hours > 23 || minutes > 59) return null;
 
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function parsePlanFeatures(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item).trim()).filter(Boolean);
+      }
+    } catch {
+      return value.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
+function mapPlanRow(row) {
+  return {
+    id: row.id_plan,
+    nombre: row.nombre,
+    precio: Number(row.precio),
+    duracionDias: Number(row.duracion_dias),
+    periodo: row.periodo,
+    caracteristicas: parsePlanFeatures(row.caracteristicas),
+    popular: Boolean(row.popular),
+    activo: Boolean(row.activo),
+    orden: Number(row.orden)
+  };
+}
+
+async function ensureMembershipPlansSchema() {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS planes_membresia (
+        id_plan INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(50) NOT NULL UNIQUE,
+        precio DECIMAL(10,2) NOT NULL,
+        duracion_dias INT NOT NULL,
+        periodo VARCHAR(30) NOT NULL DEFAULT '/mes',
+        caracteristicas VARCHAR(500) NOT NULL DEFAULT '[]',
+        popular TINYINT(1) NOT NULL DEFAULT 0,
+        activo TINYINT(1) NOT NULL DEFAULT 1,
+        orden INT NOT NULL DEFAULT 0,
+        fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    const [[{ total }]] = await connection.query(
+      "SELECT COUNT(*) AS total FROM planes_membresia"
+    );
+
+    if (Number(total) === 0) {
+      await connection.query(
+        `INSERT INTO planes_membresia
+           (nombre, precio, duracion_dias, periodo, caracteristicas, popular, orden)
+         VALUES ?`,
+        [PLAN_DEFAULTS.map((plan) => [
+          plan.nombre,
+          plan.precio,
+          plan.duracion_dias,
+          plan.periodo,
+          JSON.stringify(plan.caracteristicas),
+          plan.popular,
+          plan.orden
+        ])]
+      );
+    }
+  } finally {
+    connection.release();
+  }
+}
+
+async function loadPlanCatalog() {
+  const [rows] = await pool.query(
+    `SELECT id_plan, nombre, precio, duracion_dias, periodo, caracteristicas, popular, activo, orden
+     FROM planes_membresia
+     ORDER BY orden, id_plan`
+  );
+
+  PLAN_LIST = rows.map(mapPlanRow);
+  PLAN_CATALOG = Object.fromEntries(
+    PLAN_LIST.map((plan) => [plan.nombre, { days: plan.duracionDias, price: plan.precio }])
+  );
 }
 
 // RUTINAS
@@ -3976,6 +4084,136 @@ app.put("/api/gym-schedule", authenticate, requireRoles("admin"), async (req, re
   }
 });
 
+function validatePlanPayload(body) {
+  const nombre = String(body?.nombre ?? "").trim();
+  if (!nombre) {
+    return { error: "El nombre del plan es obligatorio" };
+  }
+  if (nombre.length > 50) {
+    return { error: "El nombre del plan no puede superar 50 caracteres" };
+  }
+
+  const precio = Number(body?.precio);
+  if (!Number.isFinite(precio) || precio < 0) {
+    return { error: "El precio debe ser un numero mayor o igual a 0" };
+  }
+
+  const duracionDias = Number(body?.duracionDias);
+  if (!Number.isInteger(duracionDias) || duracionDias < 1) {
+    return { error: "La duracion debe ser un numero entero de dias mayor a 0" };
+  }
+
+  const periodo = String(body?.periodo ?? "/mes").trim() || "/mes";
+  const caracteristicas = parsePlanFeatures(body?.caracteristicas);
+  const popular = body?.popular ? 1 : 0;
+  const activo = body?.activo === undefined ? 1 : (body.activo ? 1 : 0);
+  const orden = Number.isFinite(Number(body?.orden)) ? Number(body.orden) : 0;
+
+  return {
+    value: { nombre, precio, duracionDias, periodo, caracteristicas, popular, activo, orden }
+  };
+}
+
+app.get("/api/membership-plans", async (_req, res) => {
+  try {
+    res.json({ plans: PLAN_LIST });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando planes", detail: error.message });
+  }
+});
+
+app.post("/api/membership-plans", authenticate, requireRoles("admin"), async (req, res) => {
+  const { value, error } = validatePlanPayload(req.body);
+  if (error) {
+    res.status(400).json({ error });
+    return;
+  }
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO planes_membresia
+         (nombre, precio, duracion_dias, periodo, caracteristicas, popular, activo, orden)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [value.nombre, value.precio, value.duracionDias, value.periodo,
+        JSON.stringify(value.caracteristicas), value.popular, value.activo, value.orden]
+    );
+
+    await loadPlanCatalog();
+    const plan = PLAN_LIST.find((item) => item.id === result.insertId) || null;
+    res.status(201).json({ ok: true, plan });
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      res.status(409).json({ error: "Ya existe un plan con ese nombre" });
+      return;
+    }
+    res.status(500).json({ error: "Error creando el plan", detail: error.message });
+  }
+});
+
+app.put("/api/membership-plans/:id", authenticate, requireRoles("admin"), async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Plan invalido" });
+    return;
+  }
+
+  const { value, error } = validatePlanPayload(req.body);
+  if (error) {
+    res.status(400).json({ error });
+    return;
+  }
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE planes_membresia
+       SET nombre = ?, precio = ?, duracion_dias = ?, periodo = ?, caracteristicas = ?, popular = ?, activo = ?, orden = ?
+       WHERE id_plan = ?`,
+      [value.nombre, value.precio, value.duracionDias, value.periodo,
+        JSON.stringify(value.caracteristicas), value.popular, value.activo, value.orden, id]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(404).json({ error: "Plan no encontrado" });
+      return;
+    }
+
+    await loadPlanCatalog();
+    const plan = PLAN_LIST.find((item) => item.id === id) || null;
+    res.json({ ok: true, plan });
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      res.status(409).json({ error: "Ya existe un plan con ese nombre" });
+      return;
+    }
+    res.status(500).json({ error: "Error actualizando el plan", detail: error.message });
+  }
+});
+
+app.delete("/api/membership-plans/:id", authenticate, requireRoles("admin"), async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Plan invalido" });
+    return;
+  }
+
+  try {
+    const [result] = await pool.query(
+      "DELETE FROM planes_membresia WHERE id_plan = ?",
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(404).json({ error: "Plan no encontrado" });
+      return;
+    }
+
+    await loadPlanCatalog();
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: "Error eliminando el plan", detail: error.message });
+  }
+});
+
 app.get("/api/client/:clientId/evolution", authenticate, async (req, res) => {
   const clientId = Number(req.params.clientId);
 
@@ -6039,6 +6277,8 @@ async function startServer() {
     await ensureFinanceFeatureSchema();
     await ensureGymConfigSchema();
     await ensureGymScheduleSchema();
+    await ensureMembershipPlansSchema();
+    await loadPlanCatalog();
     app.listen(PORT, () => {
       console.log(`API corriendo en http://localhost:${PORT}`);
     });
