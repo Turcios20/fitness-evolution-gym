@@ -3811,6 +3811,19 @@ app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepci
       return;
     }
 
+    const membershipSnapshot = normalizeMembershipSnapshot(memberRows[0]);
+    const membershipIndicator = getMembershipIndicator(membershipSnapshot);
+
+    if (membershipIndicator.expired) {
+      await connection.rollback();
+      res.status(403).json({
+        error: "Acceso denegado: la membresia esta vencida o inactiva. Renueva la suscripcion para registrar la entrada.",
+        membership: membershipSnapshot,
+        indicator: membershipIndicator
+      });
+      return;
+    }
+
     const [todayRows] = await connection.query(
       `SELECT fecha_entrada
        FROM asistencia

@@ -527,6 +527,13 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const selectedMember = findMemberById(memberId);
+    const membershipStatus = getMembershipStatus(selectedMember?.membership || null);
+    if (membershipStatus.className === "danger") {
+      GymApp.toast(`Acceso denegado: ${membershipStatus.detail} Renueva la suscripcion para registrar la entrada.`, "error");
+      return;
+    }
+
     btnRegisterEntry.disabled = true;
     try {
       const result = await GymApp.api("/api/reception/checkins", {
