@@ -1235,6 +1235,66 @@ function serializeSettingValue(value) {
   return String(value);
 }
 
+const GYM_SCHEDULE_DEFAULTS = [
+  { dia_semana: 1, nombre_dia: "Lunes", hora_apertura: "05:00", hora_cierre: "22:00", activo: 1 },
+  { dia_semana: 2, nombre_dia: "Martes", hora_apertura: "05:00", hora_cierre: "22:00", activo: 1 },
+  { dia_semana: 3, nombre_dia: "Miercoles", hora_apertura: "05:00", hora_cierre: "22:00", activo: 1 },
+  { dia_semana: 4, nombre_dia: "Jueves", hora_apertura: "05:00", hora_cierre: "22:00", activo: 1 },
+  { dia_semana: 5, nombre_dia: "Viernes", hora_apertura: "05:00", hora_cierre: "21:00", activo: 1 },
+  { dia_semana: 6, nombre_dia: "Sabado", hora_apertura: "07:00", hora_cierre: "18:00", activo: 1 },
+  { dia_semana: 7, nombre_dia: "Domingo", hora_apertura: "08:00", hora_cierre: "13:00", activo: 0 }
+];
+
+async function ensureGymScheduleSchema() {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS horarios_gimnasio (
+        id_horario INT AUTO_INCREMENT PRIMARY KEY,
+        dia_semana TINYINT NOT NULL UNIQUE,
+        nombre_dia VARCHAR(20) NOT NULL,
+        hora_apertura TIME NOT NULL,
+        hora_cierre TIME NOT NULL,
+        activo TINYINT(1) NOT NULL DEFAULT 1,
+        fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    const [[{ total }]] = await connection.query(
+      "SELECT COUNT(*) AS total FROM horarios_gimnasio"
+    );
+
+    if (Number(total) === 0) {
+      await connection.query(
+        `INSERT INTO horarios_gimnasio
+           (dia_semana, nombre_dia, hora_apertura, hora_cierre, activo)
+         VALUES ?`,
+        [GYM_SCHEDULE_DEFAULTS.map((day) => [
+          day.dia_semana,
+          day.nombre_dia,
+          day.hora_apertura,
+          day.hora_cierre,
+          day.activo
+        ])]
+      );
+    }
+  } finally {
+    connection.release();
+  }
+}
+
+function normalizeTimeValue(value) {
+  const match = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(String(value ?? "").trim());
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
 // RUTINAS
 // Obtener rutinas de un cliente
 app.get(
@@ -3840,6 +3900,82 @@ app.put("/api/gym-settings", authenticate, requireRoles("admin"), async (req, re
   }
 });
 
+app.get("/api/gym-schedule", async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT dia_semana, nombre_dia, hora_apertura, hora_cierre, activo
+       FROM horarios_gimnasio
+       ORDER BY dia_semana`
+    );
+
+    const schedule = rows.map((row) => ({
+      dia: row.dia_semana,
+      nombre: row.nombre_dia,
+      apertura: String(row.hora_apertura).slice(0, 5),
+      cierre: String(row.hora_cierre).slice(0, 5),
+      activo: Boolean(row.activo)
+    }));
+
+    res.json({ schedule });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando horarios del gimnasio", detail: error.message });
+  }
+});
+
+app.put("/api/gym-schedule", authenticate, requireRoles("admin"), async (req, res) => {
+  const schedule = req.body?.schedule;
+
+  if (!Array.isArray(schedule) || !schedule.length) {
+    res.status(400).json({ error: "Horarios requeridos" });
+    return;
+  }
+
+  const updates = [];
+  for (const day of schedule) {
+    const dia = Number(day?.dia);
+    if (!Number.isInteger(dia) || dia < 1 || dia > 7) {
+      res.status(400).json({ error: "Dia de la semana invalido" });
+      return;
+    }
+
+    const apertura = normalizeTimeValue(day?.apertura);
+    const cierre = normalizeTimeValue(day?.cierre);
+    if (!apertura || !cierre) {
+      res.status(400).json({ error: `Hora invalida para el dia ${dia}. Usa el formato HH:MM.` });
+      return;
+    }
+
+    if (apertura >= cierre) {
+      res.status(400).json({ error: `La hora de cierre debe ser mayor a la de apertura (dia ${dia}).` });
+      return;
+    }
+
+    updates.push({ dia, apertura, cierre, activo: day?.activo ? 1 : 0 });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    for (const update of updates) {
+      await connection.query(
+        `UPDATE horarios_gimnasio
+         SET hora_apertura = ?, hora_cierre = ?, activo = ?
+         WHERE dia_semana = ?`,
+        [update.apertura, update.cierre, update.activo, update.dia]
+      );
+    }
+
+    await connection.commit();
+    res.json({ ok: true });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error guardando horarios del gimnasio", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
 app.get("/api/client/:clientId/evolution", authenticate, async (req, res) => {
   const clientId = Number(req.params.clientId);
 
@@ -5902,6 +6038,7 @@ async function startServer() {
     await ensureTrainerFeatureSchema();
     await ensureFinanceFeatureSchema();
     await ensureGymConfigSchema();
+    await ensureGymScheduleSchema();
     app.listen(PORT, () => {
       console.log(`API corriendo en http://localhost:${PORT}`);
     });

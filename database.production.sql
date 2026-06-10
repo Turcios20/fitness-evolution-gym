@@ -105,6 +105,25 @@ INSERT IGNORE INTO configuracion_gimnasio (clave, valor) VALUES
 ('ciudad', 'San Salvador'),
 ('pais', 'El Salvador');
 
+CREATE TABLE IF NOT EXISTS horarios_gimnasio (
+    id_horario INT AUTO_INCREMENT PRIMARY KEY,
+    dia_semana TINYINT NOT NULL UNIQUE,
+    nombre_dia VARCHAR(20) NOT NULL,
+    hora_apertura TIME NOT NULL,
+    hora_cierre TIME NOT NULL,
+    activo TINYINT(1) NOT NULL DEFAULT 1,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT IGNORE INTO horarios_gimnasio (dia_semana, nombre_dia, hora_apertura, hora_cierre, activo) VALUES
+(1, 'Lunes', '05:00', '22:00', 1),
+(2, 'Martes', '05:00', '22:00', 1),
+(3, 'Miercoles', '05:00', '22:00', 1),
+(4, 'Jueves', '05:00', '22:00', 1),
+(5, 'Viernes', '05:00', '21:00', 1),
+(6, 'Sabado', '07:00', '18:00', 1),
+(7, 'Domingo', '08:00', '13:00', 0);
+
 CREATE TABLE IF NOT EXISTS membresias (
     id_membresia INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,

@@ -38,6 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnAddStaffUser = document.getElementById("btnAddStaffUser");
   const btnSaveGym = document.getElementById("btnSaveGym");
   const gymSaveMsg = document.getElementById("gymSaveMsg");
+  const scheduleGrid = document.getElementById("scheduleGrid");
+  const btnSaveSchedule = document.getElementById("btnSaveSchedule");
+  const scheduleSaveMsg = document.getElementById("scheduleSaveMsg");
   const gymFields = {
     nombre: document.getElementById("gymNombre"),
     eslogan: document.getElementById("gymEslogan"),
@@ -715,6 +718,81 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function normalizeTime(value) {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(String(value ?? "").trim());
+    if (!match) return null;
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (hours > 23 || minutes > 59) return null;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+
+  async function loadGymSchedule() {
+    if (!scheduleGrid) return;
+
+    try {
+      const response = await GymApp.api("/api/gym-schedule");
+      const schedule = Array.isArray(response.schedule) ? response.schedule : [];
+
+      schedule.forEach((day) => {
+        const row = scheduleGrid.querySelector(`.hours-row[data-day="${day.dia}"]`);
+        if (!row) return;
+        const apertura = row.querySelector('[data-field="apertura"]');
+        const cierre = row.querySelector('[data-field="cierre"]');
+        const activo = row.querySelector('[data-field="activo"]');
+        if (apertura) apertura.value = day.apertura ?? "";
+        if (cierre) cierre.value = day.cierre ?? "";
+        if (activo) activo.checked = Boolean(day.activo);
+      });
+    } catch (error) {
+      console.error("No se pudieron cargar los horarios:", error);
+    }
+  }
+
+  async function handleSaveSchedule() {
+    if (!scheduleGrid || !btnSaveSchedule) return;
+
+    const rows = [...scheduleGrid.querySelectorAll(".hours-row")];
+    const schedule = [];
+
+    for (const row of rows) {
+      const dia = Number(row.dataset.day);
+      const dayName = row.querySelector(".day-name")?.textContent?.trim() || `Dia ${dia}`;
+      const apertura = normalizeTime(row.querySelector('[data-field="apertura"]')?.value);
+      const cierre = normalizeTime(row.querySelector('[data-field="cierre"]')?.value);
+      const activo = row.querySelector('[data-field="activo"]')?.checked || false;
+
+      if (!apertura || !cierre) {
+        setInlineMessage(scheduleSaveMsg, `Revisa las horas de ${dayName}. Usa el formato HH:MM.`, "error");
+        return;
+      }
+
+      if (apertura >= cierre) {
+        setInlineMessage(scheduleSaveMsg, `En ${dayName} la hora de cierre debe ser mayor a la de apertura.`, "error");
+        return;
+      }
+
+      schedule.push({ dia, apertura, cierre, activo });
+    }
+
+    setInlineMessage(scheduleSaveMsg, "", null);
+    btnSaveSchedule.disabled = true;
+    try {
+      await GymApp.api("/api/gym-schedule", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schedule })
+      });
+      setInlineMessage(scheduleSaveMsg, "Horarios guardados correctamente.", "success");
+      GymApp.toast("Horarios guardados correctamente.", "success");
+    } catch (error) {
+      setInlineMessage(scheduleSaveMsg, error.message || "No se pudieron guardar los horarios.", "error");
+      GymApp.toast(error.message || "No se pudieron guardar los horarios.", "error");
+    } finally {
+      btnSaveSchedule.disabled = false;
+    }
+  }
+
   hamburgerBtn?.addEventListener("click", toggleSidebar);
   sidebarOverlay?.addEventListener("click", closeSidebar);
   sidebarClose?.addEventListener("click", closeSidebar);
@@ -759,6 +837,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnSaveGym?.addEventListener("click", handleSaveGym);
 
+  btnSaveSchedule?.addEventListener("click", handleSaveSchedule);
+
   window.addEventListener("gym-theme-change", (event) => {
     applyThemeToPage(event.detail?.theme || window.GymApp.getTheme());
   });
@@ -775,4 +855,5 @@ document.addEventListener("DOMContentLoaded", () => {
   loadUserThemePreference();
   loadStaffMembers();
   loadGymSettings();
+  loadGymSchedule();
 });

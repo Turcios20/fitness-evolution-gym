@@ -139,17 +139,18 @@
             <div class="hours-header">
               <span></span><span>Apertura</span><span>Cierre</span><span>Activo</span>
             </div>
-            <div class="hours-grid">
-              <div class="hours-row"><div class="day-name">Lunes</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Martes</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Miercoles</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Jueves</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Viernes</div><input class="field-input" value="05:00"/><input class="field-input" value="21:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Sabado</div><input class="field-input" value="07:00"/><input class="field-input" value="18:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Domingo</div><input class="field-input" value="08:00"/><input class="field-input" value="13:00"/><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+            <div class="hours-grid" id="scheduleGrid">
+              <div class="hours-row" data-day="1"><div class="day-name">Lunes</div><input class="field-input" data-field="apertura" value="05:00"/><input class="field-input" data-field="cierre" value="22:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="2"><div class="day-name">Martes</div><input class="field-input" data-field="apertura" value="05:00"/><input class="field-input" data-field="cierre" value="22:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="3"><div class="day-name">Miercoles</div><input class="field-input" data-field="apertura" value="05:00"/><input class="field-input" data-field="cierre" value="22:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="4"><div class="day-name">Jueves</div><input class="field-input" data-field="apertura" value="05:00"/><input class="field-input" data-field="cierre" value="22:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="5"><div class="day-name">Viernes</div><input class="field-input" data-field="apertura" value="05:00"/><input class="field-input" data-field="cierre" value="21:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="6"><div class="day-name">Sabado</div><input class="field-input" data-field="apertura" value="07:00"/><input class="field-input" data-field="cierre" value="18:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="7"><div class="day-name">Domingo</div><input class="field-input" data-field="apertura" value="08:00"/><input class="field-input" data-field="cierre" value="13:00"/><label class="toggle"><input type="checkbox" data-field="activo"/><span class="toggle-slider"></span></label></div>
             </div>
           </div>
-          <button class="save-btn" type="button">Guardar horarios</button>
+          <div class="settings-inline-msg" id="scheduleSaveMsg"></div>
+          <button class="save-btn" type="button" id="btnSaveSchedule">Guardar horarios</button>
         </div>
 
         <div class="section" id="sec-apariencia">
