@@ -446,7 +446,7 @@ body[data-theme="light"] .search-bar input {
 .members-table-container {
   background: var(--panel);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid var(--border);
 }
 
@@ -701,6 +701,11 @@ body[data-theme="light"] .setting-item {
 
   .main-layout {
     grid-template-columns: 1fr;
+  }
+
+  .sidebar,
+  .content-area {
+    min-width: 0;
   }
 
   .sidebar {
