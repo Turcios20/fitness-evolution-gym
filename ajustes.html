@@ -6,7 +6,7 @@
   <title>Ajustes - FITNESS EVOLUTIONS GYM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="ajustes.css" />
 </head>
 <body>
@@ -30,6 +30,8 @@
         <button class="nav-toggle" id="navToggle" aria-label="Mas opciones">
           <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><circle cx="10" cy="4" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="10" cy="16" r="1.8"/></svg>
         </button>
+
+        <button type="button" class="logout-btn" id="btnSettingsLogout">Salir</button>
       </div>
     </div>
 
@@ -108,26 +110,27 @@
           <div class="settings-grid">
             <div class="settings-card">
               <div class="card-label">Informacion basica</div>
-              <div class="field-row"><div class="field-label">Nombre del gimnasio</div><input class="field-input" value="FITNESS EVOLUTIONS GYM"/></div>
-              <div class="field-row"><div class="field-label">Eslogan</div><input class="field-input" value="Evoluciona tu cuerpo, transforma tu vida"/></div>
-              <div class="field-row"><div class="field-label">NIT / RUC</div><input class="field-input" value="0614-120593-101-1"/></div>
+              <div class="field-row"><div class="field-label">Nombre del gimnasio</div><input class="field-input" id="gymNombre" value="FITNESS EVOLUTIONS GYM"/></div>
+              <div class="field-row"><div class="field-label">Eslogan</div><input class="field-input" id="gymEslogan" value="Evoluciona tu cuerpo, transforma tu vida"/></div>
+              <div class="field-row"><div class="field-label">NIT / RUC</div><input class="field-input" id="gymNit" value="0614-120593-101-1"/></div>
             </div>
             <div class="settings-card">
               <div class="card-label">Contacto</div>
-              <div class="field-row"><div class="field-label">Telefono</div><input class="field-input" value="+503 2234-5678"/></div>
-              <div class="field-row"><div class="field-label">Correo electronico</div><input class="field-input" value="info@fitnessevolutions.com"/></div>
-              <div class="field-row"><div class="field-label">Sitio web</div><input class="field-input" value="https://fitnessevolutions.com"/></div>
+              <div class="field-row"><div class="field-label">Telefono</div><input class="field-input" id="gymTelefono" value="+503 2234-5678"/></div>
+              <div class="field-row"><div class="field-label">Correo electronico</div><input class="field-input" id="gymCorreo" value="info@fitnessevolutions.com"/></div>
+              <div class="field-row"><div class="field-label">Sitio web</div><input class="field-input" id="gymSitioWeb" value="https://fitnessevolutions.com"/></div>
             </div>
             <div class="settings-card full">
               <div class="card-label">Direccion y region</div>
               <div class="three-col">
-                <div class="field-row"><div class="field-label">Direccion</div><input class="field-input" value="Blvd. del Ejercito, local 12"/></div>
-                <div class="field-row"><div class="field-label">Ciudad</div><input class="field-input" value="San Salvador"/></div>
-                <div class="field-row"><div class="field-label">Pais</div><select class="field-select"><option>El Salvador</option><option>Guatemala</option><option>Honduras</option><option>Costa Rica</option></select></div>
+                <div class="field-row"><div class="field-label">Direccion</div><input class="field-input" id="gymDireccion" value="Blvd. del Ejercito, local 12"/></div>
+                <div class="field-row"><div class="field-label">Ciudad</div><input class="field-input" id="gymCiudad" value="San Salvador"/></div>
+                <div class="field-row"><div class="field-label">Pais</div><select class="field-select" id="gymPais"><option>El Salvador</option><option>Guatemala</option><option>Honduras</option><option>Costa Rica</option></select></div>
               </div>
             </div>
           </div>
-          <button class="save-btn" type="button">Guardar cambios</button>
+          <div class="settings-inline-msg" id="gymSaveMsg"></div>
+          <button class="save-btn" type="button" id="btnSaveGym">Guardar cambios</button>
         </div>
 
         <div class="section" id="sec-horarios">
@@ -138,54 +141,29 @@
             <div class="hours-header">
               <span></span><span>Apertura</span><span>Cierre</span><span>Activo</span>
             </div>
-            <div class="hours-grid">
-              <div class="hours-row"><div class="day-name">Lunes</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Martes</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Miercoles</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Jueves</div><input class="field-input" value="05:00"/><input class="field-input" value="22:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Viernes</div><input class="field-input" value="05:00"/><input class="field-input" value="21:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Sabado</div><input class="field-input" value="07:00"/><input class="field-input" value="18:00"/><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
-              <div class="hours-row"><div class="day-name">Domingo</div><input class="field-input" value="08:00"/><input class="field-input" value="13:00"/><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+            <div class="hours-grid" id="scheduleGrid">
+              <div class="hours-row" data-day="1"><div class="day-name">Lunes</div><input class="field-input" data-field="apertura" value="05:00"/><input class="field-input" data-field="cierre" value="22:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="2"><div class="day-name">Martes</div><input class="field-input" data-field="apertura" value="05:00"/><input class="field-input" data-field="cierre" value="22:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="3"><div class="day-name">Miercoles</div><input class="field-input" data-field="apertura" value="05:00"/><input class="field-input" data-field="cierre" value="22:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="4"><div class="day-name">Jueves</div><input class="field-input" data-field="apertura" value="05:00"/><input class="field-input" data-field="cierre" value="22:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="5"><div class="day-name">Viernes</div><input class="field-input" data-field="apertura" value="05:00"/><input class="field-input" data-field="cierre" value="21:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="6"><div class="day-name">Sabado</div><input class="field-input" data-field="apertura" value="07:00"/><input class="field-input" data-field="cierre" value="18:00"/><label class="toggle"><input type="checkbox" data-field="activo" checked/><span class="toggle-slider"></span></label></div>
+              <div class="hours-row" data-day="7"><div class="day-name">Domingo</div><input class="field-input" data-field="apertura" value="08:00"/><input class="field-input" data-field="cierre" value="13:00"/><label class="toggle"><input type="checkbox" data-field="activo"/><span class="toggle-slider"></span></label></div>
             </div>
           </div>
-          <button class="save-btn" type="button">Guardar horarios</button>
+          <div class="settings-inline-msg" id="scheduleSaveMsg"></div>
+          <button class="save-btn" type="button" id="btnSaveSchedule">Guardar horarios</button>
         </div>
 
         <div class="section" id="sec-apariencia">
           <div class="section-title">Apariencia</div>
-          <div class="section-desc">Personaliza los colores y la identidad visual del sistema</div>
-          <div class="settings-grid">
-            <div class="settings-card">
-              <div class="card-label">Color primario</div>
-              <div class="swatches">
-                <span class="color-swatch selected" style="background:#f07922" data-color="#f07922"></span>
-                <span class="color-swatch" style="background:#e24b4a" data-color="#e24b4a"></span>
-                <span class="color-swatch" style="background:#378add" data-color="#378add"></span>
-                <span class="color-swatch" style="background:#1da975" data-color="#1da975"></span>
-                <span class="color-swatch" style="background:#7f77dd" data-color="#7f77dd"></span>
-              </div>
-              <div class="field-row"><div class="field-label">Codigo HEX</div><input class="field-input" id="hexInput" value="#f07922"/></div>
-            </div>
+          <div class="section-desc">Elige como se ve la interfaz del sistema</div>
+          <div class="settings-grid appearance-grid">
             <div class="settings-card">
               <div class="card-label">Tema</div>
               <div class="toggle-row">
                 <div class="toggle-info"><div class="toggle-name">Modo oscuro</div><div class="toggle-desc">Interfaz con fondo oscuro</div></div>
                 <label class="toggle"><input type="checkbox" id="darkModeToggle" checked/><span class="toggle-slider"></span></label>
-              </div>
-              <div class="toggle-row">
-                <div class="toggle-info"><div class="toggle-name">Sidebar colapsado por defecto</div><div class="toggle-desc">Ocultar menu lateral al cargar</div></div>
-                <label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label>
-              </div>
-            </div>
-            <div class="settings-card full">
-              <div class="card-label">Logo del establecimiento</div>
-              <div class="logo-row">
-                <div class="logo-upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M4 16l4-4 4 4 4-6 4 6"/><rect x="2" y="2" width="20" height="20" rx="3"/></svg><span>Subir logo</span></div>
-                <div>
-                  <div style="font-size:13px;color:#888;margin-bottom:4px">PNG, SVG o JPG · Max. 2MB</div>
-                  <div style="font-size:11px;color:#555">Tamano recomendado: 200x60px</div>
-                  <button class="add-btn" style="margin-top:10px" type="button">Seleccionar archivo</button>
-                </div>
               </div>
             </div>
           </div>
@@ -314,28 +292,13 @@
 
         <div class="section" id="sec-planes">
           <div class="section-title">Planes de membresia</div>
-          <div class="section-desc">Define los tipos de membresia y sus precios</div>
-          <div class="plan-grid">
-            <div class="plan-card selected">
-              <div class="plan-badge">Mas popular</div>
-              <div class="plan-name">Mensual</div>
-              <div class="plan-price">$35 <span>/mes</span></div>
-              <ul class="plan-features"><li>Acceso completo</li><li>Clases grupales</li><li>Vestuarios</li></ul>
-            </div>
-            <div class="plan-card">
-              <div class="plan-name">Trimestral</div>
-              <div class="plan-price">$90 <span>/3 meses</span></div>
-              <ul class="plan-features"><li>Acceso completo</li><li>Clases grupales</li><li>1 sesion con trainer</li></ul>
-            </div>
-            <div class="plan-card">
-              <div class="plan-name">Anual</div>
-              <div class="plan-price">$300 <span>/ano</span></div>
-              <ul class="plan-features"><li>Acceso completo</li><li>Clases ilimitadas</li><li>4 sesiones con trainer</li></ul>
-            </div>
+          <div class="section-desc">Define los tipos de membresia y sus precios. Los cambios se reflejan en altas, renovaciones y todas las pantallas que muestran planes.</div>
+          <div class="plan-grid" id="planGrid">
+            <div class="plan-empty">Cargando planes...</div>
           </div>
+          <div class="settings-inline-msg" id="planSaveMsg"></div>
           <div class="btn-row">
-            <button class="add-btn" type="button">+ Agregar plan</button>
-            <button class="save-btn" style="margin-top:0" type="button">Guardar planes</button>
+            <button class="add-btn" type="button" id="btnAddPlan">+ Agregar plan</button>
           </div>
         </div>
       </main>

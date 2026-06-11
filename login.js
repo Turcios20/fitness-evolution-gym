@@ -153,6 +153,37 @@ document.addEventListener("DOMContentLoaded", () => {
     box.querySelector("#gmOk").onclick = () => overlay.remove();
   }
 
+  async function loadGymFooter() {
+    const footer = document.getElementById("loginFooter");
+    if (!footer) return;
+
+    try {
+      const response = await GymApp.api("/api/gym-settings");
+      const gym = response.gym || {};
+
+      const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value || "";
+      };
+
+      const direccion = [gym.direccion, gym.ciudad, gym.pais]
+        .map((part) => (part || "").trim())
+        .filter(Boolean)
+        .join(", ");
+
+      setText("footerEslogan", gym.eslogan);
+      setText("footerTelefono", gym.telefono ? `Tel: ${gym.telefono}` : "");
+      setText("footerCorreo", gym.correo);
+      setText("footerDireccion", direccion);
+
+      footer.hidden = false;
+    } catch (error) {
+      console.error("No se pudieron cargar los datos del gimnasio:", error);
+    }
+  }
+
+  loadGymFooter();
+
   forgotPasswordLink?.addEventListener("click", (event) => {
     event.preventDefault();
     showForgotModal();

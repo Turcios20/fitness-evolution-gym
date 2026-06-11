@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!GymApp.guardRoute("cliente")) return;
 
   const session = GymApp.getSession();
+  GymApp.setupUserMenu();
   const objectiveEl = document.getElementById("objetivoPersonal");
   const comparisonEl = document.getElementById("tablaComparativa");
   const historyEl = document.getElementById("historialList");

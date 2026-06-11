@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!GymApp.guardRoute("recepcionista")) return;
 
   const session = GymApp.getSession();
+  GymApp.setupUserMenu({ anchorId: "receptionAvatar", avatarId: "receptionAvatar" });
   const avatar = document.getElementById("receptionAvatar");
   const welcome = document.getElementById("receptionWelcome");
   const searchInput = document.getElementById("receptionSearch");
@@ -33,6 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let allMembers = [];
   let presentMembers = [];
   let autoRefreshTimer = null;
+  let defaultPlan = null;
 
   function getInitials(name) {
     return (name || "RG")
@@ -305,7 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>${formatTime(member.checkInTime)}</td>
         <td>
           <button class="btn-table" ${status.renewable ? "" : "disabled"}>
-            ${status.renewable ? "Renovar 30d" : "Al dia"}
+            ${status.renewable ? `Renovar ${defaultPlan?.duracionDias || 30}d` : "Al dia"}
           </button>
         </td>
       `;
@@ -318,7 +320,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const response = await GymApp.api(`/api/members/${member.id}/renew`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ days: 30, plan: "Mensual" })
+              body: JSON.stringify({
+                days: defaultPlan?.duracionDias || 30,
+                plan: defaultPlan?.nombre || "Mensual"
+              })
             });
             const invoiceText = response?.invoiceNumber ? ` Factura: ${response.invoiceNumber}.` : "";
             GymApp.toast(`Membresia renovada para ${member.name}.${invoiceText}`, "success");
@@ -375,6 +380,11 @@ document.addEventListener("DOMContentLoaded", () => {
     populateCheckinSelect();
     populateHistorySelect();
     renderCheckinPreview();
+  }
+
+  async function loadPlans() {
+    const planList = await GymApp.getPlans({ force: true, activeOnly: true });
+    defaultPlan = planList.find((plan) => plan.popular) || planList[0] || null;
   }
 
   async function loadDashboard() {
@@ -517,6 +527,13 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const selectedMember = findMemberById(memberId);
+    const membershipStatus = getMembershipStatus(selectedMember?.membership || null);
+    if (membershipStatus.className === "danger") {
+      GymApp.toast(`Acceso denegado: ${membershipStatus.detail} Renueva la suscripcion para registrar la entrada.`, "error");
+      return;
+    }
+
     btnRegisterEntry.disabled = true;
     try {
       const result = await GymApp.api("/api/reception/checkins", {
@@ -542,9 +559,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  Promise.all([loadMembers(), loadDashboard(), loadSettings()]).catch((error) => {
-    GymApp.toast(`Error inicial: ${error.message}`, "error");
-  });
+  loadPlans()
+    .catch(() => {})
+    .then(() => Promise.all([loadMembers(), loadDashboard(), loadSettings()]))
+    .catch((error) => {
+      GymApp.toast(`Error inicial: ${error.message}`, "error");
+    });
 
   window.addEventListener("beforeunload", () => {
     if (autoRefreshTimer) clearInterval(autoRefreshTimer);

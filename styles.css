@@ -1061,6 +1061,11 @@ body {
   border-color: var(--orange);
 }
 
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 .login-feedback {
   min-height: 18px;
   margin: -2px 0 8px;
@@ -1094,6 +1099,38 @@ body {
 
 .login-links a:hover {
   color: var(--orange);
+}
+
+.login-footer {
+  width: 100%;
+  max-width: 360px;
+  margin-top: 22px;
+  text-align: center;
+  z-index: 1;
+}
+
+.login-footer-slogan {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: 0.3px;
+  color: var(--orange);
+  margin: 0 0 10px;
+}
+
+.login-footer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.login-footer-info span:empty {
+  display: none;
 }
 
 /* ===== ANIMACIONES ===== */

@@ -189,6 +189,40 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  const catalogGrid = document.getElementById("catalogGrid");
+
+  function renderCatalog(planList) {
+    if (!catalogGrid) return;
+
+    if (!planList.length) {
+      catalogGrid.innerHTML = '<div class="plan-card"><p class="plan-note">No hay planes disponibles.</p></div>';
+      return;
+    }
+
+    catalogGrid.innerHTML = planList.map((plan) => {
+      const price = Number(plan.precio).toFixed(2);
+      const note = (plan.caracteristicas && plan.caracteristicas[0]) || "Acceso general";
+      return `
+        <div class="plan-card">
+          <p class="plan-name">Plan ${escapeHtml(plan.nombre)}</p>
+          <p class="plan-price">$${price}</p>
+          <span class="plan-note">${escapeHtml(note)}</span>
+        </div>`;
+    }).join("");
+  }
+
+  async function loadCatalog() {
+    if (!catalogGrid) return;
+    try {
+      const planList = await GymApp.getPlans({ activeOnly: true });
+      renderCatalog(planList);
+    } catch (error) {
+      catalogGrid.innerHTML = '<div class="plan-card"><p class="plan-note">No se pudieron cargar los planes.</p></div>';
+      console.error("No se pudo cargar el catálogo de planes:", error);
+    }
+  }
+
   loadClientData();
   loadRutinas();
+  loadCatalog();
 });

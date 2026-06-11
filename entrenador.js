@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!GymApp.guardRoute("entrenador")) return;
 
   const session = GymApp.getSession();
+  GymApp.setupUserMenu();
   const welcomeTitle = document.getElementById("welcomeTitle");
   const userAvatar = document.getElementById("userAvatar");
   const btnLogout = document.getElementById("btnTrainerLogout");

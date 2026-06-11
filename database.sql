@@ -28,6 +28,61 @@ CREATE TABLE ajustes (
     UNIQUE KEY unique_ajuste (id_usuario, clave)
 );
 
+CREATE TABLE configuracion_gimnasio (
+    id_config INT AUTO_INCREMENT PRIMARY KEY,
+    clave VARCHAR(100) NOT NULL UNIQUE,
+    valor VARCHAR(500),
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO configuracion_gimnasio (clave, valor) VALUES
+('nombre', 'FITNESS EVOLUTIONS GYM'),
+('eslogan', 'Evoluciona tu cuerpo, transforma tu vida'),
+('nit', '0614-120593-101-1'),
+('telefono', '+503 2234-5678'),
+('correo', 'info@fitnessevolutions.com'),
+('sitio_web', 'https://fitnessevolutions.com'),
+('direccion', 'Blvd. del Ejercito, local 12'),
+('ciudad', 'San Salvador'),
+('pais', 'El Salvador');
+
+CREATE TABLE horarios_gimnasio (
+    id_horario INT AUTO_INCREMENT PRIMARY KEY,
+    dia_semana TINYINT NOT NULL UNIQUE,
+    nombre_dia VARCHAR(20) NOT NULL,
+    hora_apertura TIME NOT NULL,
+    hora_cierre TIME NOT NULL,
+    activo TINYINT(1) NOT NULL DEFAULT 1,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO horarios_gimnasio (dia_semana, nombre_dia, hora_apertura, hora_cierre, activo) VALUES
+(1, 'Lunes', '05:00', '22:00', 1),
+(2, 'Martes', '05:00', '22:00', 1),
+(3, 'Miercoles', '05:00', '22:00', 1),
+(4, 'Jueves', '05:00', '22:00', 1),
+(5, 'Viernes', '05:00', '21:00', 1),
+(6, 'Sabado', '07:00', '18:00', 1),
+(7, 'Domingo', '08:00', '13:00', 0);
+
+CREATE TABLE planes_membresia (
+    id_plan INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    precio DECIMAL(10,2) NOT NULL,
+    duracion_dias INT NOT NULL,
+    periodo VARCHAR(30) NOT NULL DEFAULT '/mes',
+    caracteristicas VARCHAR(500) NOT NULL DEFAULT '[]',
+    popular TINYINT(1) NOT NULL DEFAULT 0,
+    activo TINYINT(1) NOT NULL DEFAULT 1,
+    orden INT NOT NULL DEFAULT 0,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO planes_membresia (nombre, precio, duracion_dias, periodo, caracteristicas, popular, orden) VALUES
+('Mensual', 35, 30, '/mes', '["Acceso completo","Clases grupales","Vestuarios"]', 1, 1),
+('Trimestral', 90, 90, '/3 meses', '["Acceso completo","Clases grupales","1 sesion con trainer"]', 0, 2),
+('Anual', 300, 365, '/ano', '["Acceso completo","Clases ilimitadas","4 sesiones con trainer"]', 0, 3);
+
 CREATE TABLE membresias (
     id_membresia INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,

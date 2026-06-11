@@ -69,12 +69,26 @@ const STAFF_DB_ROLES = ["Administrador", "Recepcionista", "Entrenador"];
 const STAFF_PAYMENT_METHODS = ["Transferencia", "Efectivo", "Cheque"];
 const EXPENSE_METHODS = ["Transferencia", "Efectivo", "Tarjeta", "Cheque"];
 const PAYMENT_METHODS = ["Efectivo", "Tarjeta", "Transferencia"];
-const PLAN_CATALOG = {
-  Mensual: { days: 30, price: 35 },
-  Trimestral: { days: 90, price: 90 },
-  Semestral: { days: 180, price: 160 },
-  Anual: { days: 365, price: 300 }
-};
+const PLAN_DEFAULTS = [
+  { nombre: "Mensual", precio: 35, duracion_dias: 30, periodo: "/mes", caracteristicas: ["Acceso completo", "Clases grupales", "Vestuarios"], popular: 1, orden: 1 },
+  { nombre: "Trimestral", precio: 90, duracion_dias: 90, periodo: "/3 meses", caracteristicas: ["Acceso completo", "Clases grupales", "1 sesion con trainer"], popular: 0, orden: 2 },
+  { nombre: "Anual", precio: 300, duracion_dias: 365, periodo: "/ano", caracteristicas: ["Acceso completo", "Clases ilimitadas", "4 sesiones con trainer"], popular: 0, orden: 3 }
+];
+
+let PLAN_CATALOG = Object.fromEntries(
+  PLAN_DEFAULTS.map((plan) => [plan.nombre, { days: plan.duracion_dias, price: plan.precio }])
+);
+let PLAN_LIST = PLAN_DEFAULTS.map((plan, index) => ({
+  id: index + 1,
+  nombre: plan.nombre,
+  precio: plan.precio,
+  duracionDias: plan.duracion_dias,
+  periodo: plan.periodo,
+  caracteristicas: plan.caracteristicas,
+  popular: Boolean(plan.popular),
+  activo: true,
+  orden: plan.orden
+}));
 const EXPENSE_CATEGORIES = [
   "Servicios",
   "Mantenimiento",
@@ -287,11 +301,17 @@ function normalizePaymentMethod(method) {
 }
 
 function getPlanDefinition(plan, fallbackPlan = "Mensual") {
-  const normalizedPlan = PLAN_CATALOG[plan] ? plan : fallbackPlan;
-  return {
-    label: normalizedPlan,
-    ...(PLAN_CATALOG[normalizedPlan] || PLAN_CATALOG.Mensual)
-  };
+  if (PLAN_CATALOG[plan]) {
+    return { label: plan, ...PLAN_CATALOG[plan] };
+  }
+  if (PLAN_CATALOG[fallbackPlan]) {
+    return { label: fallbackPlan, ...PLAN_CATALOG[fallbackPlan] };
+  }
+  const firstPlan = Object.keys(PLAN_CATALOG)[0];
+  if (firstPlan) {
+    return { label: firstPlan, ...PLAN_CATALOG[firstPlan] };
+  }
+  return { label: plan || "Mensual", days: 30, price: 0 };
 }
 
 function buildInvoiceNumber(paymentId, date = new Date()) {
@@ -1187,10 +1207,200 @@ async function ensureFinanceFeatureSchema() {
   }
 }
 
+const GYM_CONFIG_DEFAULTS = {
+  nombre: "FITNESS EVOLUTIONS GYM",
+  eslogan: "Evoluciona tu cuerpo, transforma tu vida",
+  nit: "0614-120593-101-1",
+  telefono: "+503 2234-5678",
+  correo: "info@fitnessevolutions.com",
+  sitio_web: "https://fitnessevolutions.com",
+  direccion: "Blvd. del Ejercito, local 12",
+  ciudad: "San Salvador",
+  pais: "El Salvador"
+};
+
+const GYM_CONFIG_KEYS = Object.keys(GYM_CONFIG_DEFAULTS);
+
+async function ensureGymConfigSchema() {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS configuracion_gimnasio (
+        id_config INT AUTO_INCREMENT PRIMARY KEY,
+        clave VARCHAR(100) NOT NULL UNIQUE,
+        valor VARCHAR(500),
+        fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    const [[{ total }]] = await connection.query(
+      "SELECT COUNT(*) AS total FROM configuracion_gimnasio"
+    );
+
+    if (Number(total) === 0) {
+      await connection.query(
+        `INSERT INTO configuracion_gimnasio (clave, valor) VALUES ?`,
+        [Object.entries(GYM_CONFIG_DEFAULTS).map(([clave, valor]) => [clave, valor])]
+      );
+    }
+  } finally {
+    connection.release();
+  }
+}
+
 function serializeSettingValue(value) {
   if (value == null) return null;
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
+}
+
+const GYM_SCHEDULE_DEFAULTS = [
+  { dia_semana: 1, nombre_dia: "Lunes", hora_apertura: "05:00", hora_cierre: "22:00", activo: 1 },
+  { dia_semana: 2, nombre_dia: "Martes", hora_apertura: "05:00", hora_cierre: "22:00", activo: 1 },
+  { dia_semana: 3, nombre_dia: "Miercoles", hora_apertura: "05:00", hora_cierre: "22:00", activo: 1 },
+  { dia_semana: 4, nombre_dia: "Jueves", hora_apertura: "05:00", hora_cierre: "22:00", activo: 1 },
+  { dia_semana: 5, nombre_dia: "Viernes", hora_apertura: "05:00", hora_cierre: "21:00", activo: 1 },
+  { dia_semana: 6, nombre_dia: "Sabado", hora_apertura: "07:00", hora_cierre: "18:00", activo: 1 },
+  { dia_semana: 7, nombre_dia: "Domingo", hora_apertura: "08:00", hora_cierre: "13:00", activo: 0 }
+];
+
+async function ensureGymScheduleSchema() {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS horarios_gimnasio (
+        id_horario INT AUTO_INCREMENT PRIMARY KEY,
+        dia_semana TINYINT NOT NULL UNIQUE,
+        nombre_dia VARCHAR(20) NOT NULL,
+        hora_apertura TIME NOT NULL,
+        hora_cierre TIME NOT NULL,
+        activo TINYINT(1) NOT NULL DEFAULT 1,
+        fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    const [[{ total }]] = await connection.query(
+      "SELECT COUNT(*) AS total FROM horarios_gimnasio"
+    );
+
+    if (Number(total) === 0) {
+      await connection.query(
+        `INSERT INTO horarios_gimnasio
+           (dia_semana, nombre_dia, hora_apertura, hora_cierre, activo)
+         VALUES ?`,
+        [GYM_SCHEDULE_DEFAULTS.map((day) => [
+          day.dia_semana,
+          day.nombre_dia,
+          day.hora_apertura,
+          day.hora_cierre,
+          day.activo
+        ])]
+      );
+    }
+  } finally {
+    connection.release();
+  }
+}
+
+function normalizeTimeValue(value) {
+  const match = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(String(value ?? "").trim());
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function parsePlanFeatures(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item).trim()).filter(Boolean);
+      }
+    } catch {
+      return value.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
+function mapPlanRow(row) {
+  return {
+    id: row.id_plan,
+    nombre: row.nombre,
+    precio: Number(row.precio),
+    duracionDias: Number(row.duracion_dias),
+    periodo: row.periodo,
+    caracteristicas: parsePlanFeatures(row.caracteristicas),
+    popular: Boolean(row.popular),
+    activo: Boolean(row.activo),
+    orden: Number(row.orden)
+  };
+}
+
+async function ensureMembershipPlansSchema() {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS planes_membresia (
+        id_plan INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(50) NOT NULL UNIQUE,
+        precio DECIMAL(10,2) NOT NULL,
+        duracion_dias INT NOT NULL,
+        periodo VARCHAR(30) NOT NULL DEFAULT '/mes',
+        caracteristicas VARCHAR(500) NOT NULL DEFAULT '[]',
+        popular TINYINT(1) NOT NULL DEFAULT 0,
+        activo TINYINT(1) NOT NULL DEFAULT 1,
+        orden INT NOT NULL DEFAULT 0,
+        fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    const [[{ total }]] = await connection.query(
+      "SELECT COUNT(*) AS total FROM planes_membresia"
+    );
+
+    if (Number(total) === 0) {
+      await connection.query(
+        `INSERT INTO planes_membresia
+           (nombre, precio, duracion_dias, periodo, caracteristicas, popular, orden)
+         VALUES ?`,
+        [PLAN_DEFAULTS.map((plan) => [
+          plan.nombre,
+          plan.precio,
+          plan.duracion_dias,
+          plan.periodo,
+          JSON.stringify(plan.caracteristicas),
+          plan.popular,
+          plan.orden
+        ])]
+      );
+    }
+  } finally {
+    connection.release();
+  }
+}
+
+async function loadPlanCatalog() {
+  const [rows] = await pool.query(
+    `SELECT id_plan, nombre, precio, duracion_dias, periodo, caracteristicas, popular, activo, orden
+     FROM planes_membresia
+     ORDER BY orden, id_plan`
+  );
+
+  PLAN_LIST = rows.map(mapPlanRow);
+  PLAN_CATALOG = Object.fromEntries(
+    PLAN_LIST.map((plan) => [plan.nombre, { days: plan.duracionDias, price: plan.precio }])
+  );
 }
 
 // RUTINAS
@@ -3601,6 +3811,19 @@ app.post("/api/reception/checkins", authenticate, requireRoles("admin", "recepci
       return;
     }
 
+    const membershipSnapshot = normalizeMembershipSnapshot(memberRows[0]);
+    const membershipIndicator = getMembershipIndicator(membershipSnapshot);
+
+    if (membershipIndicator.expired) {
+      await connection.rollback();
+      res.status(403).json({
+        error: "Acceso denegado: la membresia esta vencida o inactiva. Renueva la suscripcion para registrar la entrada.",
+        membership: membershipSnapshot,
+        indicator: membershipIndicator
+      });
+      return;
+    }
+
     const [todayRows] = await connection.query(
       `SELECT fecha_entrada
        FROM asistencia
@@ -3737,6 +3960,270 @@ app.put("/api/settings", authenticate, async (req, res) => {
     res.status(500).json({ error: "Error guardando ajustes", detail: error.message });
   } finally {
     connection.release();
+  }
+});
+
+app.get("/api/gym-settings", async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT clave, valor FROM configuracion_gimnasio"
+    );
+
+    const gym = { ...GYM_CONFIG_DEFAULTS };
+    rows.forEach((row) => {
+      if (GYM_CONFIG_KEYS.includes(row.clave)) {
+        gym[row.clave] = row.valor;
+      }
+    });
+
+    res.json({ gym });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando datos del gimnasio", detail: error.message });
+  }
+});
+
+app.put("/api/gym-settings", authenticate, requireRoles("admin"), async (req, res) => {
+  const gym = req.body?.gym;
+
+  if (!gym || typeof gym !== "object") {
+    res.status(400).json({ error: "Datos del gimnasio requeridos" });
+    return;
+  }
+
+  const entries = Object.entries(gym).filter(([key]) => GYM_CONFIG_KEYS.includes(key));
+  if (!entries.length) {
+    res.status(400).json({ error: "No hay datos validos para guardar" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    for (const [key, value] of entries) {
+      await connection.query(
+        `INSERT INTO configuracion_gimnasio (clave, valor)
+         VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE
+           valor = VALUES(valor),
+           fecha_actualizacion = CURRENT_TIMESTAMP`,
+        [key, serializeSettingValue(value)]
+      );
+    }
+
+    await connection.commit();
+    res.json({ ok: true });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error guardando datos del gimnasio", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+app.get("/api/gym-schedule", async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT dia_semana, nombre_dia, hora_apertura, hora_cierre, activo
+       FROM horarios_gimnasio
+       ORDER BY dia_semana`
+    );
+
+    const schedule = rows.map((row) => ({
+      dia: row.dia_semana,
+      nombre: row.nombre_dia,
+      apertura: String(row.hora_apertura).slice(0, 5),
+      cierre: String(row.hora_cierre).slice(0, 5),
+      activo: Boolean(row.activo)
+    }));
+
+    res.json({ schedule });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando horarios del gimnasio", detail: error.message });
+  }
+});
+
+app.put("/api/gym-schedule", authenticate, requireRoles("admin"), async (req, res) => {
+  const schedule = req.body?.schedule;
+
+  if (!Array.isArray(schedule) || !schedule.length) {
+    res.status(400).json({ error: "Horarios requeridos" });
+    return;
+  }
+
+  const updates = [];
+  for (const day of schedule) {
+    const dia = Number(day?.dia);
+    if (!Number.isInteger(dia) || dia < 1 || dia > 7) {
+      res.status(400).json({ error: "Dia de la semana invalido" });
+      return;
+    }
+
+    const apertura = normalizeTimeValue(day?.apertura);
+    const cierre = normalizeTimeValue(day?.cierre);
+    if (!apertura || !cierre) {
+      res.status(400).json({ error: `Hora invalida para el dia ${dia}. Usa el formato HH:MM.` });
+      return;
+    }
+
+    if (apertura >= cierre) {
+      res.status(400).json({ error: `La hora de cierre debe ser mayor a la de apertura (dia ${dia}).` });
+      return;
+    }
+
+    updates.push({ dia, apertura, cierre, activo: day?.activo ? 1 : 0 });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    for (const update of updates) {
+      await connection.query(
+        `UPDATE horarios_gimnasio
+         SET hora_apertura = ?, hora_cierre = ?, activo = ?
+         WHERE dia_semana = ?`,
+        [update.apertura, update.cierre, update.activo, update.dia]
+      );
+    }
+
+    await connection.commit();
+    res.json({ ok: true });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error guardando horarios del gimnasio", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+function validatePlanPayload(body) {
+  const nombre = String(body?.nombre ?? "").trim();
+  if (!nombre) {
+    return { error: "El nombre del plan es obligatorio" };
+  }
+  if (nombre.length > 50) {
+    return { error: "El nombre del plan no puede superar 50 caracteres" };
+  }
+
+  const precio = Number(body?.precio);
+  if (!Number.isFinite(precio) || precio < 0) {
+    return { error: "El precio debe ser un numero mayor o igual a 0" };
+  }
+
+  const duracionDias = Number(body?.duracionDias);
+  if (!Number.isInteger(duracionDias) || duracionDias < 1) {
+    return { error: "La duracion debe ser un numero entero de dias mayor a 0" };
+  }
+
+  const periodo = String(body?.periodo ?? "/mes").trim() || "/mes";
+  const caracteristicas = parsePlanFeatures(body?.caracteristicas);
+  const popular = body?.popular ? 1 : 0;
+  const activo = body?.activo === undefined ? 1 : (body.activo ? 1 : 0);
+  const orden = Number.isFinite(Number(body?.orden)) ? Number(body.orden) : 0;
+
+  return {
+    value: { nombre, precio, duracionDias, periodo, caracteristicas, popular, activo, orden }
+  };
+}
+
+app.get("/api/membership-plans", async (_req, res) => {
+  try {
+    res.json({ plans: PLAN_LIST });
+  } catch (error) {
+    res.status(500).json({ error: "Error cargando planes", detail: error.message });
+  }
+});
+
+app.post("/api/membership-plans", authenticate, requireRoles("admin"), async (req, res) => {
+  const { value, error } = validatePlanPayload(req.body);
+  if (error) {
+    res.status(400).json({ error });
+    return;
+  }
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO planes_membresia
+         (nombre, precio, duracion_dias, periodo, caracteristicas, popular, activo, orden)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [value.nombre, value.precio, value.duracionDias, value.periodo,
+        JSON.stringify(value.caracteristicas), value.popular, value.activo, value.orden]
+    );
+
+    await loadPlanCatalog();
+    const plan = PLAN_LIST.find((item) => item.id === result.insertId) || null;
+    res.status(201).json({ ok: true, plan });
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      res.status(409).json({ error: "Ya existe un plan con ese nombre" });
+      return;
+    }
+    res.status(500).json({ error: "Error creando el plan", detail: error.message });
+  }
+});
+
+app.put("/api/membership-plans/:id", authenticate, requireRoles("admin"), async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Plan invalido" });
+    return;
+  }
+
+  const { value, error } = validatePlanPayload(req.body);
+  if (error) {
+    res.status(400).json({ error });
+    return;
+  }
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE planes_membresia
+       SET nombre = ?, precio = ?, duracion_dias = ?, periodo = ?, caracteristicas = ?, popular = ?, activo = ?, orden = ?
+       WHERE id_plan = ?`,
+      [value.nombre, value.precio, value.duracionDias, value.periodo,
+        JSON.stringify(value.caracteristicas), value.popular, value.activo, value.orden, id]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(404).json({ error: "Plan no encontrado" });
+      return;
+    }
+
+    await loadPlanCatalog();
+    const plan = PLAN_LIST.find((item) => item.id === id) || null;
+    res.json({ ok: true, plan });
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      res.status(409).json({ error: "Ya existe un plan con ese nombre" });
+      return;
+    }
+    res.status(500).json({ error: "Error actualizando el plan", detail: error.message });
+  }
+});
+
+app.delete("/api/membership-plans/:id", authenticate, requireRoles("admin"), async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Plan invalido" });
+    return;
+  }
+
+  try {
+    const [result] = await pool.query(
+      "DELETE FROM planes_membresia WHERE id_plan = ?",
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(404).json({ error: "Plan no encontrado" });
+      return;
+    }
+
+    await loadPlanCatalog();
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: "Error eliminando el plan", detail: error.message });
   }
 });
 
@@ -5801,6 +6288,10 @@ async function startServer() {
     await ensureUserAccountSchema();
     await ensureTrainerFeatureSchema();
     await ensureFinanceFeatureSchema();
+    await ensureGymConfigSchema();
+    await ensureGymScheduleSchema();
+    await ensureMembershipPlansSchema();
+    await loadPlanCatalog();
     app.listen(PORT, () => {
       console.log(`API corriendo en http://localhost:${PORT}`);
     });

@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const session = window.GymApp.getSession();
+  window.GymApp.setupUserMenu();
   const refs = {
     userAvatar: document.getElementById("userAvatar"),
     clientsList: document.getElementById("clientsList"),

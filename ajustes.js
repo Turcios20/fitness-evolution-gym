@@ -18,8 +18,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const pageSub = document.querySelector(".page-sub");
   const sidebarItems = [...document.querySelectorAll(".sidebar-item[data-section]")];
   const sections = [...document.querySelectorAll(".section")];
-  const swatches = [...document.querySelectorAll(".color-swatch")];
-  const hexInput = document.getElementById("hexInput");
   const darkModeToggle = document.getElementById("darkModeToggle");
   const btnSaveAppearance = document.getElementById("btnSaveAppearance");
   const appearanceSection = document.getElementById("sec-apariencia");
@@ -36,6 +34,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const errConfirmPassword = document.getElementById("errConfirmPassword");
   const staffUsersBody = document.getElementById("staffUsersBody");
   const btnAddStaffUser = document.getElementById("btnAddStaffUser");
+  const btnSaveGym = document.getElementById("btnSaveGym");
+  const gymSaveMsg = document.getElementById("gymSaveMsg");
+  const scheduleGrid = document.getElementById("scheduleGrid");
+  const btnSaveSchedule = document.getElementById("btnSaveSchedule");
+  const scheduleSaveMsg = document.getElementById("scheduleSaveMsg");
+  const planGrid = document.getElementById("planGrid");
+  const btnAddPlan = document.getElementById("btnAddPlan");
+  const planSaveMsg = document.getElementById("planSaveMsg");
+  let plans = [];
+  const gymFields = {
+    nombre: document.getElementById("gymNombre"),
+    eslogan: document.getElementById("gymEslogan"),
+    nit: document.getElementById("gymNit"),
+    telefono: document.getElementById("gymTelefono"),
+    correo: document.getElementById("gymCorreo"),
+    sitio_web: document.getElementById("gymSitioWeb"),
+    direccion: document.getElementById("gymDireccion"),
+    ciudad: document.getElementById("gymCiudad"),
+    pais: document.getElementById("gymPais")
+  };
   let trainers = [];
 
   const roleLabels = {
@@ -109,15 +127,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (window.innerWidth < 900) {
       closeSidebar();
-    }
-  }
-
-  function setColorSelection(hex) {
-    swatches.forEach((swatch) => {
-      swatch.classList.toggle("selected", swatch.dataset.color === hex);
-    });
-    if (hexInput) {
-      hexInput.value = hex;
     }
   }
 
@@ -195,15 +204,12 @@ document.addEventListener("DOMContentLoaded", () => {
     appearanceDesc?.insertAdjacentElement("afterend", note);
   }
 
-  function disableSection(sectionId) {
+  function hideSection(sectionId) {
     const item = sidebarItems.find((sidebarItem) => sidebarItem.dataset.section === sectionId);
     const section = document.getElementById(`sec-${sectionId}`);
 
-    item?.classList.add("is-disabled");
-    section?.classList.add("is-disabled");
-    section?.querySelectorAll("input, select, textarea, button").forEach((control) => {
-      control.disabled = true;
-    });
+    if (item) item.style.display = "none";
+    if (section) section.style.display = "none";
   }
 
   function configureRoleMode() {
@@ -236,7 +242,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const allowedSections = new Set(["apariencia", "seguridad"]);
     sidebarItems.forEach((item) => {
       if (!allowedSections.has(item.dataset.section)) {
-        disableSection(item.dataset.section);
+        hideSection(item.dataset.section);
+      }
+    });
+
+    [...document.querySelectorAll(".sidebar-section")].forEach((group) => {
+      const hasAllowed = [...group.querySelectorAll(".sidebar-item[data-section]")]
+        .some((item) => allowedSections.has(item.dataset.section));
+      if (!hasAllowed) {
+        group.style.display = "none";
       }
     });
 
@@ -438,6 +452,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function showEditStaffModal(staffMember) {
     await ensureTrainersLoaded();
+    if (!plans.length) {
+      try {
+        plans = await GymApp.getPlans();
+      } catch (error) {
+        console.error("No se pudieron cargar los planes:", error);
+      }
+    }
 
     const { overlay, box } = createOverlay();
     box.classList.add("gm-edit-box");
@@ -488,9 +509,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="gm-field">
             <label>Plan de membresia</label>
             <select id="gmPlan" class="gm-input">
-              ${["Mensual", "Trimestral", "Semestral", "Anual"].map((plan) => `
-                <option value="${plan}">${plan}</option>
-              `).join("")}
+              ${(plans.filter((plan) => plan.activo).length ? plans.filter((plan) => plan.activo) : plans)
+                .map((plan) => `<option value="${escapeHtml(plan.nombre)}">${escapeHtml(plan.nombre)}</option>`)
+                .join("")}
             </select>
           </div>
           <div class="gm-field">
@@ -658,6 +679,318 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function loadGymSettings() {
+    if (!gymFields.nombre) return;
+
+    try {
+      const response = await GymApp.api("/api/gym-settings");
+      const gym = response.gym || {};
+      Object.entries(gymFields).forEach(([key, input]) => {
+        if (input && gym[key] != null) {
+          input.value = gym[key];
+        }
+      });
+    } catch (error) {
+      console.error("No se pudieron cargar los datos del gimnasio:", error);
+    }
+  }
+
+  async function handleSaveGym() {
+    if (!btnSaveGym) return;
+
+    const gym = {};
+    Object.entries(gymFields).forEach(([key, input]) => {
+      if (input) {
+        gym[key] = input.value.trim();
+      }
+    });
+
+    setInlineMessage(gymSaveMsg, "", null);
+    btnSaveGym.disabled = true;
+    try {
+      await GymApp.api("/api/gym-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gym })
+      });
+      setInlineMessage(gymSaveMsg, "Datos del gimnasio guardados correctamente.", "success");
+      GymApp.toast("Datos del gimnasio guardados correctamente.", "success");
+    } catch (error) {
+      setInlineMessage(gymSaveMsg, error.message || "No se pudieron guardar los datos.", "error");
+      GymApp.toast(error.message || "No se pudieron guardar los datos.", "error");
+    } finally {
+      btnSaveGym.disabled = false;
+    }
+  }
+
+  function renderPlans() {
+    if (!planGrid) return;
+
+    if (!plans.length) {
+      planGrid.innerHTML = '<div class="plan-empty">No hay planes registrados. Agrega el primero.</div>';
+      return;
+    }
+
+    planGrid.innerHTML = plans
+      .map((plan) => {
+        const features = (plan.caracteristicas || [])
+          .map((feature) => `<li>${escapeHtml(feature)}</li>`)
+          .join("");
+        const price = Number.isInteger(plan.precio) ? plan.precio : Number(plan.precio).toFixed(2);
+        const inactiveClass = plan.activo ? "" : " plan-inactive";
+        const badge = plan.popular ? '<div class="plan-badge">Mas popular</div>' : "";
+        const inactiveTag = plan.activo ? "" : '<div class="plan-badge plan-badge-off">Inactivo</div>';
+        return `
+          <div class="plan-card${plan.popular ? " selected" : ""}${inactiveClass}" data-id="${plan.id}" role="button" tabindex="0">
+            ${badge}${inactiveTag}
+            <div class="plan-name">${escapeHtml(plan.nombre)}</div>
+            <div class="plan-price">$${price} <span>${escapeHtml(plan.periodo || "")}</span></div>
+            <ul class="plan-features">${features}</ul>
+            <div class="plan-card-hint">Clic para editar</div>
+          </div>
+        `;
+      })
+      .join("");
+
+    planGrid.querySelectorAll(".plan-card").forEach((card) => {
+      const plan = plans.find((item) => String(item.id) === String(card.dataset.id));
+      if (!plan) return;
+      card.addEventListener("click", () => showPlanModal(plan));
+      card.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          showPlanModal(plan);
+        }
+      });
+    });
+  }
+
+  async function loadPlans() {
+    if (!planGrid) return;
+
+    try {
+      plans = await GymApp.getPlans({ force: true });
+      renderPlans();
+    } catch (error) {
+      planGrid.innerHTML = '<div class="plan-empty">No se pudieron cargar los planes.</div>';
+      console.error("No se pudieron cargar los planes:", error);
+    }
+  }
+
+  function showPlanModal(existingPlan) {
+    const isEdit = Boolean(existingPlan);
+    const plan = existingPlan || {
+      nombre: "",
+      precio: "",
+      duracionDias: 30,
+      periodo: "/mes",
+      caracteristicas: [],
+      popular: false,
+      activo: true
+    };
+
+    const { overlay, box } = createOverlay();
+    box.classList.add("gm-edit-box");
+    box.innerHTML = `
+      <h3 class="gm-title">${isEdit ? "Editar plan" : "Nuevo plan"}</h3>
+      <div class="gm-form">
+        <div class="gm-field">
+          <label>Nombre del plan</label>
+          <input id="planNombre" class="gm-input" type="text" maxlength="50" value="${escapeHtml(plan.nombre)}" placeholder="Ej: Mensual">
+        </div>
+        <div class="gm-field">
+          <label>Precio ($)</label>
+          <input id="planPrecio" class="gm-input" type="number" min="0" step="0.01" value="${escapeHtml(plan.precio)}" placeholder="35">
+        </div>
+        <div class="gm-field">
+          <label>Duracion (dias)</label>
+          <input id="planDuracion" class="gm-input" type="number" min="1" step="1" value="${escapeHtml(plan.duracionDias)}" placeholder="30">
+        </div>
+        <div class="gm-field">
+          <label>Etiqueta de periodo</label>
+          <input id="planPeriodo" class="gm-input" type="text" maxlength="30" value="${escapeHtml(plan.periodo)}" placeholder="/mes">
+        </div>
+        <div class="gm-field">
+          <label>Caracteristicas (una por linea)</label>
+          <textarea id="planFeatures" class="gm-input" rows="4" placeholder="Acceso completo&#10;Clases grupales">${escapeHtml((plan.caracteristicas || []).join("\n"))}</textarea>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info"><div class="toggle-name">Marcar como popular</div><div class="toggle-desc">Se resalta con la etiqueta "Mas popular"</div></div>
+          <label class="toggle"><input type="checkbox" id="planPopular" ${plan.popular ? "checked" : ""}/><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info"><div class="toggle-name">Plan activo</div><div class="toggle-desc">Disponible para nuevas altas y renovaciones</div></div>
+          <label class="toggle"><input type="checkbox" id="planActivo" ${plan.activo ? "checked" : ""}/><span class="toggle-slider"></span></label>
+        </div>
+        <span class="gm-error" id="planError"></span>
+      </div>
+      <div class="gm-actions">
+        ${isEdit ? '<button class="gm-btn gm-btn-danger" id="planDelete">Eliminar</button>' : ""}
+        <button class="gm-btn gm-btn-cancel" id="planCancel">Cancelar</button>
+        <button class="gm-btn gm-btn-primary" id="planSave">${isEdit ? "Guardar cambios" : "Crear plan"}</button>
+      </div>
+    `;
+
+    const errEl = box.querySelector("#planError");
+
+    box.querySelector("#planCancel").onclick = () => overlay.remove();
+
+    box.querySelector("#planSave").onclick = async () => {
+      const payload = {
+        nombre: box.querySelector("#planNombre").value.trim(),
+        precio: Number(box.querySelector("#planPrecio").value),
+        duracionDias: Number(box.querySelector("#planDuracion").value),
+        periodo: box.querySelector("#planPeriodo").value.trim() || "/mes",
+        caracteristicas: box.querySelector("#planFeatures").value
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean),
+        popular: box.querySelector("#planPopular").checked,
+        activo: box.querySelector("#planActivo").checked
+      };
+
+      if (!payload.nombre) {
+        errEl.textContent = "El nombre es obligatorio.";
+        return;
+      }
+      if (!Number.isFinite(payload.precio) || payload.precio < 0) {
+        errEl.textContent = "Ingresa un precio valido.";
+        return;
+      }
+      if (!Number.isInteger(payload.duracionDias) || payload.duracionDias < 1) {
+        errEl.textContent = "La duracion debe ser un numero de dias mayor a 0.";
+        return;
+      }
+
+      const saveBtn = box.querySelector("#planSave");
+      saveBtn.disabled = true;
+      try {
+        await GymApp.api(isEdit ? `/api/membership-plans/${existingPlan.id}` : "/api/membership-plans", {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        overlay.remove();
+        GymApp.clearPlansCache();
+        await loadPlans();
+        setInlineMessage(planSaveMsg, isEdit ? "Plan actualizado correctamente." : "Plan creado correctamente.", "success");
+        GymApp.toast(isEdit ? "Plan actualizado." : "Plan creado.", "success");
+      } catch (error) {
+        errEl.textContent = error.message || "No se pudo guardar el plan.";
+        saveBtn.disabled = false;
+      }
+    };
+
+    if (isEdit) {
+      box.querySelector("#planDelete").onclick = () => {
+        showDeletePlanModal(existingPlan, overlay);
+      };
+    }
+  }
+
+  function showDeletePlanModal(plan, parentOverlay) {
+    const { overlay, box } = createOverlay();
+    box.innerHTML = `
+      <h3 class="gm-title">Eliminar plan</h3>
+      <p class="gm-body">
+        Se eliminara el plan <strong>${escapeHtml(plan.nombre)}</strong>. Las membresias existentes con este plan no se modifican, pero dejara de aparecer en altas y renovaciones.
+      </p>
+      <div class="gm-actions">
+        <button class="gm-btn gm-btn-cancel" id="delCancel">Cancelar</button>
+        <button class="gm-btn gm-btn-danger" id="delConfirm">Eliminar</button>
+      </div>
+    `;
+    box.querySelector("#delCancel").onclick = () => overlay.remove();
+    box.querySelector("#delConfirm").onclick = async () => {
+      try {
+        await GymApp.api(`/api/membership-plans/${plan.id}`, { method: "DELETE" });
+        overlay.remove();
+        parentOverlay?.remove();
+        GymApp.clearPlansCache();
+        await loadPlans();
+        setInlineMessage(planSaveMsg, "Plan eliminado correctamente.", "success");
+        GymApp.toast("Plan eliminado.", "success");
+      } catch (error) {
+        GymApp.toast(error.message || "No se pudo eliminar el plan.", "error");
+      }
+    };
+  }
+
+  function normalizeTime(value) {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(String(value ?? "").trim());
+    if (!match) return null;
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (hours > 23 || minutes > 59) return null;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+
+  async function loadGymSchedule() {
+    if (!scheduleGrid) return;
+
+    try {
+      const response = await GymApp.api("/api/gym-schedule");
+      const schedule = Array.isArray(response.schedule) ? response.schedule : [];
+
+      schedule.forEach((day) => {
+        const row = scheduleGrid.querySelector(`.hours-row[data-day="${day.dia}"]`);
+        if (!row) return;
+        const apertura = row.querySelector('[data-field="apertura"]');
+        const cierre = row.querySelector('[data-field="cierre"]');
+        const activo = row.querySelector('[data-field="activo"]');
+        if (apertura) apertura.value = day.apertura ?? "";
+        if (cierre) cierre.value = day.cierre ?? "";
+        if (activo) activo.checked = Boolean(day.activo);
+      });
+    } catch (error) {
+      console.error("No se pudieron cargar los horarios:", error);
+    }
+  }
+
+  async function handleSaveSchedule() {
+    if (!scheduleGrid || !btnSaveSchedule) return;
+
+    const rows = [...scheduleGrid.querySelectorAll(".hours-row")];
+    const schedule = [];
+
+    for (const row of rows) {
+      const dia = Number(row.dataset.day);
+      const dayName = row.querySelector(".day-name")?.textContent?.trim() || `Dia ${dia}`;
+      const apertura = normalizeTime(row.querySelector('[data-field="apertura"]')?.value);
+      const cierre = normalizeTime(row.querySelector('[data-field="cierre"]')?.value);
+      const activo = row.querySelector('[data-field="activo"]')?.checked || false;
+
+      if (!apertura || !cierre) {
+        setInlineMessage(scheduleSaveMsg, `Revisa las horas de ${dayName}. Usa el formato HH:MM.`, "error");
+        return;
+      }
+
+      if (apertura >= cierre) {
+        setInlineMessage(scheduleSaveMsg, `En ${dayName} la hora de cierre debe ser mayor a la de apertura.`, "error");
+        return;
+      }
+
+      schedule.push({ dia, apertura, cierre, activo });
+    }
+
+    setInlineMessage(scheduleSaveMsg, "", null);
+    btnSaveSchedule.disabled = true;
+    try {
+      await GymApp.api("/api/gym-schedule", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schedule })
+      });
+      setInlineMessage(scheduleSaveMsg, "Horarios guardados correctamente.", "success");
+      GymApp.toast("Horarios guardados correctamente.", "success");
+    } catch (error) {
+      setInlineMessage(scheduleSaveMsg, error.message || "No se pudieron guardar los horarios.", "error");
+      GymApp.toast(error.message || "No se pudieron guardar los horarios.", "error");
+    } finally {
+      btnSaveSchedule.disabled = false;
+    }
+  }
+
   hamburgerBtn?.addEventListener("click", toggleSidebar);
   sidebarOverlay?.addEventListener("click", closeSidebar);
   sidebarClose?.addEventListener("click", closeSidebar);
@@ -677,13 +1010,6 @@ document.addEventListener("DOMContentLoaded", () => {
     item.addEventListener("click", () => showSection(item.dataset.section));
   });
 
-  swatches.forEach((swatch) => {
-    swatch.addEventListener("click", () => {
-      if (swatch.closest(".settings-card")?.classList.contains("is-disabled")) return;
-      setColorSelection(swatch.dataset.color);
-    });
-  });
-
   darkModeToggle?.addEventListener("change", () => {
     applyThemeToPage(getSelectedTheme());
   });
@@ -700,6 +1026,17 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "form.html";
   });
 
+  btnSaveGym?.addEventListener("click", handleSaveGym);
+
+  btnSaveSchedule?.addEventListener("click", handleSaveSchedule);
+
+  btnAddPlan?.addEventListener("click", () => showPlanModal(null));
+
+  document.getElementById("btnSettingsLogout")?.addEventListener("click", () => {
+    GymApp.clearSession();
+    window.location.href = "login.html";
+  });
+
   window.addEventListener("gym-theme-change", (event) => {
     applyThemeToPage(event.detail?.theme || window.GymApp.getTheme());
   });
@@ -712,7 +1049,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   configureRoleMode();
-  setColorSelection("#f07922");
   loadUserThemePreference();
   loadStaffMembers();
+  loadGymSettings();
+  loadGymSchedule();
+  loadPlans();
 });

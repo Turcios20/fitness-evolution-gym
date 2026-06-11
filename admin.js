@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let members    = [];
   let trainers   = [];
+  let planCatalog = [];
   let filterPlan = "all";
   let filterStatus = "all";
   let attendanceEntries = [];
@@ -191,25 +192,30 @@ document.addEventListener("DOMContentLoaded", () => {
     box.querySelector("#gmConfirm").onclick = () => { overlay.remove(); onConfirm(); };
   }
 
-  const PLANES = [
-    { label: "Mensual",    days: 30,  price: "$35",  active: true  },
-    { label: "Trimestral", days: 90,  price: "$90",  active: false },
-    { label: "Semestral",  days: 180, price: "$160", active: false },
-    { label: "Anual",      days: 365, price: "$300", active: false },
-  ];
+  function planOptions(currentPlan) {
+    const names = planCatalog.filter(p => p.activo).map(p => p.nombre);
+    if (currentPlan && !names.includes(currentPlan)) {
+      names.unshift(currentPlan);
+    }
+    if (!names.length && currentPlan) {
+      names.push(currentPlan);
+    }
+    return names.map(name =>
+      `<option value="${name}" ${name === currentPlan ? "selected" : ""}>${name}</option>`).join("");
+  }
 
   function showRenewModal(member, onConfirm) {
     const { overlay, box } = createOverlay();
     const initials = getInitials(member.name);
-    const planCards = PLANES.map(p => `
-      <button class="gm-plan-card ${p.active ? "" : "gm-plan-disabled"}"
-        data-days="${p.days}" data-plan="${p.label}"
-        ${p.active ? "" : "disabled"}>
-        <span class="gm-plan-name">${p.label}</span>
-        <span class="gm-plan-price">${p.price}</span>
-        <span class="gm-plan-days">${p.days} días</span>
-        ${p.active ? "" : '<span class="gm-plan-soon">Próximamente</span>'}
-      </button>`).join("");
+    const activePlans = planCatalog.filter(p => p.activo);
+    const planCards = activePlans.length
+      ? activePlans.map(p => `
+        <button class="gm-plan-card" data-days="${p.duracionDias}" data-plan="${p.nombre}">
+          <span class="gm-plan-name">${p.nombre}</span>
+          <span class="gm-plan-price">${GymApp.formatPlanPrice(p)}</span>
+          <span class="gm-plan-days">${p.duracionDias} días</span>
+        </button>`).join("")
+      : '<p class="gm-body">No hay planes activos. Crea uno en Ajustes &gt; Planes de membresia.</p>';
     box.innerHTML = `
       <div class="gm-avatar-big" style="background:${avatarColor(initials)};">${initials}</div>
       <h3 class="gm-title">Renovar membresía</h3>
@@ -254,8 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <input id="gmEmail"  class="gm-input" type="email" value="${member.email}" /></div>
         <div class="gm-field" id="gmPlanField"><label>Plan</label>
           <select id="gmPlan" class="gm-input">
-            ${["Mensual","Trimestral","Semestral","Anual"].map(p =>
-              `<option value="${p}" ${p === currentPlan ? "selected" : ""}>${p}</option>`).join("")}
+            ${planOptions(currentPlan)}
           </select></div>
         <div class="gm-field" id="gmStatusField"><label>Estado</label>
           <select id="gmStatus" class="gm-input">
@@ -694,7 +699,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const row = document.createElement("div");
     row.className = "filter-row";
 
-    const plans   = ["Todos", "Mensual", "Trimestral", "Semestral", "Anual"];
+    const plans   = ["Todos", ...planCatalog.map(p => p.nombre)];
     const statuses = ["Todos", "Activo", "Inactivo"];
 
     function pill(label, key, value, activeVal, setter) {
@@ -780,12 +785,14 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadMembers() {
     showSkeletons();
     try {
-      const [memberData, trainerData] = await Promise.all([
+      const [memberData, trainerData, planData] = await Promise.all([
         GymApp.api("/api/admin/members"),
-        GymApp.api("/api/trainers")
+        GymApp.api("/api/trainers"),
+        GymApp.getPlans({ force: true })
       ]);
       members = memberData.members || [];
       trainers = trainerData.trainers || [];
+      planCatalog = planData || [];
       renderAlerts(members);
       renderSidebarSummary(members);
       buildFilters();

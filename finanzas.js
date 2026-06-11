@@ -3,6 +3,11 @@
 document.addEventListener("DOMContentLoaded", async () => {
   if (!window.GymApp?.guardRoute("admin")) return;
 
+  document.getElementById("btnAdminLogout")?.addEventListener("click", () => {
+    window.GymApp.clearSession();
+    window.location.href = "login.html";
+  });
+
   const fmt = (n) => "$" + Number(n || 0).toLocaleString("es-HN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
