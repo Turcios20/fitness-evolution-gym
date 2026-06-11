@@ -204,15 +204,12 @@ document.addEventListener("DOMContentLoaded", () => {
     appearanceDesc?.insertAdjacentElement("afterend", note);
   }
 
-  function disableSection(sectionId) {
+  function hideSection(sectionId) {
     const item = sidebarItems.find((sidebarItem) => sidebarItem.dataset.section === sectionId);
     const section = document.getElementById(`sec-${sectionId}`);
 
-    item?.classList.add("is-disabled");
-    section?.classList.add("is-disabled");
-    section?.querySelectorAll("input, select, textarea, button").forEach((control) => {
-      control.disabled = true;
-    });
+    if (item) item.style.display = "none";
+    if (section) section.style.display = "none";
   }
 
   function configureRoleMode() {
@@ -245,7 +242,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const allowedSections = new Set(["apariencia", "seguridad"]);
     sidebarItems.forEach((item) => {
       if (!allowedSections.has(item.dataset.section)) {
-        disableSection(item.dataset.section);
+        hideSection(item.dataset.section);
+      }
+    });
+
+    [...document.querySelectorAll(".sidebar-section")].forEach((group) => {
+      const hasAllowed = [...group.querySelectorAll(".sidebar-item[data-section]")]
+        .some((item) => allowedSections.has(item.dataset.section));
+      if (!hasAllowed) {
+        group.style.display = "none";
       }
     });
 
