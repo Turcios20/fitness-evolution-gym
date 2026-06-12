@@ -255,10 +255,10 @@ CREATE TABLE progreso_fotos (
 );
 
 INSERT INTO usuarios (nombre_completo, correo, password, rol) VALUES
-('Victor Administrator', 'admin@fitness-evolution-gym.pro', 'admin123', 'Administrador'),
-('Jhoscar Ochoa', 'jhoscar@correo.com', 'cliente123', 'Cliente'),
-('Maria Recepcion', 'maria.recepcion@gmail.com', 'recep123', 'Recepcionista'),
-('Carlos Entrenador', 'carlos.entrenador@gmail.com', 'train123', 'Entrenador');
+('Victor Administrator', 'admin@fitness-evolution-gym.pro', 'scrypt$570c284b352cdb7554b79e8d9761b985$270ca31f944e595a51dc2af96bec57b20bfd512867313d3ed53090a6900bdb18f067c2c47b53415af7784911e868334788ecb16db9c92ad85e58142a922bb2b8', 'Administrador'),
+('Jhoscar Ochoa', 'jhoscar@correo.com', 'scrypt$3466b1aad71f0f3e256cbfefab1e1063$24c261ef725dbe8b18b494152ddc877fab8f7699617a95cf1509fa44eb9e5f084dc0b6c7e3364c062a4e4bc2fe4319c1cf66e07239866d8a814acf607963b2f4', 'Cliente'),
+('Maria Recepcion', 'maria.recepcion@gmail.com', 'scrypt$0a042e96bed7a3b7b8723113ad691c46$2449c8bc631ecc355c5dd2aea03f41b289e7a81bd99fb01b4d594a6486271318043241bccace05f9ac15e4cdea01cbf5fd3f7a833a2e812ee3d9e8cbc332a39e', 'Recepcionista'),
+('Carlos Entrenador', 'carlos.entrenador@gmail.com', 'scrypt$4baeeadbcff8d99f8fb05126b4897dc8$5408a79cd95c1cc7317d8d8fbd3c4c7310d92e13c585b47daff1045d9a5249171ce6156f127a08757fa4675272af14089939f2ec29ac1e6e41dde925a722cc2e', 'Entrenador');
 
 INSERT INTO membresias (id_usuario, tipo_plan, precio, fecha_inicio, fecha_vencimiento, estado)
 VALUES

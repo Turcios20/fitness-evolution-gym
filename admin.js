@@ -53,6 +53,19 @@ document.addEventListener("DOMContentLoaded", () => {
     return p[(initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % p.length];
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value).replace(/`/g, "&#96;");
+  }
+
   function toInputDate(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -179,7 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
     box.innerHTML = `
       <div class="gm-avatar-big" style="background:${avatarColor(initials)};">${initials}</div>
       <h3 class="gm-title">¿Eliminar miembro?</h3>
-      <p class="gm-body">Vas a eliminar a <strong>${member.name}</strong>.<br>
+      <p class="gm-body">Vas a eliminar a <strong>${escapeHtml(member.name)}</strong>.<br>
       Esta acción <span style="color:#e05555;">no se puede deshacer</span>.</p>
       <div class="gm-actions">
         <button class="gm-btn gm-btn-cancel" id="gmCancel">Cancelar</button>
@@ -198,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
       names.push(currentPlan);
     }
     return names.map(name =>
-      `<option value="${name}" ${name === currentPlan ? "selected" : ""}>${name}</option>`).join("");
+      `<option value="${escapeAttr(name)}" ${name === currentPlan ? "selected" : ""}>${escapeHtml(name)}</option>`).join("");
   }
 
   function showRenewModal(member, onConfirm) {
@@ -207,8 +220,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const activePlans = planCatalog.filter(p => p.activo);
     const planCards = activePlans.length
       ? activePlans.map(p => `
-        <button class="gm-plan-card" data-days="${p.duracionDias}" data-plan="${p.nombre}">
-          <span class="gm-plan-name">${p.nombre}</span>
+        <button class="gm-plan-card" data-days="${p.duracionDias}" data-plan="${escapeAttr(p.nombre)}">
+          <span class="gm-plan-name">${escapeHtml(p.nombre)}</span>
           <span class="gm-plan-price">${GymApp.formatPlanPrice(p)}</span>
           <span class="gm-plan-days">${p.duracionDias} días</span>
         </button>`).join("")
@@ -216,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
     box.innerHTML = `
       <div class="gm-avatar-big" style="background:${avatarColor(initials)};">${initials}</div>
       <h3 class="gm-title">Renovar membresía</h3>
-      <p class="gm-body">Selecciona el plan para <strong>${member.name}</strong>:</p>
+      <p class="gm-body">Selecciona el plan para <strong>${escapeHtml(member.name)}</strong>:</p>
       <div class="gm-plans-grid">${planCards}</div>
       <div class="gm-actions">
         <button class="gm-btn gm-btn-cancel" id="gmCancel">Cancelar</button>
@@ -243,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .concat(
         trainers.map((trainer) => `
           <option value="${trainer.id}" ${trainer.id === Number(member.assignedTrainer?.id || 0) ? "selected" : ""}>
-            ${trainer.name}
+            ${escapeHtml(trainer.name)}
           </option>
         `)
       )
@@ -252,9 +265,9 @@ document.addEventListener("DOMContentLoaded", () => {
       <h3 class="gm-title">Editar miembro</h3>
       <div class="gm-form">
         <div class="gm-field"><label>Nombre completo</label>
-          <input id="gmName"   class="gm-input" type="text"  value="${member.name}" /></div>
+          <input id="gmName"   class="gm-input" type="text"  value="${escapeAttr(member.name)}" /></div>
         <div class="gm-field"><label>Correo electrónico</label>
-          <input id="gmEmail"  class="gm-input" type="email" value="${member.email}" /></div>
+          <input id="gmEmail"  class="gm-input" type="email" value="${escapeAttr(member.email)}" /></div>
         <div class="gm-field" id="gmPlanField"><label>Plan</label>
           <select id="gmPlan" class="gm-input">
             ${planOptions(currentPlan)}
@@ -480,9 +493,9 @@ document.addEventListener("DOMContentLoaded", () => {
       <tr>
         <td>${formatDate(entry.checkInAt)}</td>
         <td>${formatTime(entry.checkInAt)}</td>
-        <td>${entry.member.name}<br><span class="member-trainer">#${entry.member.id}</span></td>
+        <td>${escapeHtml(entry.member.name)}<br><span class="member-trainer">#${entry.member.id}</span></td>
         <td>${attendanceBadge(entry)}</td>
-        <td>${entry.membership?.plan || "Sin plan"} · ${entry.member.email}</td>
+        <td>${escapeHtml(entry.membership?.plan || "Sin plan")} · ${escapeHtml(entry.member.email)}</td>
       </tr>
     `).join("");
   }
@@ -571,9 +584,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const info = document.createElement("div");
     info.className = "member-info";
     info.innerHTML = `
-      <div class="member-name">${member.name}</div>
-      <div class="member-days">${member.email} | ${plan}</div>
-      <div class="member-trainer">Entrenador: ${member.assignedTrainer?.name || "Sin asignar"}</div>
+      <div class="member-name">${escapeHtml(member.name)}</div>
+      <div class="member-days">${escapeHtml(member.email)} | ${escapeHtml(plan)}</div>
+      <div class="member-trainer">Entrenador: ${escapeHtml(member.assignedTrainer?.name || "Sin asignar")}</div>
       <div style="margin-top:4px;">${statusBadge(days, status)}</div>`;
 
     // Acciones normales (desktop)

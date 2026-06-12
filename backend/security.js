@@ -4,7 +4,17 @@ const crypto = require("crypto");
 const { promisify } = require("util");
 
 const scryptAsync = promisify(crypto.scrypt);
-const TOKEN_SECRET = process.env.AUTH_SECRET || process.env.DB_PASSWORD || "fitness-evolution-dev-secret";
+const TOKEN_SECRET = process.env.AUTH_SECRET || process.env.DB_PASSWORD || crypto
+  .createHash("sha256")
+  .update([
+    "fitness-evolution-gym",
+    process.cwd(),
+    process.env.DB_HOST || "",
+    process.env.DB_PORT || "",
+    process.env.DB_NAME || "",
+    process.env.DB_USER || ""
+  ].join("|"))
+  .digest("hex");
 const TOKEN_TTL_MS = Number(process.env.AUTH_TOKEN_TTL_MS || 8 * 60 * 60 * 1000);
 
 function base64UrlEncode(value) {

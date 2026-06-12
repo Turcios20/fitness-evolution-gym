@@ -11,6 +11,15 @@
     return theme === "light" ? "light" : "dark";
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function getThemeCacheKey(username) {
     return username ? `gym-theme:${username}` : LEGACY_THEME_KEY;
   }
@@ -212,7 +221,7 @@
     el.className = `gym-toast gym-toast--${type}`;
 
     const icons = { success: "OK", error: "X", info: "i" };
-    el.innerHTML = `<span class="gym-toast-icon">${icons[type] || "i"}</span><span>${message}</span>`;
+    el.innerHTML = `<span class="gym-toast-icon">${icons[type] || "i"}</span><span>${escapeHtml(message)}</span>`;
 
     container.appendChild(el);
     requestAnimationFrame(() => el.classList.add("gym-toast--show"));
@@ -233,16 +242,21 @@
       danger = false,
     } = typeof options === "string" ? { message: options } : options;
 
+    const safeTitle = escapeHtml(title);
+    const safeMessage = escapeHtml(message);
+    const safeConfirmText = escapeHtml(confirmText);
+    const safeCancelText = escapeHtml(cancelText);
+
     return new Promise((resolve) => {
       const overlay = document.createElement("div");
       overlay.className = "gym-confirm-overlay";
       overlay.innerHTML = `
         <div class="gym-confirm" role="dialog" aria-modal="true">
-          <h3 class="gym-confirm-title">${title}</h3>
-          ${message ? `<p class="gym-confirm-message">${message}</p>` : ""}
+          <h3 class="gym-confirm-title">${safeTitle}</h3>
+          ${message ? `<p class="gym-confirm-message">${safeMessage}</p>` : ""}
           <div class="gym-confirm-actions">
-            <button type="button" class="gym-confirm-btn gym-confirm-cancel">${cancelText}</button>
-            <button type="button" class="gym-confirm-btn gym-confirm-ok${danger ? " gym-confirm-danger" : ""}">${confirmText}</button>
+            <button type="button" class="gym-confirm-btn gym-confirm-cancel">${safeCancelText}</button>
+            <button type="button" class="gym-confirm-btn gym-confirm-ok${danger ? " gym-confirm-danger" : ""}">${safeConfirmText}</button>
           </div>
         </div>
       `;

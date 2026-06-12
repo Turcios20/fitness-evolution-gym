@@ -84,9 +84,19 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderTrainerOptions() {
     if (!campos.trainerId) return;
 
-    campos.trainerId.innerHTML = ['<option value="">Sin asignar</option>']
-      .concat(trainers.map((trainer) => `<option value="${trainer.id}">${trainer.name}</option>`))
-      .join("");
+    campos.trainerId.innerHTML = "";
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Sin asignar";
+    campos.trainerId.appendChild(defaultOption);
+
+    trainers.forEach((trainer) => {
+      const option = document.createElement("option");
+      option.value = String(trainer.id);
+      option.textContent = trainer.name || `Entrenador #${trainer.id}`;
+      campos.trainerId.appendChild(option);
+    });
   }
 
   function syncSuggestedPrice(force = false) {
@@ -151,12 +161,20 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const planList = await GymApp.getPlans({ activeOnly: true });
       PLAN_PRICES = {};
-      campos.plan.innerHTML = ['<option value="">Seleccionar plan...</option>']
-        .concat(planList.map((plan) => {
-          PLAN_PRICES[plan.nombre] = Number(plan.precio);
-          return `<option value="${plan.nombre}">${plan.nombre}</option>`;
-        }))
-        .join("");
+      campos.plan.innerHTML = "";
+
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Seleccionar plan...";
+      campos.plan.appendChild(defaultOption);
+
+      planList.forEach((plan) => {
+        PLAN_PRICES[plan.nombre] = Number(plan.precio);
+        const option = document.createElement("option");
+        option.value = String(plan.nombre || "");
+        option.textContent = plan.nombre || "Plan";
+        campos.plan.appendChild(option);
+      });
     } catch (error) {
       GymApp.toast(`No se pudieron cargar los planes: ${error.message}`, "error");
     }

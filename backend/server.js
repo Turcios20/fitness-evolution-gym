@@ -3,6 +3,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
@@ -103,14 +104,67 @@ const EXPENSE_CATEGORIES = [
 let adminMailFallbackWarned = false;
 const YEAR_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 const ISO_DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+const BLOCKED_STATIC_PREFIXES = ["/backend", "/node_modules", "/.git"];
+const BLOCKED_STATIC_EXACT_PATHS = new Set([
+  "/.env",
+  "/.env.example",
+  "/package.json",
+  "/package-lock.json",
+  "/render.yaml"
+]);
+const BLOCKED_STATIC_PATTERNS = [
+  /^\/database(?:\.[^/]+)?\.sql$/i,
+  /^\/.*\.md$/i,
+  /^\/.*\.(?:log|err)$/i,
+  /^\/~\$.*$/i
+];
 let mailTransporter;
 
+app.disable("x-powered-by");
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.get(["/", "/index.html"], (_req, res) => {
   res.redirect("/login.html");
 });
-app.use(express.static(path.join(__dirname, ".."), { index: false }));
+app.use((req, res, next) => {
+  if (!["GET", "HEAD"].includes(req.method)) {
+    next();
+    return;
+  }
+
+  if (isBlockedStaticPath(req.path)) {
+    res.status(404).end();
+    return;
+  }
+
+  next();
+});
+app.use(express.static(path.join(__dirname, ".."), { index: false, dotfiles: "ignore" }));
+
+function normalizeStaticRequestPath(requestPath) {
+  const normalized = path.posix.normalize(
+    `/${String(requestPath || "/")
+      .replace(/\\/g, "/")
+      .replace(/^\/+/, "")}`
+  );
+
+  return normalized === "." ? "/" : normalized;
+}
+
+function isBlockedStaticPath(requestPath) {
+  const normalized = normalizeStaticRequestPath(requestPath);
+  const lowerCased = normalized.toLowerCase();
+
+  if (BLOCKED_STATIC_PREFIXES.some((prefix) => lowerCased === prefix || lowerCased.startsWith(`${prefix}/`))) {
+    return true;
+  }
+
+  if (BLOCKED_STATIC_EXACT_PATHS.has(lowerCased)) {
+    return true;
+  }
+
+  return BLOCKED_STATIC_PATTERNS.some((pattern) => pattern.test(normalized));
+}
 
 function roleToFrontend(role) {
   const value = String(role || "").trim().toLowerCase();
@@ -621,7 +675,7 @@ async function buildInvoiceAttachment(payment) {
 
 function createTemporaryPassword(length = TEMP_PASSWORD_LENGTH) {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-  return Array.from({ length }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+  return Array.from({ length }, () => alphabet[crypto.randomInt(0, alphabet.length)]).join("");
 }
 
 async function buildMemberAccountCreatedEmail(member) {
@@ -829,9 +883,10 @@ async function sendStaffReactivatedNotification(staffMember) {
 
 async function sendForgotPasswordEmail(user, temporaryPassword) {
   try {
-    await sendMail(buildForgotPasswordEmail(user, temporaryPassword));
+    return await sendMail(buildForgotPasswordEmail(user, temporaryPassword));
   } catch (error) {
     console.error("No se pudo enviar correo de recuperacion:", error.message);
+    return false;
   }
 }
 
@@ -3254,19 +3309,21 @@ app.post("/api/auth/forgot-password", async (req, res) => {
 
     if (user && user.estado_usuario !== "Inactivo") {
       const temporaryPassword = createTemporaryPassword();
-      const passwordHash = await hashPassword(temporaryPassword);
-
-      await pool.query(
-        `UPDATE usuarios
-         SET password = ?
-         WHERE id_usuario = ?`,
-        [passwordHash, user.id_usuario]
-      );
-
-      await sendForgotPasswordEmail({
+      const sent = await sendForgotPasswordEmail({
         name: user.nombre_completo,
         email: user.correo
       }, temporaryPassword);
+
+      if (sent) {
+        const passwordHash = await hashPassword(temporaryPassword);
+
+        await pool.query(
+          `UPDATE usuarios
+           SET password = ?
+           WHERE id_usuario = ?`,
+          [passwordHash, user.id_usuario]
+        );
+      }
     }
 
     res.json({

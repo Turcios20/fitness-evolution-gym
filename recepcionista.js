@@ -50,6 +50,15 @@ document.addEventListener("DOMContentLoaded", () => {
     return palette[(initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % palette.length];
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function formatTime(value) {
     if (!value) return "--";
     return new Date(value).toLocaleTimeString("es-SV", {
@@ -172,8 +181,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function statusPillHtml(status) {
-    return `<span class="status-pill ${status.className}">${status.label}</span>`;
+  function createStatusPill(status) {
+    const pill = document.createElement("span");
+    pill.className = `status-pill ${status.className}`;
+    pill.textContent = status.label;
+    return pill;
+  }
+
+  function renderEmptyRow(target, colspan, message) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = colspan;
+    cell.className = "table-empty";
+    cell.textContent = message;
+    row.appendChild(cell);
+    target.replaceChildren(row);
   }
 
   function memberSearchText(member) {
@@ -196,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
       : null;
   }
 
-  function renderCheckinPreview() {
+  function renderCheckinPreviewLegacy() {
     const selectedMember = findMemberById(memberSelect.value);
 
     if (!selectedMember) {
@@ -236,8 +258,80 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  function createMemberOption(member) {
+  function createMemberOptionLegacy(member) {
     return `<option value="${member.id}">#${member.id} - ${member.name} - ${member.email}</option>`;
+  }
+
+  function renderCheckinPreview() {
+    const selectedMember = findMemberById(memberSelect.value);
+
+    if (!selectedMember) {
+      memberDetails.className = "member-preview member-preview--placeholder";
+      const placeholder = document.createElement("p");
+      placeholder.textContent = "Selecciona un miembro para ver su estado de membresia antes del registro.";
+      memberDetails.replaceChildren(placeholder);
+      return;
+    }
+
+    const membership = selectedMember.membership || null;
+    const status = getMembershipStatus(membership);
+    const toneClass = status.className === "active"
+      ? "member-preview--ok"
+      : status.className === "warn"
+        ? "member-preview--warn"
+        : "member-preview--danger";
+
+    memberDetails.className = `member-preview ${toneClass}`;
+
+    const top = document.createElement("div");
+    top.className = "member-preview-top";
+    const topInfo = document.createElement("div");
+    const name = document.createElement("div");
+    name.className = "member-preview-name";
+    name.textContent = selectedMember.name;
+    const id = document.createElement("span");
+    id.className = "member-preview-id";
+    id.textContent = `ID #${selectedMember.id} - ${selectedMember.email}`;
+    topInfo.append(name, id);
+    top.append(topInfo, createStatusPill(status));
+
+    const grid = document.createElement("div");
+    grid.className = "member-preview-grid";
+
+    const planItem = document.createElement("div");
+    planItem.className = "member-preview-item";
+    const planLabel = document.createElement("span");
+    planLabel.className = "member-preview-label";
+    planLabel.textContent = "Plan";
+    const planValue = document.createElement("span");
+    planValue.className = "member-preview-value";
+    planValue.textContent = membership?.plan || "Sin plan";
+    planItem.append(planLabel, planValue);
+
+    const endDateItem = document.createElement("div");
+    endDateItem.className = "member-preview-item";
+    const endDateLabel = document.createElement("span");
+    endDateLabel.className = "member-preview-label";
+    endDateLabel.textContent = "Vence";
+    const endDateValue = document.createElement("span");
+    endDateValue.className = "member-preview-value";
+    endDateValue.textContent = membership?.endDate ? formatDate(membership.endDate) : "--";
+    endDateItem.append(endDateLabel, endDateValue);
+
+    grid.append(planItem, endDateItem);
+
+    const note = document.createElement("div");
+    note.className = "member-preview-note";
+    note.textContent = status.detail;
+
+    memberDetails.replaceChildren(top, grid, note);
+  }
+
+  function createMemberOption(member) {
+    const option = document.createElement("option");
+    option.value = String(member.id);
+    option.textContent = `#${member.id} - ${member.name} - ${member.email}`;
+    return option;
   }
 
   function populateCheckinSelect() {
@@ -247,13 +341,16 @@ document.addEventListener("DOMContentLoaded", () => {
       ? allMembers.filter((member) => memberSearchText(member).includes(query))
       : allMembers;
 
-    memberSelect.innerHTML = ['<option value="">Selecciona un cliente...</option>']
-      .concat(
-        [...list]
-          .sort((left, right) => left.name.localeCompare(right.name))
-          .map(createMemberOption)
-      )
-      .join("");
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Selecciona un cliente...";
+
+    memberSelect.replaceChildren(defaultOption);
+    [...list]
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .forEach((member) => {
+        memberSelect.appendChild(createMemberOption(member));
+      });
 
     if (list.some((member) => String(member.id) === currentValue)) {
       memberSelect.value = currentValue;
@@ -264,20 +361,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function populateHistorySelect() {
     const currentValue = historyMemberSelect.value;
-    historyMemberSelect.innerHTML = ['<option value="">Selecciona un cliente...</option>']
-      .concat(
-        [...allMembers]
-          .sort((left, right) => left.name.localeCompare(right.name))
-          .map(createMemberOption)
-      )
-      .join("");
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Selecciona un cliente...";
+
+    historyMemberSelect.replaceChildren(defaultOption);
+    [...allMembers]
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .forEach((member) => {
+        historyMemberSelect.appendChild(createMemberOption(member));
+      });
 
     if (allMembers.some((member) => String(member.id) === currentValue)) {
       historyMemberSelect.value = currentValue;
     }
   }
 
-  function renderTable() {
+  function renderTableLegacy() {
     const query = String(searchInput.value || "").trim().toLowerCase();
     const filtered = presentMembers.filter((member) =>
       memberSearchText(member).includes(query)
@@ -340,7 +440,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function renderHistoryTable(entries) {
+  function renderHistoryTableLegacy(entries) {
     if (!entries.length) {
       historyTableBody.innerHTML = `
         <tr>
@@ -365,6 +465,103 @@ document.addEventListener("DOMContentLoaded", () => {
         </tr>
       `;
     }).join("");
+  }
+
+  function renderTable() {
+    const query = String(searchInput.value || "").trim().toLowerCase();
+    const filtered = presentMembers.filter((member) =>
+      memberSearchText(member).includes(query)
+    );
+
+    if (!filtered.length) {
+      renderEmptyRow(tableBody, 4, "No hay miembros presentes que coincidan.");
+      return;
+    }
+
+    tableBody.replaceChildren();
+    filtered.forEach((member) => {
+      const status = getPresentMemberStatus(member);
+      const tr = document.createElement("tr");
+
+      const infoCell = document.createElement("td");
+      const info = document.createElement("div");
+      info.className = "m-info";
+      const memberName = document.createElement("span");
+      memberName.className = "m-name";
+      memberName.textContent = member.name;
+      const memberId = document.createElement("span");
+      memberId.className = "m-id";
+      memberId.textContent = `ID #${member.id} - ${member.email}`;
+      info.append(memberName, memberId);
+      infoCell.appendChild(info);
+
+      const statusCell = document.createElement("td");
+      statusCell.appendChild(createStatusPill(status));
+
+      const timeCell = document.createElement("td");
+      timeCell.textContent = formatTime(member.checkInTime);
+
+      const actionCell = document.createElement("td");
+      const button = document.createElement("button");
+      button.className = "btn-table";
+      button.disabled = !status.renewable;
+      button.textContent = status.renewable ? `Renovar ${defaultPlan?.duracionDias || 30}d` : "Al dia";
+      actionCell.appendChild(button);
+
+      if (status.renewable) {
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          try {
+            const response = await GymApp.api(`/api/members/${member.id}/renew`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                days: defaultPlan?.duracionDias || 30,
+                plan: defaultPlan?.nombre || "Mensual"
+              })
+            });
+            const invoiceText = response?.invoiceNumber ? ` Factura: ${response.invoiceNumber}.` : "";
+            GymApp.toast(`Membresia renovada para ${member.name}.${invoiceText}`, "success");
+            await loadMembers();
+            await Promise.all([loadDashboard(), refreshHistoryIfSelected(member.id)]);
+          } catch (error) {
+            button.disabled = false;
+            GymApp.toast(`Error: ${error.message}`, "error");
+          }
+        });
+      }
+
+      tr.append(infoCell, statusCell, timeCell, actionCell);
+      tableBody.appendChild(tr);
+    });
+  }
+
+  function renderHistoryTable(entries) {
+    if (!entries.length) {
+      renderEmptyRow(historyTableBody, 4, "No hay registros de asistencia para este rango.");
+      return;
+    }
+
+    historyTableBody.replaceChildren();
+    entries.forEach((entry) => {
+      const status = getMembershipStatus(entry.membership);
+      const detail = entry.membership?.plan
+        ? `${entry.membership.plan} - ${entry.member.email}`
+        : entry.member.email;
+
+      const row = document.createElement("tr");
+      const dateCell = document.createElement("td");
+      dateCell.textContent = formatDate(entry.checkInAt);
+      const timeCell = document.createElement("td");
+      timeCell.textContent = formatTime(entry.checkInAt);
+      const statusCell = document.createElement("td");
+      statusCell.appendChild(createStatusPill(status));
+      const detailCell = document.createElement("td");
+      detailCell.textContent = detail;
+
+      row.append(dateCell, timeCell, statusCell, detailCell);
+      historyTableBody.appendChild(row);
+    });
   }
 
   function updateHistorySummary(member, entries) {
@@ -464,11 +661,7 @@ document.addEventListener("DOMContentLoaded", () => {
   historyMemberSelect.addEventListener("change", () => {
     if (historyMemberSelect.value) {
       const member = findMemberById(historyMemberSelect.value);
-      historyTableBody.innerHTML = `
-        <tr>
-          <td colspan="4" class="table-empty">Pulsa "Consultar historial" para cargar los registros.</td>
-        </tr>
-      `;
+      renderEmptyRow(historyTableBody, 4, 'Pulsa "Consultar historial" para cargar los registros.');
       updateHistorySummary(member, []);
     }
   });

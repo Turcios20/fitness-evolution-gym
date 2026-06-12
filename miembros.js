@@ -40,6 +40,19 @@ document.addEventListener("DOMContentLoaded", () => {
     return palette[(initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % palette.length];
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value).replace(/`/g, "&#96;");
+  }
+
   function memberStatus(member) {
     const status = member.membership?.status || "Activo";
     const days = member.membership?.daysRemaining ?? 0;
@@ -78,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .concat(
         trainers.map((trainer) => `
           <option value="${trainer.id}" ${trainer.id === selectedId ? "selected" : ""}>
-            ${trainer.name}
+            ${escapeHtml(trainer.name)}
           </option>
         `)
       )
@@ -102,11 +115,11 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="gm-form">
         <div class="gm-field">
           <label>Nombre completo</label>
-          <input id="gmName" class="gm-input" type="text" value="${member.name}">
+          <input id="gmName" class="gm-input" type="text" value="${escapeAttr(member.name)}">
         </div>
         <div class="gm-field">
           <label>Correo electronico</label>
-          <input id="gmEmail" class="gm-input" type="email" value="${member.email}">
+          <input id="gmEmail" class="gm-input" type="email" value="${escapeAttr(member.email)}">
         </div>
         <div class="gm-field" id="gmPlanField">
           <label>Plan</label>
@@ -219,7 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
     box.innerHTML = `
       <div class="gm-avatar-big" style="background:${avatarColor(initials)};">${initials}</div>
       <h3 class="gm-title">Eliminar miembro</h3>
-      <p class="gm-body">Vas a eliminar a <strong>${member.name}</strong>. Esta accion no se puede deshacer.</p>
+      <p class="gm-body">Vas a eliminar a <strong>${escapeHtml(member.name)}</strong>. Esta accion no se puede deshacer.</p>
       <div class="gm-actions">
         <button class="gm-btn gm-btn-cancel" id="gmCancel">Cancelar</button>
         <button class="gm-btn gm-btn-danger" id="gmConfirm">Si, eliminar</button>
@@ -241,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
       names.push(currentPlan);
     }
     return names
-      .map((name) => `<option value="${name}" ${name === currentPlan ? "selected" : ""}>${name}</option>`)
+      .map((name) => `<option value="${escapeAttr(name)}" ${name === currentPlan ? "selected" : ""}>${escapeHtml(name)}</option>`)
       .join("");
   }
 
@@ -253,12 +266,12 @@ document.addEventListener("DOMContentLoaded", () => {
     box.innerHTML = `
       <div class="gm-avatar-big" style="background:${avatarColor(initials)};">${initials}</div>
       <h3 class="gm-title">Renovar membresia</h3>
-      <p class="gm-body">Selecciona el plan para <strong>${member.name}</strong>:</p>
+      <p class="gm-body">Selecciona el plan para <strong>${escapeHtml(member.name)}</strong>:</p>
       <div class="gm-plans-grid">
         ${activePlans.length
           ? activePlans.map((plan) => `
-            <button class="gm-plan-card" data-days="${plan.duracionDias}" data-plan="${plan.nombre}">
-              <span class="gm-plan-name">${plan.nombre}</span>
+            <button class="gm-plan-card" data-days="${plan.duracionDias}" data-plan="${escapeAttr(plan.nombre)}">
+              <span class="gm-plan-name">${escapeHtml(plan.nombre)}</span>
               <span class="gm-plan-price">${GymApp.formatPlanPrice(plan)}</span>
               <span class="gm-plan-days">${plan.duracionDias} dias</span>
             </button>
@@ -360,13 +373,13 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="td-member">
           <div class="td-avatar" style="background:${avatarColor(initials)};">${initials}</div>
           <div>
-            <div class="td-name">${member.name}</div>
-            <div class="td-email">${member.email}</div>
+            <div class="td-name">${escapeHtml(member.name)}</div>
+            <div class="td-email">${escapeHtml(member.email)}</div>
           </div>
         </div>
       </td>
-      <td><span class="td-plan">${plan}</span></td>
-      <td><span class="td-trainer">${member.assignedTrainer?.name || "Sin asignar"}</span></td>
+      <td><span class="td-plan">${escapeHtml(plan)}</span></td>
+      <td><span class="td-trainer">${escapeHtml(member.assignedTrainer?.name || "Sin asignar")}</span></td>
       <td>${days > 0 ? `${days} dias` : "-"}</td>
       <td>${badgeHtml(member)}</td>
       <td>
