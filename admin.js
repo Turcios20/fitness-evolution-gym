@@ -139,9 +139,6 @@ document.addEventListener("DOMContentLoaded", () => {
       alertCard.classList.add("sidebar-card--alerts");
       alertCard.innerHTML = `
         <div class="sidebar-card-title">Alertas y tareas pendientes</div>
-        <p class="sidebar-card-copy">
-          Un espacio dedicado a lo que requiere atencion inmediata.
-        </p>
         <div class="alert-list" id="alert-list">
           <div class="alert-item">
             <div class="alert-badge alert-badge--warn">Hoy</div>
