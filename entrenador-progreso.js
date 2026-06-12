@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
   GymApp.setupUserMenu();
   const userAvatar = document.getElementById("userAvatar");
   const roleBadge = document.getElementById("roleBadge");
-  const btnLogout = document.getElementById("btnTrainerLogout");
   const clientsList = document.getElementById("clientsList");
   const clientsCount = document.getElementById("clientsCount");
   const clientsPanelTitle = document.getElementById("clientsPanelTitle");
@@ -334,10 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
   objectiveSelect.addEventListener("change", toggleObjectiveCustomField);
   saveObjectiveButton.addEventListener("click", saveObjective);
 
-  btnLogout.addEventListener("click", () => {
-    GymApp.clearSession();
-    window.location.href = "login.html";
-  });
 
   configurePageByRole();
   renderAvatar();

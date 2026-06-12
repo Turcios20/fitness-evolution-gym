@@ -730,3 +730,18 @@ body[data-theme="light"] .setting-item {
     grid-template-columns: 1fr;
   }
 }
+
+.recepcion-page .topnav .logo {
+  margin-right: 0;
+}
+
+.recepcion-page .topnav .nav-link {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.recepcion-page .topnav .nav-link.active,
+.recepcion-page .topnav .nav-link:hover {
+  background: none;
+}
