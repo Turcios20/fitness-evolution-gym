@@ -2243,6 +2243,99 @@ input::-ms-clear {
   .gym-toast { max-width: 100%; }
 }
 
+.gym-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.gym-confirm-overlay--show { opacity: 1; }
+
+.gym-confirm {
+  width: 100%;
+  max-width: 380px;
+  background: rgba(18,18,18,0.98);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.6);
+  transform: translateY(8px) scale(0.98);
+  transition: transform 0.2s ease;
+}
+
+.gym-confirm-overlay--show .gym-confirm { transform: translateY(0) scale(1); }
+
+.gym-confirm-title {
+  margin: 0 0 8px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+
+.gym-confirm-message {
+  margin: 0 0 22px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.gym-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.gym-confirm-btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.gym-confirm-cancel {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+
+.gym-confirm-cancel:hover {
+  border-color: var(--text-dim);
+  color: var(--text);
+}
+
+.gym-confirm-ok {
+  background: var(--orange);
+  color: #fff;
+}
+
+.gym-confirm-ok:hover { background: var(--orange-dark); }
+
+.gym-confirm-danger {
+  background: #c4302b;
+}
+
+.gym-confirm-danger:hover { background: #a82420; }
+
+body[data-theme="light"] .gym-confirm {
+  background: rgba(255,249,242,0.99);
+}
+
 /* =============================================
    BADGES DE ESTADO EN TARJETAS
    ============================================= */

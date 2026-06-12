@@ -224,6 +224,55 @@
     }, 3200);
   }
 
+  function confirmDialog(options = {}) {
+    const {
+      title = "¿Estás seguro?",
+      message = "",
+      confirmText = "Aceptar",
+      cancelText = "Cancelar",
+      danger = false,
+    } = typeof options === "string" ? { message: options } : options;
+
+    return new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      overlay.className = "gym-confirm-overlay";
+      overlay.innerHTML = `
+        <div class="gym-confirm" role="dialog" aria-modal="true">
+          <h3 class="gym-confirm-title">${title}</h3>
+          ${message ? `<p class="gym-confirm-message">${message}</p>` : ""}
+          <div class="gym-confirm-actions">
+            <button type="button" class="gym-confirm-btn gym-confirm-cancel">${cancelText}</button>
+            <button type="button" class="gym-confirm-btn gym-confirm-ok${danger ? " gym-confirm-danger" : ""}">${confirmText}</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+      requestAnimationFrame(() => overlay.classList.add("gym-confirm-overlay--show"));
+
+      const close = (result) => {
+        overlay.classList.remove("gym-confirm-overlay--show");
+        overlay.addEventListener("transitionend", () => overlay.remove(), { once: true });
+        document.removeEventListener("keydown", onKey);
+        resolve(result);
+      };
+
+      const onKey = (event) => {
+        if (event.key === "Escape") close(false);
+        if (event.key === "Enter") close(true);
+      };
+
+      overlay.querySelector(".gym-confirm-ok").addEventListener("click", () => close(true));
+      overlay.querySelector(".gym-confirm-cancel").addEventListener("click", () => close(false));
+      overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) close(false);
+      });
+      document.addEventListener("keydown", onKey);
+
+      overlay.querySelector(".gym-confirm-ok").focus();
+    });
+  }
+
   const EYE_ICON = `
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M12 5C6.5 5 2 8.6 1 12c1 3.4 5.5 7 11 7s10-3.6 11-7c-1-3.4-5.5-7-11-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"></path>
@@ -400,6 +449,7 @@
     getHomeByRole,
     resolveUrl,
     toast,
+    confirm: confirmDialog,
     getTheme,
     setTheme,
     syncThemeFromSettings,
