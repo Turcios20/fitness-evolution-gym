@@ -120,6 +120,31 @@ const BLOCKED_STATIC_PATTERNS = [
   /^\/.*\.(?:log|err)$/i,
   /^\/~\$.*$/i
 ];
+const FRONTEND_PAGE_ROUTES = [
+  ["login", "login.html"],
+  ["admin", "admin.html"],
+  ["miembros", "miembros.html"],
+  ["finanzas-general", "finanzas-general.html"],
+  ["finanzas", "finanzas.html"],
+  ["pagos-personal", "pagos-personal.html"],
+  ["egresos", "egresos.html"],
+  ["ajustes", "ajustes.html"],
+  ["form", "form.html"],
+  ["recepcionista", "recepcionista.html"],
+  ["form-recepcion", "form-recepcion.html"],
+  ["ajustes-recepcion", "ajustes-recepcion.html"],
+  ["entrenador", "entrenador.html"],
+  ["entrenador-rutinas", "entrenador-rutinas.html"],
+  ["entrenador-medidas", "entrenador-medidas.html"],
+  ["entrenador-progreso", "entrenador-progreso.html"],
+  ["ajustes-entrenador", "ajustes-entrenador.html"],
+  ["cliente", "cliente.html"],
+  ["calendario-cliente", "calendario-cliente.html"],
+  ["progreso-cliente", "progreso-cliente.html"],
+  ["evolucion-cliente", "evolucion-cliente.html"],
+  ["mis-rutinas-cliente", "mis-rutinas-cliente.html"],
+  ["ajustes-cliente", "ajustes-cliente.html"]
+];
 let mailTransporter;
 
 app.disable("x-powered-by");
@@ -128,12 +153,7 @@ app.use(express.json({ limit: "10mb" }));
 app.get(["/", "/index.html"], (_req, res) => {
   res.redirect("/login");
 });
-app.get("/login", (_req, res) => {
-  res.sendFile(path.join(__dirname, "..", "login.html"));
-});
-app.get("/login.html", (_req, res) => {
-  res.redirect("/login");
-});
+registerFrontendPageRoutes();
 app.use((req, res, next) => {
   if (!["GET", "HEAD"].includes(req.method)) {
     next();
@@ -165,6 +185,33 @@ function createScopedAppSecret(scope) {
       process.env.DB_USER || ""
     ].join("|"))
     .digest("hex");
+}
+
+function getRequestQuerySuffix(req) {
+  const queryIndex = req.originalUrl.indexOf("?");
+  return queryIndex >= 0 ? req.originalUrl.slice(queryIndex) : "";
+}
+
+function redirectToCleanPage(req, res, cleanRoute) {
+  res.redirect(`${cleanRoute}${getRequestQuerySuffix(req)}`);
+}
+
+function sendFrontendPage(res, fileName) {
+  res.sendFile(path.join(__dirname, "..", fileName));
+}
+
+function registerFrontendPageRoutes() {
+  FRONTEND_PAGE_ROUTES.forEach(([slug, fileName]) => {
+    const cleanRoute = `/${slug}`;
+
+    app.get(cleanRoute, (_req, res) => {
+      sendFrontendPage(res, fileName);
+    });
+
+    app.get([`${cleanRoute}/`, `/${fileName}`], (req, res) => {
+      redirectToCleanPage(req, res, cleanRoute);
+    });
+  });
 }
 
 function normalizeStaticRequestPath(requestPath) {

@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("btnAdminLogout")?.addEventListener("click", () => {
     window.GymApp.clearSession();
-    window.location.href = "login.html";
+    window.location.href = "/login";
   });
 
   const ROLE_COLORS = {

@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     dn.textContent = name;
     wrap.addEventListener("click", (e) => { e.stopPropagation(); drop.classList.toggle("open"); });
     document.addEventListener("click", () => drop.classList.remove("open"));
-    logoutBtn.addEventListener("click", () => { GymApp.clearSession(); window.location.href = "login.html"; });
+    logoutBtn.addEventListener("click", () => { GymApp.clearSession(); window.location.href = "/login"; });
   })();
 
   function escapeHtml(value) {

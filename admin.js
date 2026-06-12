@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnLogout) {
     btnLogout.addEventListener("click", () => {
       GymApp.clearSession();
-      window.location.href = "login.html";
+      window.location.href = "/login";
     });
   }
 
@@ -775,7 +775,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.className = "admin-create-member";
     Object.assign(btn.style, { marginLeft:"8px", whiteSpace:"nowrap",
       padding:"8px 14px", fontSize:"13px", borderRadius:"8px" });
-    btn.addEventListener("click", () => { window.location.href = "form.html"; });
+    btn.addEventListener("click", () => { window.location.href = "/form"; });
     bar.appendChild(btn);
   }
 

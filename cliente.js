@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -84,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── Cerrar sesión ──
   btnLogout.addEventListener("click", () => {
     GymApp.clearSession();
-    window.location.href = "login.html";
+    window.location.href = "/login";
   });
 
   // Los links del nav inferior ya apuntan a sus páginas reales

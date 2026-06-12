@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("btnAdminLogout")?.addEventListener("click", () => {
     window.GymApp.clearSession();
-    window.location.href = "login.html";
+    window.location.href = "/login";
   });
 
   const MODULE_STYLES = {
@@ -208,7 +208,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               <span>Historico</span>
             </div>
           </div>
-          <a href="finanzas.html" class="overview-module-link">Abrir ingresos</a>
+          <a href="/finanzas" class="overview-module-link">Abrir ingresos</a>
         </article>
 
         <article class="overview-module-card overview-module-card--staff">
@@ -239,7 +239,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               <span>Historico</span>
             </div>
           </div>
-          <a href="pagos-personal.html" class="overview-module-link">Abrir pagos al personal</a>
+          <a href="/pagos-personal" class="overview-module-link">Abrir pagos al personal</a>
         </article>
 
         <article class="overview-module-card overview-module-card--expense">
@@ -270,7 +270,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               <span>Historico</span>
             </div>
           </div>
-          <a href="egresos.html" class="overview-module-link">Abrir egresos</a>
+          <a href="/egresos" class="overview-module-link">Abrir egresos</a>
         </article>
       </div>
     `;

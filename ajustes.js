@@ -63,22 +63,22 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   if (!session) {
-    window.location.href = "login.html";
+    window.location.href = "/login";
     return;
   }
 
   if (session.role === "cliente") {
-    window.location.href = "ajustes-cliente.html";
+    window.location.href = "/ajustes-cliente";
     return;
   }
 
   if (session.role === "entrenador") {
-    window.location.href = "ajustes-entrenador.html";
+    window.location.href = "/ajustes-entrenador";
     return;
   }
 
   if (session.role === "recepcionista") {
-    window.location.href = "ajustes-recepcion.html";
+    window.location.href = "/ajustes-recepcion";
     return;
   }
 
@@ -229,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const navItems = [
       { href: window.GymApp.getHomeByRole(session.role), label: "Inicio", active: false },
-      { href: "ajustes.html", label: "Ajustes", active: true }
+      { href: "/ajustes", label: "Ajustes", active: true }
     ];
     renderRoleNav(navItems);
 
@@ -1033,7 +1033,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   btnAddStaffUser?.addEventListener("click", () => {
-    window.location.href = "form.html";
+    window.location.href = "/form";
   });
 
   btnSaveGym?.addEventListener("click", handleSaveGym);
@@ -1044,7 +1044,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("btnSettingsLogout")?.addEventListener("click", () => {
     GymApp.clearSession();
-    window.location.href = "login.html";
+    window.location.href = "/login";
   });
 
   window.addEventListener("gym-theme-change", (event) => {

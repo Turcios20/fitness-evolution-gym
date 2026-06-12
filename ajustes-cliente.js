@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   logoutButton?.addEventListener("click", () => {
     window.GymApp.clearSession();
-    window.location.href = "login.html";
+    window.location.href = "/login";
   });
 
   window.addEventListener("gym-theme-change", (event) => {

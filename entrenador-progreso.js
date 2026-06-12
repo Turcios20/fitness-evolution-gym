@@ -68,8 +68,8 @@ document.addEventListener("DOMContentLoaded", () => {
       progressSubtitle.textContent = "Progreso Fisico";
       progressTitle.textContent = "Progreso de Miembros";
       clientsPanelTitle.textContent = "Clientes";
-      progressHomeLink.href = "admin.html";
-      progressSettingsLink.href = "ajustes.html";
+      progressHomeLink.href = "/admin";
+      progressSettingsLink.href = "/ajustes";
       objectiveEditorHint.textContent = "Como administrador puedes actualizar el objetivo y subir una fotografia por registro.";
       return;
     }
@@ -78,8 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
     progressSubtitle.textContent = "Progreso de Clientes";
     progressTitle.textContent = "Progreso de Alumnos";
     clientsPanelTitle.textContent = "Mis Clientes";
-    progressHomeLink.href = "entrenador.html";
-    progressSettingsLink.href = "ajustes-entrenador.html";
+    progressHomeLink.href = "/entrenador";
+    progressSettingsLink.href = "/ajustes-entrenador";
     objectiveEditorHint.textContent = "Como entrenador asignado puedes actualizar el objetivo y subir una fotografia por registro.";
   }
 

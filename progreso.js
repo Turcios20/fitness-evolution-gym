@@ -7,7 +7,7 @@
 
   const session = window.GymApp.getSession();
   if (!session?.id) {
-    window.location.href = "login.html";
+    window.location.href = "/login";
     return;
   }
 

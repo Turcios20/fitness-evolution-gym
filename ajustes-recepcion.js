@@ -155,7 +155,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   btnLogout?.addEventListener("click", () => {
     GymApp.clearSession();
-    window.location.href = "login.html";
+    window.location.href = "/login";
   });
 
   window.addEventListener("gym-theme-change", (event) => {

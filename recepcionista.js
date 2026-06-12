@@ -674,7 +674,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnLogout.addEventListener("click", () => {
     GymApp.clearSession();
-    window.location.href = "login.html";
+    window.location.href = "/login";
   });
 
   btnFocusCheckin.addEventListener("click", () => {

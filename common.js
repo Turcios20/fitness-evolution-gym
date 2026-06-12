@@ -87,10 +87,10 @@
 
   function getHomeByRole(role) {
     const value = String(role || "").trim().toLowerCase();
-    if (value === "admin") return "admin.html";
-    if (value === "recepcionista") return "recepcionista.html";
-    if (value === "entrenador") return "entrenador.html";
-    return "cliente.html";
+    if (value === "admin") return "/admin";
+    if (value === "recepcionista") return "/recepcionista";
+    if (value === "entrenador") return "/entrenador";
+    return "/cliente";
   }
 
   function resolveUrl(resourcePath) {
@@ -116,7 +116,7 @@
 
     if (response.status === 401) {
       clearSession();
-      window.location.href = "login.html";
+      window.location.href = "/login";
       throw new Error("Sesion expirada.");
     }
 
@@ -180,13 +180,13 @@
   function guardRoute(requiredRole) {
     if (isSessionExpired()) {
       clearSession();
-      window.location.href = "login.html";
+      window.location.href = "/login";
       return false;
     }
 
     const session = getSession();
     if (!session) {
-      window.location.href = "login.html";
+      window.location.href = "/login";
       return false;
     }
 
@@ -407,7 +407,7 @@
     const logoutBtn = dropdown.querySelector(".dropdown-logout");
     logoutBtn?.addEventListener("click", () => {
       clearSession();
-      window.location.href = "login.html";
+      window.location.href = "/login";
     });
   }
 

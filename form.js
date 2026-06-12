@@ -49,14 +49,14 @@ document.addEventListener("DOMContentLoaded", () => {
     campos.rol.innerHTML = '<option value="cliente">Cliente</option>';
     campos.rol.value = "cliente";
     campos.rol.disabled = true;
-    document.getElementById("linkMembers").href = "recepcionista.html";
-    document.getElementById("linkSettings").href = "ajustes-recepcion.html";
+    document.getElementById("linkMembers").href = "/recepcionista";
+    document.getElementById("linkSettings").href = "/ajustes-recepcion";
     formSubtitle.textContent = "Recepcion";
 
     GymApp.setupUserMenu({ anchorId: "receptionAvatar", avatarId: "receptionAvatar" });
     document.getElementById("btnReceptionLogout")?.addEventListener("click", () => {
       GymApp.clearSession();
-      window.location.href = "login.html";
+      window.location.href = "/login";
     });
   }
 

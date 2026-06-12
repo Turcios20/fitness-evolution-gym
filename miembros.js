@@ -453,7 +453,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function handleAction(action, member, rowElement) {
     if (action === "track") {
-      window.location.href = `entrenador-progreso.html?clientId=${member.id}`;
+      window.location.href = `/entrenador-progreso?clientId=${member.id}`;
       return;
     }
 
@@ -509,7 +509,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnLogout.addEventListener("click", () => {
     GymApp.clearSession();
-    window.location.href = "login.html";
+    window.location.href = "/login";
   });
 
   btnExport.addEventListener("click", () => {
