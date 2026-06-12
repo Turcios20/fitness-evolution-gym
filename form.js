@@ -50,8 +50,14 @@ document.addEventListener("DOMContentLoaded", () => {
     campos.rol.value = "cliente";
     campos.rol.disabled = true;
     document.getElementById("linkMembers").href = "recepcionista.html";
-    document.getElementById("linkSettings").href = "ajustes.html";
+    document.getElementById("linkSettings").href = "ajustes-recepcion.html";
     formSubtitle.textContent = "Recepcion";
+
+    GymApp.setupUserMenu({ anchorId: "receptionAvatar", avatarId: "receptionAvatar" });
+    document.getElementById("btnReceptionLogout")?.addEventListener("click", () => {
+      GymApp.clearSession();
+      window.location.href = "login.html";
+    });
   }
 
   function mostrarMensaje(texto, tipo) {

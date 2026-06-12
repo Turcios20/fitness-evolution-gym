@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agregar Cliente - FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="recepcion.css">
+</head>
+<body class="recepcion-page">
+  <div class="gym-bg"></div>
+
+  <div class="page">
+    <nav class="topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
+      </div>
+
+      <div class="nav-links">
+        <a href="recepcionista.html" class="nav-link" id="linkHome">
+          <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio">
+          Inicio
+        </a>
+        <a href="recepcionista.html" class="nav-link" id="linkMembers">
+          <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros">
+          Miembros
+        </a>
+        <a href="ajustes-recepcion.html" class="nav-link" id="linkSettings">
+          <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+          Ajustes
+        </a>
+      </div>
+
+      <div class="user-info">
+        <span class="role-tag">RECEPCION</span>
+        <div class="user-avatar" id="receptionAvatar">RG</div>
+        <button type="button" class="logout-btn" id="btnReceptionLogout">Salir</button>
+      </div>
+    </nav>
+
+    <main class="content">
+      <div class="fadein">
+        <a href="recepcionista.html" class="btn-back" id="btnBack">Volver</a>
+        <p class="welcome-sub" id="formSubtitle">Gestion de usuarios</p>
+        <h1 class="welcome-title" id="formTitle">Agregar nuevo usuario</h1>
+      </div>
+
+      <div class="form-card fadein-2">
+        <div id="form-msg" class="form-msg" style="display:none;"></div>
+
+        <div class="form-group">
+          <label class="form-label" for="nombre">Nombre completo</label>
+          <input class="input-field" type="text" id="nombre" name="nombre" placeholder="Ej: Jhoscar Manuel" autocomplete="off" required>
+          <span class="form-error" id="err-nombre"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="correo">Correo electronico</label>
+          <input class="input-field" type="email" id="correo" name="correo" placeholder="correo@ejemplo.com" autocomplete="off" required>
+          <span class="form-error" id="err-correo"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Contrasena</label>
+          <div class="password-field">
+            <input class="input-field" type="password" id="password" name="password" placeholder="Minimo 6 caracteres" required>
+            <button type="button" data-password-toggle="password"></button>
+          </div>
+          <span class="form-error" id="err-password"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirmPassword">Confirmar contrasena</label>
+          <div class="password-field">
+            <input class="input-field" type="password" id="confirmPassword" name="confirmPassword" placeholder="Repite la contrasena" required>
+            <button type="button" data-password-toggle="confirmPassword"></button>
+          </div>
+          <span class="form-error" id="err-confirm-password"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="rol">Rol</label>
+          <select class="input-field input-select" id="rol" name="rol" required>
+            <option value="cliente">Cliente</option>
+            <option value="recepcionista">Recepcionista</option>
+            <option value="entrenador">Entrenador</option>
+          </select>
+        </div>
+
+        <div class="form-group" data-membership-field>
+          <label class="form-label" for="plan">Plan de membresia</label>
+          <select class="input-field input-select" id="plan" name="plan">
+            <option value="">Seleccionar plan...</option>
+          </select>
+          <span class="form-error" id="err-plan"></span>
+        </div>
+
+        <div class="form-group" data-membership-field>
+          <label class="form-label" for="precio">Precio ($)</label>
+          <input class="input-field" type="number" id="precio" name="precio" placeholder="20" min="1">
+          <span class="form-error" id="err-precio"></span>
+        </div>
+
+        <div class="form-group" data-membership-field>
+          <label class="form-label" for="metodoPago">Metodo de pago</label>
+          <select class="input-field input-select" id="metodoPago" name="metodoPago">
+            <option value="Efectivo">Efectivo</option>
+            <option value="Tarjeta">Tarjeta</option>
+            <option value="Transferencia">Transferencia</option>
+          </select>
+          <span class="form-error" id="err-metodo-pago"></span>
+        </div>
+
+        <div class="form-group" data-membership-field data-trainer-field>
+          <label class="form-label" for="trainerId">Entrenador asignado</label>
+          <select class="input-field input-select" id="trainerId" name="trainerId">
+            <option value="">Sin asignar</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <a href="recepcionista.html" class="btn-cancel" id="btnCancel">Cancelar</a>
+          <button type="button" id="btn-guardar" class="btn-orange form-submit">Agregar usuario</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="form.js"></script>
+</body>
+</html>
