@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const session = GymApp.getSession();
   GymApp.setupUserMenu();
   const userAvatar         = document.getElementById("userAvatar");
-  const btnLogout          = document.getElementById("btnTrainerLogout");
   const clientsList        = document.getElementById("clientsList");
   const clientsCount       = document.getElementById("clientsCount");
   const detailsPlaceholder = document.getElementById("detailsPlaceholder");
@@ -50,11 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
     trainerAccountHint.textContent = `Cuenta activa: ${session.username || "sin correo"}`;
   }
 
-  // ── Logout ──
-  btnLogout.addEventListener("click", () => {
-    GymApp.clearSession();
-    window.location.href = "login.html";
-  });
 
   // ── Tabs ──
   tabRutinas.addEventListener("click", () => {

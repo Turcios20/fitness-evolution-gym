@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajustes - FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="entrenador.css">
+</head>
+<body class="entrenador-page">
+  <div class="gym-bg"></div>
+  <div class="page">
+
+    <nav class="topnav trainer-topnav">
+      <div class="logo">FITNESS <span>EVOLUTIONS GYM</span></div>
+      <div class="trainer-top-actions">
+        <div class="user-avatar-wrap" id="avatarWrap">
+          <span class="role-badge">COACH</span>
+          <div class="user-avatar" id="userAvatar">CO</div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="content trainer-content">
+      <div class="fadein">
+        <p class="welcome-sub">Panel de Instructor</p>
+        <h1 class="welcome-title">Preferencias de tu cuenta</h1>
+        <p class="trainer-account-hint">Puedes cambiar el tema de tu cuenta y tu contrasena desde esta pantalla.</p>
+      </div>
+
+      <div class="form-card fadein-2" style="margin-bottom:18px;">
+        <p class="coming-title" style="margin-bottom:10px;">Apariencia de tu cuenta</p>
+        <p class="coming-sub">Guarda el tema visual para que se mantenga en tus proximos ingresos.</p>
+
+        <div class="toggle-row" style="max-width:420px;margin:24px 0 0;text-align:left;">
+          <div class="toggle-info">
+            <div class="toggle-name">Modo oscuro</div>
+            <div class="toggle-desc">Si lo desactivas, tu cuenta usara el modo claro en todo el sistema.</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="trainerThemeToggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div style="margin-top:20px;display:flex;justify-content:flex-start;gap:12px;flex-wrap:wrap;">
+          <button class="btn-orange" id="btnSaveTrainerTheme" style="margin-top:0;display:inline-block;width:auto;padding:10px 28px;" type="button">
+            Guardar preferencia
+          </button>
+        </div>
+      </div>
+
+      <div class="form-card fadein-2">
+        <p class="coming-title" style="margin-bottom:10px;">Seguridad</p>
+        <p class="coming-sub">Actualiza tu contrasena personal sin depender del administrador.</p>
+
+        <div id="trainerPasswordMsg" class="form-msg" style="display:none;margin-top:18px;"></div>
+
+        <div class="form-group" style="margin-top:18px;">
+          <label class="form-label" for="trainerCurrentPassword">Contrasena actual</label>
+          <div class="password-field">
+            <input class="input-field" type="password" id="trainerCurrentPassword" placeholder="Tu contrasena actual" autocomplete="current-password">
+            <button type="button" data-password-toggle="trainerCurrentPassword"></button>
+          </div>
+          <span class="form-error" id="trainerErrCurrentPassword"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="trainerNewPassword">Nueva contrasena</label>
+          <div class="password-field">
+            <input class="input-field" type="password" id="trainerNewPassword" placeholder="Minimo 6 caracteres" autocomplete="new-password">
+            <button type="button" data-password-toggle="trainerNewPassword"></button>
+          </div>
+          <span class="form-error" id="trainerErrNewPassword"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="trainerConfirmPassword">Confirmar nueva contrasena</label>
+          <div class="password-field">
+            <input class="input-field" type="password" id="trainerConfirmPassword" placeholder="Repite la nueva contrasena" autocomplete="new-password">
+            <button type="button" data-password-toggle="trainerConfirmPassword"></button>
+          </div>
+          <span class="form-error" id="trainerErrConfirmPassword"></span>
+        </div>
+
+        <div class="form-actions" style="margin-top:10px;">
+          <button class="btn-orange form-submit" id="btnChangeTrainerPassword" type="button" style="width:auto;display:inline-flex;justify-content:center;padding:11px 24px;">
+            Actualizar contrasena
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <nav class="bottomnav">
+      <a href="entrenador.html" class="bot-link">
+        <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Panel">
+        Panel
+      </a>
+      <a href="entrenador-progreso.html" class="bot-link">
+        <img src="assets/exercise_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Progreso">
+        Progreso
+      </a>
+      <a href="ajustes-entrenador.html" class="bot-link active">
+        <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+        Ajustes
+      </a>
+    </nav>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="ajustes-entrenador.js"></script>
+</body>
+</html>

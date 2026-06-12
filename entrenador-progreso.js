@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     progressTitle.textContent = "Progreso de Alumnos";
     clientsPanelTitle.textContent = "Mis Clientes";
     progressHomeLink.href = "entrenador.html";
-    progressSettingsLink.href = "ajustes.html";
+    progressSettingsLink.href = "ajustes-entrenador.html";
     objectiveEditorHint.textContent = "Como entrenador asignado puedes actualizar el objetivo y subir una fotografia por registro.";
   }
 
