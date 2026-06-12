@@ -13,6 +13,17 @@ CREATE TABLE IF NOT EXISTS ajustes (
     UNIQUE KEY unique_ajuste (id_usuario, clave)
 );
 
+CREATE TABLE IF NOT EXISTS password_reset_codes (
+    id_usuario INT NOT NULL PRIMARY KEY,
+    code_hash CHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_password_reset_codes_expires (expires_at),
+    CONSTRAINT fk_password_reset_codes_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+);
+
 INSERT INTO usuarios (nombre_completo, correo, password, rol)
 SELECT 'Maria Recepcion', 'recepcion@fitnessgym.com', 'scrypt$0a042e96bed7a3b7b8723113ad691c46$2449c8bc631ecc355c5dd2aea03f41b289e7a81bd99fb01b4d594a6486271318043241bccace05f9ac15e4cdea01cbf5fd3f7a833a2e812ee3d9e8cbc332a39e', 'Recepcionista'
 WHERE NOT EXISTS (

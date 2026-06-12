@@ -39,7 +39,9 @@ const OBJECTIVE_MAX_LENGTH = 255;
 const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 const PHOTO_UPLOAD_ROOT = path.join(__dirname, "..", "uploads", "progress");
 const BRAND_LOGO_FILE = path.join(__dirname, "..", "assets", "image.png");
-const TEMP_PASSWORD_LENGTH = 10;
+const PASSWORD_RESET_CODE_LENGTH = 6;
+const PASSWORD_RESET_CODE_TTL_MINUTES = Math.max(1, Number(process.env.PASSWORD_RESET_CODE_TTL_MINUTES || 10) || 10);
+const PASSWORD_RESET_SECRET = createScopedAppSecret("password-reset");
 const PHOTO_MIME_EXTENSIONS = {
   "image/jpeg": "jpg",
   "image/png": "png"
@@ -140,6 +142,24 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.static(path.join(__dirname, ".."), { index: false, dotfiles: "ignore" }));
+
+function createScopedAppSecret(scope) {
+  if (process.env.AUTH_SECRET) return String(process.env.AUTH_SECRET);
+  if (process.env.DB_PASSWORD) return String(process.env.DB_PASSWORD);
+
+  return crypto
+    .createHash("sha256")
+    .update([
+      "fitness-evolution-gym",
+      scope,
+      process.cwd(),
+      process.env.DB_HOST || "",
+      process.env.DB_PORT || "",
+      process.env.DB_NAME || "",
+      process.env.DB_USER || ""
+    ].join("|"))
+    .digest("hex");
+}
 
 function normalizeStaticRequestPath(requestPath) {
   const normalized = path.posix.normalize(
@@ -673,9 +693,95 @@ async function buildInvoiceAttachment(payment) {
   };
 }
 
-function createTemporaryPassword(length = TEMP_PASSWORD_LENGTH) {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-  return Array.from({ length }, () => alphabet[crypto.randomInt(0, alphabet.length)]).join("");
+function createPasswordResetCode(length = PASSWORD_RESET_CODE_LENGTH) {
+  const max = 10 ** length;
+  return String(crypto.randomInt(0, max)).padStart(length, "0");
+}
+
+function hashPasswordResetCode(userId, code) {
+  return crypto
+    .createHmac("sha256", PASSWORD_RESET_SECRET)
+    .update(`${userId}:${String(code || "").trim()}`)
+    .digest("hex");
+}
+
+function getPasswordResetExpirationDate() {
+  return new Date(Date.now() + PASSWORD_RESET_CODE_TTL_MINUTES * 60 * 1000);
+}
+
+function isExpiredDate(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) || date.getTime() <= Date.now();
+}
+
+function safeHexEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left || ""), "hex");
+  const rightBuffer = Buffer.from(String(right || ""), "hex");
+
+  if (leftBuffer.length === 0 || rightBuffer.length === 0 || leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+async function deleteExpiredPasswordResetCodes(executor = pool) {
+  await executor.query(
+    `DELETE FROM password_reset_codes
+     WHERE expires_at <= NOW()`
+  );
+}
+
+async function deletePasswordResetCode(userId, executor = pool) {
+  await executor.query(
+    `DELETE FROM password_reset_codes
+     WHERE id_usuario = ?`,
+    [userId]
+  );
+}
+
+async function savePasswordResetCode(userId, code, executor = pool) {
+  const expiresAt = getPasswordResetExpirationDate();
+  const codeHash = hashPasswordResetCode(userId, code);
+
+  await executor.query(
+    `INSERT INTO password_reset_codes (id_usuario, code_hash, expires_at)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       code_hash = VALUES(code_hash),
+       expires_at = VALUES(expires_at),
+       created_at = CURRENT_TIMESTAMP,
+       updated_at = CURRENT_TIMESTAMP`,
+    [userId, codeHash, expiresAt]
+  );
+
+  return expiresAt;
+}
+
+async function verifyPasswordResetCode(userId, code, executor = pool) {
+  const [rows] = await executor.query(
+    `SELECT code_hash, expires_at
+     FROM password_reset_codes
+     WHERE id_usuario = ?
+     LIMIT 1`,
+    [userId]
+  );
+
+  if (!rows.length) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  if (isExpiredDate(rows[0].expires_at)) {
+    await deletePasswordResetCode(userId, executor);
+    return { ok: false, reason: "expired" };
+  }
+
+  const receivedHash = hashPasswordResetCode(userId, code);
+  if (!safeHexEqual(rows[0].code_hash, receivedHash)) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  return { ok: true };
 }
 
 async function buildMemberAccountCreatedEmail(member) {
@@ -819,7 +925,7 @@ function buildStaffReactivatedEmail(staffMember) {
   };
 }
 
-function buildForgotPasswordEmail(user, temporaryPassword) {
+function buildPasswordResetCodeEmail(user, resetCode) {
   const sender = buildNoReplySender();
   return {
     from: sender.from,
@@ -829,9 +935,10 @@ function buildForgotPasswordEmail(user, temporaryPassword) {
       `Hola ${user.name},`,
       "",
       "Recibimos una solicitud para recuperar tu acceso.",
-      `Tu nueva contraseña temporal es: ${temporaryPassword}`,
+      `Tu codigo de recuperacion es: ${resetCode}`,
       "",
-      "Usala para ingresar y cambiala inmediatamente desde tu pantalla de ajustes.",
+      `Este codigo vence en ${PASSWORD_RESET_CODE_TTL_MINUTES} minutos.`,
+      "Ingresa el codigo en la pagina de inicio de sesion y define una nueva contrasena.",
       "",
       "Equipo Fitness Evolutions Gym"
     ].join("\n")
@@ -881,9 +988,9 @@ async function sendStaffReactivatedNotification(staffMember) {
   }
 }
 
-async function sendForgotPasswordEmail(user, temporaryPassword) {
+async function sendPasswordResetCodeEmail(user, resetCode) {
   try {
-    return await sendMail(buildForgotPasswordEmail(user, temporaryPassword));
+    return await sendMail(buildPasswordResetCodeEmail(user, resetCode));
   } catch (error) {
     console.error("No se pudo enviar correo de recuperacion:", error.message);
     return false;
@@ -1080,6 +1187,29 @@ async function ensureUserAccountSchema() {
          ADD COLUMN estado_usuario ENUM('Activo', 'Inactivo') NOT NULL DEFAULT 'Activo' AFTER rol`
       );
     }
+  } finally {
+    connection.release();
+  }
+}
+
+async function ensurePasswordResetSchema() {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS password_reset_codes (
+        id_usuario INT NOT NULL PRIMARY KEY,
+        code_hash CHAR(64) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_password_reset_codes_expires (expires_at),
+        CONSTRAINT fk_password_reset_codes_usuario
+          FOREIGN KEY (id_usuario)
+          REFERENCES usuarios(id_usuario)
+          ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
   } finally {
     connection.release();
   }
@@ -3305,33 +3435,94 @@ app.post("/api/auth/forgot-password", async (req, res) => {
   }
 
   try {
+    await deleteExpiredPasswordResetCodes();
     const user = await getUserByUsername(email);
 
     if (user && user.estado_usuario !== "Inactivo") {
-      const temporaryPassword = createTemporaryPassword();
-      const sent = await sendForgotPasswordEmail({
+      const resetCode = createPasswordResetCode();
+      await savePasswordResetCode(user.id_usuario, resetCode);
+
+      const sent = await sendPasswordResetCodeEmail({
         name: user.nombre_completo,
         email: user.correo
-      }, temporaryPassword);
+      }, resetCode);
 
-      if (sent) {
-        const passwordHash = await hashPassword(temporaryPassword);
-
-        await pool.query(
-          `UPDATE usuarios
-           SET password = ?
-           WHERE id_usuario = ?`,
-          [passwordHash, user.id_usuario]
-        );
+      if (!sent) {
+        await deletePasswordResetCode(user.id_usuario);
       }
     }
 
     res.json({
       ok: true,
-      message: "Si el correo existe, se envio una contraseña temporal."
+      message: "Si el correo existe, enviamos un codigo de 6 digitos."
     });
   } catch (error) {
     res.status(500).json({ error: "Error procesando la recuperacion", detail: error.message });
+  }
+});
+
+app.post("/api/auth/reset-password", async (req, res) => {
+  const email = String(req.body?.email || "").trim();
+  const code = String(req.body?.code || "").trim();
+  const newPassword = String(req.body?.newPassword || "");
+
+  if (!email || !code || !newPassword) {
+    res.status(400).json({ error: "email, code y newPassword son requeridos" });
+    return;
+  }
+
+  if (!/^\d{6}$/.test(code)) {
+    res.status(400).json({ error: "El codigo debe tener 6 digitos" });
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    res.status(400).json({ error: "La nueva contrasena debe tener al menos 6 caracteres" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+
+  try {
+    await deleteExpiredPasswordResetCodes(connection);
+
+    const user = await getUserByUsername(email, connection);
+    if (!user || user.estado_usuario === "Inactivo") {
+      res.status(400).json({ error: "El codigo es invalido o ya vencio" });
+      return;
+    }
+
+    await connection.beginTransaction();
+
+    const verification = await verifyPasswordResetCode(user.id_usuario, code, connection);
+    if (!verification.ok) {
+      await connection.rollback();
+      res.status(400).json({ error: "El codigo es invalido o ya vencio" });
+      return;
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await connection.query(
+      `UPDATE usuarios
+       SET password = ?
+       WHERE id_usuario = ?`,
+      [passwordHash, user.id_usuario]
+    );
+    await deletePasswordResetCode(user.id_usuario, connection);
+
+    await connection.commit();
+
+    res.json({
+      ok: true,
+      message: "Contrasena actualizada correctamente. Ya puedes iniciar sesion."
+    });
+  } catch (error) {
+    try {
+      await connection.rollback();
+    } catch {}
+    res.status(500).json({ error: "Error actualizando la contrasena", detail: error.message });
+  } finally {
+    connection.release();
   }
 });
 
@@ -6343,6 +6534,7 @@ app.post("/api/fotos", authenticate, requireRoles("admin", "entrenador"), async 
 async function startServer() {
   try {
     await ensureUserAccountSchema();
+    await ensurePasswordResetSchema();
     await ensureTrainerFeatureSchema();
     await ensureFinanceFeatureSchema();
     await ensureGymConfigSchema();

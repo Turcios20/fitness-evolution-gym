@@ -87,6 +87,17 @@ CREATE TABLE IF NOT EXISTS ajustes (
     UNIQUE KEY unique_ajuste (id_usuario, clave)
 );
 
+CREATE TABLE IF NOT EXISTS password_reset_codes (
+    id_usuario INT NOT NULL PRIMARY KEY,
+    code_hash CHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_password_reset_codes_expires (expires_at),
+    CONSTRAINT fk_password_reset_codes_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS configuracion_gimnasio (
     id_config INT AUTO_INCREMENT PRIMARY KEY,
     clave VARCHAR(100) NOT NULL UNIQUE,
