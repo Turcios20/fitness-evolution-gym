@@ -15,10 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const avatarDropdown= document.getElementById("avatarDropdown");
   const dropdownName  = document.getElementById("dropdownName");
   const btnLogout     = document.getElementById("btnLogout");
-  const bars          = document.querySelectorAll(".bar-chart .bar");
   const bottomLinks   = document.querySelectorAll(".bottomnav .bot-link");
-  const verTodos      = document.querySelectorAll(".ver-todo");
-  const renewButton   = document.querySelector(".subs-card .btn-orange");
 
   // ── Genera iniciales a partir del nombre (ej: "Jhoscar Ochoa" → "JO") ──
   function getInitials(name) {
@@ -90,40 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "login.html";
   });
 
-  // ── Interacción de las barras del gráfico ──
-  bars.forEach((bar) => {
-    bar.style.cursor = "pointer";
-    bar.addEventListener("click", () => {
-      bars.forEach((b) => b.classList.remove("active"));
-      bar.classList.add("active");
-    });
-  });
-
   // Los links del nav inferior ya apuntan a sus páginas reales
-
-  verTodos.forEach((el) => {
-    el.style.cursor = "pointer";
-    el.addEventListener("click", () => GymApp.toast("Vista completa en construcción.", "info"));
-  });
-
-  // ── Renovar suscripción ──
-  if (renewButton) {
-    renewButton.addEventListener("click", async (e) => {
-      e.preventDefault();
-      try {
-        await GymApp.api("/api/subscription/renew", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: session.username }),
-        });
-        await loadClientData();
-        GymApp.toast("Suscripción renovada exitosamente.", "success");
-      } catch {
-        if (daysEl) daysEl.textContent = "30 días";
-        GymApp.toast("Renovación registrada (modo local).", "info");
-      }
-    });
-  }
 
   // ── Cargar rutinas del cliente ──
   const rutinasContainer = document.getElementById("rutinasContainer");

@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
   GymApp.setupUserMenu();
   const userAvatar = document.getElementById("userAvatar");
   const roleBadge = document.getElementById("roleBadge");
-  const btnLogout = document.getElementById("btnTrainerLogout");
   const clientsList = document.getElementById("clientsList");
   const clientsCount = document.getElementById("clientsCount");
   const clientsPanelTitle = document.getElementById("clientsPanelTitle");
@@ -80,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
     progressTitle.textContent = "Progreso de Alumnos";
     clientsPanelTitle.textContent = "Mis Clientes";
     progressHomeLink.href = "entrenador.html";
-    progressSettingsLink.href = "ajustes.html";
+    progressSettingsLink.href = "ajustes-entrenador.html";
     objectiveEditorHint.textContent = "Como entrenador asignado puedes actualizar el objetivo y subir una fotografia por registro.";
   }
 
@@ -334,10 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
   objectiveSelect.addEventListener("change", toggleObjectiveCustomField);
   saveObjectiveButton.addEventListener("click", saveObjective);
 
-  btnLogout.addEventListener("click", () => {
-    GymApp.clearSession();
-    window.location.href = "login.html";
-  });
 
   configurePageByRole();
   renderAvatar();

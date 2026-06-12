@@ -72,6 +72,16 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  if (session.role === "entrenador") {
+    window.location.href = "ajustes-entrenador.html";
+    return;
+  }
+
+  if (session.role === "recepcionista") {
+    window.location.href = "ajustes-recepcion.html";
+    return;
+  }
+
   GymApp.setupPasswordToggles(document);
 
   function escapeHtml(value) {

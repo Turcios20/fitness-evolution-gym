@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const session = GymApp.getSession();
   GymApp.setupUserMenu();
   const userAvatar         = document.getElementById("userAvatar");
-  const btnLogout          = document.getElementById("btnTrainerLogout");
   const clientsList        = document.getElementById("clientsList");
   const clientsCount       = document.getElementById("clientsCount");
   const detailsPlaceholder = document.getElementById("detailsPlaceholder");
@@ -50,11 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
     trainerAccountHint.textContent = `Cuenta activa: ${session.username || "sin correo"}`;
   }
 
-  // ── Logout ──
-  btnLogout.addEventListener("click", () => {
-    GymApp.clearSession();
-    window.location.href = "login.html";
-  });
 
   // ── Tabs ──
   tabRutinas.addEventListener("click", () => {
@@ -209,7 +203,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── Eliminar rutina ──
   async function deleteRutina(rutina) {
-    if (!confirm(`¿Eliminar la rutina "${rutina.nombre_ejercicio}"?`)) return;
+    const confirmed = await GymApp.confirm({
+      title: "Eliminar rutina",
+      message: `¿Seguro que quieres eliminar la rutina "${rutina.nombre_ejercicio}"?`,
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       const response = await fetch(`/api/routines/${rutina.id_rutina}`, {
         method: "DELETE",

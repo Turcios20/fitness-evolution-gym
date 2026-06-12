@@ -126,20 +126,80 @@ body[data-theme="light"] .user-avatar {
   color: var(--orange);
 }
 
-.trainer-logout {
-  border: 1px solid var(--border);
-  background: rgba(232, 124, 42, 0.12);
-  color: var(--text);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-family: inherit;
-  font-weight: 700;
+.user-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
   cursor: pointer;
 }
 
-.trainer-logout:hover {
-  border-color: var(--orange);
-  color: var(--orange);
+.avatar-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 180px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 0;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 0.18s, transform 0.18s;
+  z-index: 50;
+}
+
+.avatar-dropdown.open {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+
+.dropdown-name {
+  padding: 10px 16px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 4px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 16px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: "Rajdhani", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.dropdown-logout {
+  color: #e05555;
+}
+
+.dropdown-logout:hover {
+  background: rgba(224, 85, 85, 0.1);
+  color: #e87070;
 }
 
 .content {
@@ -494,10 +554,6 @@ body[data-theme="light"] .bot-link img {
   .user-avatar {
     width: 36px;
     height: 36px;
-  }
-
-  .trainer-logout {
-    padding: 8px 10px;
   }
 
   .bottomnav {

@@ -28,7 +28,6 @@ document.addEventListener("DOMContentLoaded", () => {
     cadera: document.getElementById("cadera"),
     brazos: document.getElementById("brazos"),
     piernas: document.getElementById("piernas"),
-    btnLogout: document.getElementById("btnLogout"),
     btnGuardar: document.getElementById("btnGuardar"),
     btnLimpiar: document.getElementById("btnLimpiar"),
     btnGuardarObjetivo: document.getElementById("btnGuardarObjetivo")
@@ -416,11 +415,6 @@ document.addEventListener("DOMContentLoaded", () => {
       input.value = "";
     }
   }
-
-  refs.btnLogout.addEventListener("click", () => {
-    window.GymApp.clearSession();
-    window.location.href = "login.html";
-  });
 
   refs.btnGuardar.addEventListener("click", saveMeasurement);
   refs.btnLimpiar.addEventListener("click", resetForm);

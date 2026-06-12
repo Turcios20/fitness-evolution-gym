@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
   GymApp.setupUserMenu();
   const welcomeTitle = document.getElementById("welcomeTitle");
   const userAvatar = document.getElementById("userAvatar");
-  const btnLogout = document.getElementById("btnTrainerLogout");
   const statTotalClients = document.getElementById("statTotalClients");
   const statActiveClients = document.getElementById("statActiveClients");
   const statExpiringSoon = document.getElementById("statExpiringSoon");
@@ -39,11 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (trainerAccountHint) {
     trainerAccountHint.textContent = `Cuenta activa: ${activeAccount}`;
   }
-
-  btnLogout.addEventListener("click", () => {
-    GymApp.clearSession();
-    window.location.href = "login.html";
-  });
 
   document.querySelectorAll(".tool-card").forEach((card) => {
     card.addEventListener("click", (event) => {

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajustes - FITNESS EVOLUTIONS GYM</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="recepcion.css">
+</head>
+<body class="recepcion-page">
+  <div class="gym-bg"></div>
+
+  <div class="page">
+    <nav class="topnav">
+      <div class="logo">
+        FITNESS
+        <span>EVOLUTIONS GYM</span>
+      </div>
+
+      <div class="nav-links">
+        <a href="recepcionista.html" class="nav-link">
+          <img src="assets/home_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Inicio">
+          Inicio
+        </a>
+        <a href="recepcionista.html#miembros" class="nav-link">
+          <img src="assets/group_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Miembros">
+          Miembros
+        </a>
+        <a href="ajustes-recepcion.html" class="nav-link active">
+          <img src="assets/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" alt="Ajustes">
+          Ajustes
+        </a>
+      </div>
+
+      <div class="user-info">
+        <span class="role-tag">RECEPCION</span>
+        <div class="user-avatar" id="receptionAvatar">RG</div>
+        <button type="button" class="logout-btn" id="btnReceptionLogout">Salir</button>
+      </div>
+    </nav>
+
+    <main style="max-width:1100px;margin:0 auto;padding:40px 40px 60px;width:100%;">
+      <div class="fadein">
+        <p class="welcome-sub">Recepcion</p>
+        <h1 class="welcome-title">Preferencias de tu cuenta</h1>
+        <p class="trainer-account-hint">Puedes cambiar el tema de tu cuenta y tu contrasena desde esta pantalla.</p>
+      </div>
+
+      <div class="form-card fadein-2" style="margin-bottom:18px;">
+        <p class="coming-title" style="margin-bottom:10px;">Apariencia de tu cuenta</p>
+        <p class="coming-sub">Guarda el tema visual para que se mantenga en tus proximos ingresos.</p>
+
+        <div class="toggle-row" style="max-width:420px;margin:24px 0 0;text-align:left;">
+          <div class="toggle-info">
+            <div class="toggle-name">Modo oscuro</div>
+            <div class="toggle-desc">Si lo desactivas, tu cuenta usara el modo claro en todo el sistema.</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="receptionThemeToggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div style="margin-top:20px;display:flex;justify-content:flex-start;gap:12px;flex-wrap:wrap;">
+          <button class="btn-orange" id="btnSaveReceptionTheme" style="margin-top:0;display:inline-block;width:auto;padding:10px 28px;" type="button">
+            Guardar preferencia
+          </button>
+        </div>
+      </div>
+
+      <div class="form-card fadein-2">
+        <p class="coming-title" style="margin-bottom:10px;">Seguridad</p>
+        <p class="coming-sub">Actualiza tu contrasena personal sin depender del administrador.</p>
+
+        <div id="receptionPasswordMsg" class="form-msg" style="display:none;margin-top:18px;"></div>
+
+        <div class="form-group" style="margin-top:18px;">
+          <label class="form-label" for="receptionCurrentPassword">Contrasena actual</label>
+          <div class="password-field">
+            <input class="input-field" type="password" id="receptionCurrentPassword" placeholder="Tu contrasena actual" autocomplete="current-password">
+            <button type="button" data-password-toggle="receptionCurrentPassword"></button>
+          </div>
+          <span class="form-error" id="receptionErrCurrentPassword"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="receptionNewPassword">Nueva contrasena</label>
+          <div class="password-field">
+            <input class="input-field" type="password" id="receptionNewPassword" placeholder="Minimo 6 caracteres" autocomplete="new-password">
+            <button type="button" data-password-toggle="receptionNewPassword"></button>
+          </div>
+          <span class="form-error" id="receptionErrNewPassword"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="receptionConfirmPassword">Confirmar nueva contrasena</label>
+          <div class="password-field">
+            <input class="input-field" type="password" id="receptionConfirmPassword" placeholder="Repite la nueva contrasena" autocomplete="new-password">
+            <button type="button" data-password-toggle="receptionConfirmPassword"></button>
+          </div>
+          <span class="form-error" id="receptionErrConfirmPassword"></span>
+        </div>
+
+        <div class="form-actions" style="margin-top:10px;">
+          <button class="btn-orange form-submit" id="btnChangeReceptionPassword" type="button" style="width:auto;display:inline-flex;justify-content:center;padding:11px 24px;">
+            Actualizar contrasena
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="ajustes-recepcion.js"></script>
+</body>
+</html>
