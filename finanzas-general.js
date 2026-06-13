@@ -183,7 +183,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         <article class="overview-module-card overview-module-card--income">
           <div class="overview-module-header">
             <div>
-              <span class="overview-module-kicker">HU-19</span>
               <h3 class="overview-module-title">Ingresos</h3>
             </div>
             <span class="overview-module-pill">Clientes</span>
@@ -214,7 +213,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         <article class="overview-module-card overview-module-card--staff">
           <div class="overview-module-header">
             <div>
-              <span class="overview-module-kicker">HU-20</span>
               <h3 class="overview-module-title">Pagos al personal</h3>
             </div>
             <span class="overview-module-pill">Interno</span>
@@ -245,7 +243,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         <article class="overview-module-card overview-module-card--expense">
           <div class="overview-module-header">
             <div>
-              <span class="overview-module-kicker">HU-21</span>
               <h3 class="overview-module-title">Egresos</h3>
             </div>
             <span class="overview-module-pill">Gastos</span>
