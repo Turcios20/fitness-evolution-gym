@@ -6,7 +6,7 @@
   <title>Rutinas y Planes — FITNESS EVOLUTIONS GYM</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="entrenador-progreso.css">
-  <link rel="stylesheet" href="entrenador-rutinas.css?v=20260612-tabs">
+  <link rel="stylesheet" href="entrenador-rutinas.css?v=20260612-classes">
   <link rel="stylesheet" href="entrenador.css">
   
 </head>
@@ -96,6 +96,26 @@
 
               <!-- SECCIÓN RESERVAS -->
               <div id="seccionReservas" class="hidden" hidden>
+                <p class="section-divider">Crear o editar clase</p>
+                <div class="rutina-form">
+                  <input type="text" id="inputClaseNombre" class="rutina-input" placeholder="Nombre de la clase *">
+                  <input type="text" id="inputClaseDescripcion" class="rutina-input" placeholder="Descripcion breve">
+                  <div class="form-row form-row-classes">
+                    <input type="datetime-local" id="inputClaseFechaHora" class="rutina-input">
+                    <input type="number" id="inputClaseDuracion" class="rutina-input" placeholder="Duracion (min)" min="1" value="60">
+                    <input type="number" id="inputClaseCapacidad" class="rutina-input" placeholder="Capacidad" min="1" value="20">
+                  </div>
+                  <div class="class-form-actions">
+                    <button type="button" id="btnGuardarClase" class="btn-guardar">Crear Clase</button>
+                    <button type="button" id="btnCancelarEdicionClase" class="btn-secondary hidden">Cancelar edicion</button>
+                  </div>
+                </div>
+                <p class="section-divider">Clases programadas</p>
+                <div class="measurements-list" id="listaClasesProgramadas"></div>
+                <div class="no-measurements hidden" id="noClasesProgramadas">
+                  <p>No hay clases futuras programadas aun</p>
+                </div>
+
                 <p class="section-divider">Asignar clase a este cliente</p>
                 <div class="rutina-form">
                   <select id="selectClase" class="rutina-input">
@@ -159,6 +179,6 @@
   </div>
 
   <script src="common.js"></script>
-  <script src="entrenador-rutinas.js?v=20260612-tabs"></script>
+  <script src="entrenador-rutinas.js?v=20260612-classes"></script>
 </body>
 </html>

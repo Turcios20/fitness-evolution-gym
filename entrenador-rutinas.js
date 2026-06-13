@@ -5,52 +5,111 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const session = GymApp.getSession();
   GymApp.setupUserMenu();
-  const userAvatar         = document.getElementById("userAvatar");
-  const clientsList        = document.getElementById("clientsList");
-  const clientsCount       = document.getElementById("clientsCount");
+
+  const userAvatar = document.getElementById("userAvatar");
+  const clientsList = document.getElementById("clientsList");
+  const clientsCount = document.getElementById("clientsCount");
   const detailsPlaceholder = document.getElementById("detailsPlaceholder");
-  const detailsContent     = document.getElementById("detailsContent");
-  const clientName         = document.getElementById("clientName");
-  const clientEmail        = document.getElementById("clientEmail");
-  const tabRutinas         = document.getElementById("tabRutinas");
-  const tabPlanes          = document.getElementById("tabPlanes");
-  const tabReservas        = document.getElementById("tabReservas");
-  const seccionRutinas     = document.getElementById("seccionRutinas");
-  const seccionPlanes      = document.getElementById("seccionPlanes");
-  const seccionReservas    = document.getElementById("seccionReservas");
-  const listaRutinas       = document.getElementById("listaRutinas");
-  const noRutinas          = document.getElementById("noRutinas");
-  const btnCrearRutina     = document.getElementById("btnCrearRutina");
-  const listaPlanes        = document.getElementById("listaPlanes");
-  const noPlanes           = document.getElementById("noPlanes");
-  const btnCrearPlan       = document.getElementById("btnCrearPlan");
+  const detailsContent = document.getElementById("detailsContent");
+  const clientName = document.getElementById("clientName");
+  const clientEmail = document.getElementById("clientEmail");
   const trainerAccountHint = document.getElementById("trainerAccountHint");
-  const selectClase        = document.getElementById("selectClase");
-  const btnAsignarClase    = document.getElementById("btnAsignarClase");
-  const listaReservas      = document.getElementById("listaReservas");
-  const noReservas         = document.getElementById("noReservas");
+
+  const tabRutinas = document.getElementById("tabRutinas");
+  const tabPlanes = document.getElementById("tabPlanes");
+  const tabReservas = document.getElementById("tabReservas");
+  const seccionRutinas = document.getElementById("seccionRutinas");
+  const seccionPlanes = document.getElementById("seccionPlanes");
+  const seccionReservas = document.getElementById("seccionReservas");
+
+  const listaRutinas = document.getElementById("listaRutinas");
+  const noRutinas = document.getElementById("noRutinas");
+  const btnCrearRutina = document.getElementById("btnCrearRutina");
+
+  const listaPlanes = document.getElementById("listaPlanes");
+  const noPlanes = document.getElementById("noPlanes");
+  const btnCrearPlan = document.getElementById("btnCrearPlan");
+
+  const inputClaseNombre = document.getElementById("inputClaseNombre");
+  const inputClaseDescripcion = document.getElementById("inputClaseDescripcion");
+  const inputClaseFechaHora = document.getElementById("inputClaseFechaHora");
+  const inputClaseDuracion = document.getElementById("inputClaseDuracion");
+  const inputClaseCapacidad = document.getElementById("inputClaseCapacidad");
+  const btnGuardarClase = document.getElementById("btnGuardarClase");
+  const btnCancelarEdicionClase = document.getElementById("btnCancelarEdicionClase");
+  const selectClase = document.getElementById("selectClase");
+  const btnAsignarClase = document.getElementById("btnAsignarClase");
+  const listaClasesProgramadas = document.getElementById("listaClasesProgramadas");
+  const noClasesProgramadas = document.getElementById("noClasesProgramadas");
+  const listaReservas = document.getElementById("listaReservas");
+  const noReservas = document.getElementById("noReservas");
 
   let selectedClientId = null;
   let editingRoutineId = null;
+  let editingClassId = null;
 
-  // ── Avatar ──
   function getInitials(name) {
-    return (name || "CO").trim().split(/\s+/)
-      .slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+    return (name || "CO")
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((word) => word[0].toUpperCase())
+      .join("");
   }
+
   function avatarColor(initials) {
-    const palette = ["#c45e1a","#7b2d8b","#1a6fbf","#1a8f5a","#8a4f0d","#3d5a9e"];
-    return palette[(initials.charCodeAt(0)+(initials.charCodeAt(1)||0))%palette.length];
+    const palette = ["#c45e1a", "#7b2d8b", "#1a6fbf", "#1a8f5a", "#8a4f0d", "#3d5a9e"];
+    return palette[(initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % palette.length];
   }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function parseDateValue(value) {
+    if (!value) return null;
+    const normalized = String(value).replace(" ", "T");
+    const date = new Date(normalized);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function formatDateTime(value) {
+    const date = parseDateValue(value);
+    if (!date) return "--";
+
+    return date.toLocaleString("es-SV", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  function toDateTimeLocalValue(value) {
+    const date = parseDateValue(value);
+    if (!date) return "";
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
   const displayName = session.name || session.displayName || "Coach";
-  userAvatar.textContent      = getInitials(displayName);
+  userAvatar.textContent = getInitials(displayName);
   userAvatar.style.background = avatarColor(getInitials(displayName));
   if (trainerAccountHint) {
     trainerAccountHint.textContent = `Cuenta activa: ${session.username || "sin correo"}`;
   }
 
-
-  // ── Tabs ──
   function activateTab(tabName) {
     const showRutinas = tabName === "rutinas";
     const showPlanes = tabName === "planes";
@@ -87,18 +146,65 @@ document.addEventListener("DOMContentLoaded", () => {
     if (selectedClientId) loadReservasAsignadas(selectedClientId);
   });
 
-  // ── Seleccionar cliente ──
+  function resetRutinaForm() {
+    editingRoutineId = null;
+    document.getElementById("inputEjercicio").value = "";
+    document.getElementById("inputDescripcion").value = "";
+    document.getElementById("selectDia").value = "";
+    document.getElementById("inputSeries").value = "";
+    document.getElementById("inputRepeticiones").value = "";
+    document.getElementById("inputDuracion").value = "";
+    btnCrearRutina.textContent = "Guardar Rutina";
+  }
+
+  function resetClassForm() {
+    editingClassId = null;
+    inputClaseNombre.value = "";
+    inputClaseDescripcion.value = "";
+    inputClaseFechaHora.value = "";
+    inputClaseDuracion.value = "60";
+    inputClaseCapacidad.value = "20";
+    btnGuardarClase.textContent = "Crear Clase";
+    btnCancelarEdicionClase.classList.add("hidden");
+  }
+
+  function startEditRutina(rutina) {
+    editingRoutineId = rutina.id_rutina;
+    document.getElementById("inputEjercicio").value = rutina.nombre_ejercicio || "";
+    document.getElementById("inputDescripcion").value = rutina.descripcion || "";
+    document.getElementById("selectDia").value = rutina.dia_semana || "";
+    document.getElementById("inputSeries").value = rutina.series ?? "";
+    document.getElementById("inputRepeticiones").value = rutina.repeticiones ?? "";
+    document.getElementById("inputDuracion").value = rutina.duracion ?? "";
+    btnCrearRutina.textContent = "Actualizar Rutina";
+    document.getElementById("inputEjercicio").scrollIntoView({ behavior: "smooth", block: "center" });
+    document.getElementById("inputEjercicio").focus();
+  }
+
+  function startEditClass(clase) {
+    editingClassId = clase.id_clase;
+    inputClaseNombre.value = clase.nombre || "";
+    inputClaseDescripcion.value = clase.descripcion || "";
+    inputClaseFechaHora.value = toDateTimeLocalValue(clase.fecha_hora);
+    inputClaseDuracion.value = String(clase.duracion_min || 60);
+    inputClaseCapacidad.value = String(clase.capacidad || 20);
+    btnGuardarClase.textContent = "Actualizar Clase";
+    btnCancelarEdicionClase.classList.remove("hidden");
+    inputClaseNombre.scrollIntoView({ behavior: "smooth", block: "center" });
+    inputClaseNombre.focus();
+  }
+
   function selectClient(client) {
-    document.querySelectorAll(".client-item")
-      .forEach((i) => i.classList.remove("active"));
-    document.querySelector(`[data-client-id="${client.id}"]`)
-      ?.classList.add("active");
-    selectedClientId        = client.id;
-    clientName.textContent  = client.name;
+    document.querySelectorAll(".client-item").forEach((item) => item.classList.remove("active"));
+    document.querySelector(`[data-client-id="${client.id}"]`)?.classList.add("active");
+
+    selectedClientId = client.id;
+    clientName.textContent = client.name;
     clientEmail.textContent = client.email;
     detailsPlaceholder.style.display = "none";
     detailsContent.classList.remove("hidden");
     resetRutinaForm();
+    resetClassForm();
 
     if (tabPlanes.classList.contains("active")) {
       loadPlanes(client.id);
@@ -114,164 +220,146 @@ document.addEventListener("DOMContentLoaded", () => {
     loadRutinas(client.id);
   }
 
-  // ── Render clientes ──
   function renderClients(clients) {
-    clientsList.innerHTML    = "";
+    clientsList.innerHTML = "";
     clientsCount.textContent = String(clients.length);
+
     if (!clients.length) {
       clientsList.innerHTML = `
         <div class="client-item-empty">
-          <p>No tienes clientes asignados aún</p>
+          <p>No tienes clientes asignados aun</p>
         </div>`;
       return;
     }
+
     clients.forEach((client) => {
       const item = document.createElement("div");
-      item.className        = "client-item";
+      item.className = "client-item";
       item.dataset.clientId = String(client.id);
       item.innerHTML = `
-        <p class="client-item-name">${client.name}</p>
-        <p class="client-item-email">${client.email}</p>`;
+        <p class="client-item-name">${escapeHtml(client.name)}</p>
+        <p class="client-item-email">${escapeHtml(client.email)}</p>`;
       item.addEventListener("click", () => selectClient(client));
       clientsList.appendChild(item);
     });
   }
 
-  // ── Cargar rutinas ──
   async function loadRutinas(clientId) {
     listaRutinas.innerHTML = `<div class="client-item-empty"><p>Cargando rutinas...</p></div>`;
     noRutinas.classList.add("hidden");
+
     try {
-      const data    = await GymApp.api(`/api/client/${clientId}/routines`);
+      const data = await GymApp.api(`/api/client/${clientId}/routines`);
       const rutinas = Array.isArray(data?.routines) ? data.routines : [];
       listaRutinas.innerHTML = "";
+
       if (!rutinas.length) {
         listaRutinas.classList.add("hidden");
         noRutinas.classList.remove("hidden");
         return;
       }
+
       listaRutinas.classList.remove("hidden");
-      rutinas.forEach((r) => {
+      rutinas.forEach((rutina) => {
         const card = document.createElement("div");
         card.className = "measurement-card";
         card.style.marginBottom = "16px";
         card.innerHTML = `
           <div class="measurement-date">
-            <span class="measurement-date-label">${r.dia_semana || "--"}</span>
-            <span class="measurement-date-value">${r.duracion ? r.duracion + " min" : "--"}</span>
+            <span class="measurement-date-label">${escapeHtml(rutina.dia_semana || "--")}</span>
+            <span class="measurement-date-value">${rutina.duracion ? `${rutina.duracion} min` : "--"}</span>
           </div>
           <div class="measurement-values">
             <div class="measure-item">
               <span class="measure-label">Ejercicio</span>
-              <span class="measure-value" style="font-size:13px;">${r.nombre_ejercicio}</span>
+              <span class="measure-value" style="font-size:13px;">${escapeHtml(rutina.nombre_ejercicio)}</span>
             </div>
             <div class="measure-item">
-              <span class="measure-label">Descripción</span>
-              <span class="measure-value" style="font-size:12px;">${r.descripcion || "--"}</span>
+              <span class="measure-label">Descripcion</span>
+              <span class="measure-value" style="font-size:12px;">${escapeHtml(rutina.descripcion || "--")}</span>
             </div>
             <div class="measure-item">
               <span class="measure-label">Series</span>
-              <span class="measure-value">${r.series ?? "--"}</span>
+              <span class="measure-value">${rutina.series ?? "--"}</span>
             </div>
             <div class="measure-item">
               <span class="measure-label">Reps</span>
-              <span class="measure-value">${r.repeticiones ?? "--"}</span>
+              <span class="measure-value">${rutina.repeticiones ?? "--"}</span>
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;">
             <button class="btn-orange btn-edit-rutina" style="flex:1;padding:8px;font-size:13px;">Editar</button>
             <button class="btn-orange btn-delete-rutina" style="flex:1;padding:8px;font-size:13px;background:#8b1a1a;">Eliminar</button>
           </div>`;
-        card.querySelector(".btn-edit-rutina").addEventListener("click", () => startEditRutina(r));
-        card.querySelector(".btn-delete-rutina").addEventListener("click", () => deleteRutina(r));
+
+        card.querySelector(".btn-edit-rutina").addEventListener("click", () => startEditRutina(rutina));
+        card.querySelector(".btn-delete-rutina").addEventListener("click", () => deleteRutina(rutina));
         listaRutinas.appendChild(card);
       });
-    } catch (e) {
+    } catch (error) {
       listaRutinas.innerHTML = `
         <div style="text-align:center;padding:20px;color:var(--text-dim);">
-          <p>Error: ${e.message}</p>
+          <p>Error: ${escapeHtml(error.message)}</p>
         </div>`;
     }
   }
 
-  // ── Reset form a modo "crear" ──
-  function resetRutinaForm() {
-    editingRoutineId = null;
-    document.getElementById("inputEjercicio").value    = "";
-    document.getElementById("inputDescripcion").value  = "";
-    document.getElementById("selectDia").value         = "";
-    document.getElementById("inputSeries").value       = "";
-    document.getElementById("inputRepeticiones").value = "";
-    document.getElementById("inputDuracion").value     = "";
-    btnCrearRutina.textContent = "Guardar Rutina";
-  }
-
-  // ── Cargar rutina existente al form para editar ──
-  function startEditRutina(rutina) {
-    editingRoutineId = rutina.id_rutina;
-    document.getElementById("inputEjercicio").value    = rutina.nombre_ejercicio || "";
-    document.getElementById("inputDescripcion").value  = rutina.descripcion || "";
-    document.getElementById("selectDia").value         = rutina.dia_semana || "";
-    document.getElementById("inputSeries").value       = rutina.series ?? "";
-    document.getElementById("inputRepeticiones").value = rutina.repeticiones ?? "";
-    document.getElementById("inputDuracion").value     = rutina.duracion ?? "";
-    btnCrearRutina.textContent = "Actualizar Rutina";
-    document.getElementById("inputEjercicio").scrollIntoView({ behavior: "smooth", block: "center" });
-    document.getElementById("inputEjercicio").focus();
-  }
-
-  // ── Eliminar rutina ──
   async function deleteRutina(rutina) {
     const confirmed = await GymApp.confirm({
       title: "Eliminar rutina",
-      message: `¿Seguro que quieres eliminar la rutina "${rutina.nombre_ejercicio}"?`,
+      message: `Seguro que quieres eliminar la rutina "${rutina.nombre_ejercicio}"?`,
       confirmText: "Eliminar",
       cancelText: "Cancelar",
-      danger: true,
+      danger: true
     });
+
     if (!confirmed) return;
+
     try {
       const response = await fetch(`/api/routines/${rutina.id_rutina}`, {
         method: "DELETE",
-        headers: { "Authorization": `Bearer ${session.token}` }
+        headers: { Authorization: `Bearer ${session.token}` }
       });
+
       if (!response.ok) {
         const err = await response.json();
         GymApp.toast(`Error: ${err.error}`, "error");
         return;
       }
-      GymApp.toast("Rutina eliminada ✓", "success");
-      if (editingRoutineId === rutina.id_rutina) resetRutinaForm();
+
+      GymApp.toast("Rutina eliminada correctamente", "success");
+      if (editingRoutineId === rutina.id_rutina) {
+        resetRutinaForm();
+      }
       loadRutinas(selectedClientId);
-    } catch (e) {
-      GymApp.toast(`Error: ${e.message}`, "error");
+    } catch (error) {
+      GymApp.toast(`Error: ${error.message}`, "error");
     }
   }
 
-  // ── Crear / Actualizar rutina ──
   btnCrearRutina.addEventListener("click", async () => {
     if (!selectedClientId) {
       GymApp.toast("Selecciona un cliente primero", "error");
       return;
     }
+
     const ejercicio = document.getElementById("inputEjercicio").value.trim();
     if (!ejercicio) {
       GymApp.toast("El nombre del ejercicio es obligatorio", "error");
       return;
     }
+
     const payload = {
-      ejercicio:    ejercicio,
-      descripcion:  document.getElementById("inputDescripcion").value.trim(),
-      dia:          document.getElementById("selectDia").value,
-      series:       Number(document.getElementById("inputSeries").value) || null,
+      ejercicio,
+      descripcion: document.getElementById("inputDescripcion").value.trim(),
+      dia: document.getElementById("selectDia").value,
+      series: Number(document.getElementById("inputSeries").value) || null,
       repeticiones: Number(document.getElementById("inputRepeticiones").value) || null,
-      duracion:     Number(document.getElementById("inputDuracion").value) || null,
+      duracion: Number(document.getElementById("inputDuracion").value) || null
     };
 
     const isEditing = editingRoutineId != null;
-    const url = isEditing
-      ? `/api/routines/${editingRoutineId}`
-      : `/api/client/${selectedClientId}/routines`;
+    const url = isEditing ? `/api/routines/${editingRoutineId}` : `/api/client/${selectedClientId}/routines`;
     const method = isEditing ? "PUT" : "POST";
 
     try {
@@ -279,175 +367,334 @@ document.addEventListener("DOMContentLoaded", () => {
         method,
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.token}`
+          Authorization: `Bearer ${session.token}`
         },
         body: JSON.stringify(payload)
       });
+
       if (!response.ok) {
         const err = await response.json();
         GymApp.toast(`Error: ${err.error}`, "error");
         return;
       }
-      GymApp.toast(isEditing ? "Rutina actualizada ✓" : "Rutina guardada ✓", "success");
+
+      GymApp.toast(isEditing ? "Rutina actualizada correctamente" : "Rutina guardada correctamente", "success");
       resetRutinaForm();
       loadRutinas(selectedClientId);
-    } catch (e) {
-      GymApp.toast(`Error: ${e.message}`, "error");
+    } catch (error) {
+      GymApp.toast(`Error: ${error.message}`, "error");
     }
   });
 
-  // ── Cargar planes ──
   async function loadPlanes(clientId) {
     listaPlanes.innerHTML = `<div class="client-item-empty"><p>Cargando planes...</p></div>`;
     noPlanes.classList.add("hidden");
+
     try {
-      const data   = await GymApp.api(`/api/client/${clientId}/plans`);
+      const data = await GymApp.api(`/api/client/${clientId}/plans`);
       const planes = Array.isArray(data?.plans) ? data.plans : [];
       listaPlanes.innerHTML = "";
+
       if (!planes.length) {
         listaPlanes.classList.add("hidden");
         noPlanes.classList.remove("hidden");
         return;
       }
+
       listaPlanes.classList.remove("hidden");
-      planes.forEach((p) => {
+      planes.forEach((plan) => {
         const card = document.createElement("div");
         card.className = "measurement-card";
         card.style.marginBottom = "16px";
         card.innerHTML = `
           <div class="measurement-date">
-            <span class="measurement-date-label">${p.nombre_plan}</span>
-            <span class="measurement-date-value" style="
-              padding:2px 10px;border-radius:20px;font-size:11px;
-              font-weight:700;background:rgba(31,143,79,0.18);color:var(--text);">
+            <span class="measurement-date-label">${escapeHtml(plan.nombre_plan)}</span>
+            <span class="measurement-date-value" style="padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(31,143,79,0.18);color:var(--text);">
               Activo
             </span>
           </div>
           <div class="measurement-values">
             <div class="measure-item">
               <span class="measure-label">Objetivo</span>
-              <span class="measure-value" style="font-size:12px;">${p.objetivo || "--"}</span>
+              <span class="measure-value" style="font-size:12px;">${escapeHtml(plan.objetivo || "--")}</span>
             </div>
             <div class="measure-item">
               <span class="measure-label">Inicio</span>
-              <span class="measure-value" style="font-size:12px;">${p.fecha_inicio ? new Date(p.fecha_inicio).toLocaleDateString("es-SV") : "--"}</span>
+              <span class="measure-value" style="font-size:12px;">${plan.fecha_inicio ? new Date(plan.fecha_inicio).toLocaleDateString("es-SV") : "--"}</span>
             </div>
             <div class="measure-item">
               <span class="measure-label">Fin</span>
-              <span class="measure-value" style="font-size:12px;">${p.fecha_fin ? new Date(p.fecha_fin).toLocaleDateString("es-SV") : "--"}</span>
+              <span class="measure-value" style="font-size:12px;">${plan.fecha_fin ? new Date(plan.fecha_fin).toLocaleDateString("es-SV") : "--"}</span>
             </div>
           </div>`;
         listaPlanes.appendChild(card);
       });
-    } catch (e) {
+    } catch (error) {
       listaPlanes.innerHTML = `
         <div style="text-align:center;padding:20px;color:var(--text-dim);">
-          <p>Error: ${e.message}</p>
+          <p>Error: ${escapeHtml(error.message)}</p>
         </div>`;
     }
   }
 
-  // ── Crear plan ──
   btnCrearPlan.addEventListener("click", async () => {
     if (!selectedClientId) {
       GymApp.toast("Selecciona un cliente primero", "error");
       return;
     }
-    const nombre      = document.getElementById("inputNombrePlan").value.trim();
+
+    const nombre = document.getElementById("inputNombrePlan").value.trim();
     const fechaInicio = document.getElementById("inputFechaInicio").value;
+
     if (!nombre) {
       GymApp.toast("El nombre del plan es obligatorio", "error");
       return;
     }
+
     if (!fechaInicio) {
       GymApp.toast("La fecha de inicio es obligatoria", "error");
       return;
     }
+
     try {
       const response = await fetch(`/api/client/${selectedClientId}/plans`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.token}`
+          Authorization: `Bearer ${session.token}`
         },
         body: JSON.stringify({
-          nombre:      nombre,
-          objetivo:    document.getElementById("inputObjetivo").value.trim(),
-          fechaInicio: fechaInicio,
-          fechaFin:    document.getElementById("inputFechaFin").value || null,
+          nombre,
+          objetivo: document.getElementById("inputObjetivo").value.trim(),
+          fechaInicio,
+          fechaFin: document.getElementById("inputFechaFin").value || null
         })
       });
+
       if (!response.ok) {
         const err = await response.json();
         GymApp.toast(`Error: ${err.error}`, "error");
         return;
       }
-      GymApp.toast("Plan guardado ✓", "success");
-      document.getElementById("inputNombrePlan").value  = "";
-      document.getElementById("inputObjetivo").value    = "";
+
+      GymApp.toast("Plan guardado correctamente", "success");
+      document.getElementById("inputNombrePlan").value = "";
+      document.getElementById("inputObjetivo").value = "";
       document.getElementById("inputFechaInicio").value = "";
-      document.getElementById("inputFechaFin").value    = "";
+      document.getElementById("inputFechaFin").value = "";
       loadPlanes(selectedClientId);
-    } catch (e) {
-      GymApp.toast(`Error: ${e.message}`, "error");
+    } catch (error) {
+      GymApp.toast(`Error: ${error.message}`, "error");
     }
   });
 
-  // ── Cargar clientes ──
-  async function loadTrainerClients() {
-    try {
-      const data    = await GymApp.api("/api/trainer/dashboard");
-      const clients = Array.isArray(data?.clients) ? data.clients : [];
-      renderClients(clients);
-      if (clients.length > 0) selectClient(clients[0]);
-    } catch (error) {
-      clientsList.innerHTML = `
-        <div class="client-item-empty">
-          <p>Error cargando clientes</p>
-          <p style="font-size:10px;margin-top:5px;">${error.message}</p>
+  function renderClasesProgramadas(clases) {
+    listaClasesProgramadas.innerHTML = "";
+
+    if (!clases.length) {
+      listaClasesProgramadas.classList.add("hidden");
+      noClasesProgramadas.classList.remove("hidden");
+      return;
+    }
+
+    listaClasesProgramadas.classList.remove("hidden");
+    noClasesProgramadas.classList.add("hidden");
+
+    clases.forEach((clase) => {
+      const reservedSlots = Math.max(0, Number(clase.capacidad || 0) - Number(clase.disponibles || 0));
+      const card = document.createElement("div");
+      card.className = "measurement-card";
+      card.style.marginBottom = "16px";
+      card.innerHTML = `
+        <div class="measurement-date">
+          <span class="measurement-date-label">${escapeHtml(clase.nombre)}</span>
+          <span class="measurement-date-value">${Number(clase.duracion_min || 0)} min</span>
+        </div>
+        <div class="class-card-meta">
+          <div class="measure-item">
+            <span class="measure-label">Fecha</span>
+            <span class="measure-value" style="font-size:13px;">${escapeHtml(formatDateTime(clase.fecha_hora))}</span>
+          </div>
+          <div class="measure-item">
+            <span class="measure-label">Entrenador</span>
+            <span class="measure-value" style="font-size:13px;">${escapeHtml(clase.entrenador || "--")}</span>
+          </div>
+          <div class="measure-item">
+            <span class="measure-label">Capacidad</span>
+            <span class="measure-value">${Number(clase.capacidad || 0)}</span>
+          </div>
+          <div class="measure-item">
+            <span class="measure-label">Reservadas</span>
+            <span class="measure-value">${reservedSlots}</span>
+          </div>
+        </div>
+        ${clase.descripcion ? `<p class="class-card-desc">${escapeHtml(clase.descripcion)}</p>` : ""}
+        <div class="class-card-actions">
+          <button class="btn-orange btn-editar-clase">Editar</button>
+          <button class="btn-orange btn-eliminar-clase" style="background:#8b1a1a;">Eliminar</button>
         </div>`;
+
+      card.querySelector(".btn-editar-clase").addEventListener("click", () => startEditClass(clase));
+      card.querySelector(".btn-eliminar-clase").addEventListener("click", () => deleteClass(clase));
+      listaClasesProgramadas.appendChild(card);
+    });
+  }
+
+  async function loadClasesDisponibles() {
+    selectClase.innerHTML = `<option value="">Cargando clases disponibles...</option>`;
+    listaClasesProgramadas.innerHTML = `<div class="client-item-empty"><p>Cargando clases...</p></div>`;
+    listaClasesProgramadas.classList.remove("hidden");
+    noClasesProgramadas.classList.add("hidden");
+
+    try {
+      const data = await GymApp.api("/api/clases");
+      const clases = Array.isArray(data?.clases) ? data.clases : [];
+
+      if (!clases.length) {
+        selectClase.innerHTML = `<option value="">No hay clases disponibles</option>`;
+        renderClasesProgramadas([]);
+        return;
+      }
+
+      selectClase.innerHTML = `<option value="">Selecciona una clase...</option>` +
+        clases.map((clase) => {
+          const sinCupo = Number(clase.disponibles || 0) <= 0;
+          return `<option value="${clase.id_clase}" ${sinCupo ? "disabled" : ""}>${escapeHtml(clase.nombre)} - ${escapeHtml(formatDateTime(clase.fecha_hora))} ${sinCupo ? "(sin cupos)" : `(${clase.disponibles} cupos)`}</option>`;
+        }).join("");
+
+      renderClasesProgramadas(clases);
+    } catch (error) {
+      selectClase.innerHTML = `<option value="">Error cargando clases</option>`;
+      listaClasesProgramadas.innerHTML = `
+        <div style="text-align:center;padding:20px;color:var(--text-dim);">
+          <p>Error: ${escapeHtml(error.message)}</p>
+        </div>`;
+    }
+  }
+
+  btnCancelarEdicionClase.addEventListener("click", () => {
+    resetClassForm();
+  });
+
+  btnGuardarClase.addEventListener("click", async () => {
+    const nombre = inputClaseNombre.value.trim();
+    const fechaHora = inputClaseFechaHora.value;
+    const duracionMin = Number(inputClaseDuracion.value);
+    const capacidad = Number(inputClaseCapacidad.value);
+
+    if (!nombre) {
+      GymApp.toast("El nombre de la clase es obligatorio", "error");
+      return;
+    }
+
+    if (!fechaHora) {
+      GymApp.toast("La fecha y hora es obligatoria", "error");
+      return;
+    }
+
+    if (!Number.isInteger(duracionMin) || duracionMin <= 0) {
+      GymApp.toast("La duracion debe ser mayor a 0", "error");
+      return;
+    }
+
+    if (!Number.isInteger(capacidad) || capacidad <= 0) {
+      GymApp.toast("La capacidad debe ser mayor a 0", "error");
+      return;
+    }
+
+    const payload = {
+      nombre,
+      descripcion: inputClaseDescripcion.value.trim(),
+      fechaHora,
+      duracionMin,
+      capacidad
+    };
+
+    const isEditing = editingClassId != null;
+    const url = isEditing ? `/api/clases/${editingClassId}` : "/api/clases";
+    const method = isEditing ? "PUT" : "POST";
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        GymApp.toast(`Error: ${err.error}`, "error");
+        return;
+      }
+
+      GymApp.toast(isEditing ? "Clase actualizada correctamente" : "Clase creada correctamente", "success");
+      resetClassForm();
+      await loadClasesDisponibles();
+      if (selectedClientId) {
+        loadReservasAsignadas(selectedClientId);
+      }
+    } catch (error) {
+      GymApp.toast(`Error: ${error.message}`, "error");
+    }
+  });
+
+  async function deleteClass(clase) {
+    const confirmed = await GymApp.confirm({
+      title: "Eliminar clase",
+      message: `Se eliminara la clase "${clase.nombre}".`,
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      danger: true
+    });
+
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/clases/${clase.id_clase}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session.token}` }
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        GymApp.toast(`Error: ${err.error}`, "error");
+        return;
+      }
+
+      GymApp.toast("Clase eliminada correctamente", "success");
+      if (editingClassId === clase.id_clase) {
+        resetClassForm();
+      }
+      await loadClasesDisponibles();
+      if (selectedClientId) {
+        loadReservasAsignadas(selectedClientId);
+      }
+    } catch (error) {
       GymApp.toast(`Error: ${error.message}`, "error");
     }
   }
 
-  // ── RESERVAS: cargar clases disponibles en el dropdown ──
-  async function loadClasesDisponibles() {
-    selectClase.innerHTML = `<option value="">Cargando clases disponibles...</option>`;
-    try {
-      const data = await GymApp.api("/api/clases");
-      const clases = Array.isArray(data?.clases) ? data.clases : [];
-      if (!clases.length) {
-        selectClase.innerHTML = `<option value="">No hay clases disponibles</option>`;
-        return;
-      }
-      const fmt = (d) => new Date(d).toLocaleString("es-SV", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-      selectClase.innerHTML = `<option value="">Selecciona una clase...</option>` +
-        clases.map((c) => {
-          const sinCupo = c.disponibles <= 0;
-          return `<option value="${c.id_clase}" ${sinCupo ? "disabled" : ""}>${c.nombre} — ${fmt(c.fecha_hora)} ${sinCupo ? "(sin cupos)" : `(${c.disponibles} cupos)`}</option>`;
-        }).join("");
-    } catch (e) {
-      selectClase.innerHTML = `<option value="">Error cargando clases</option>`;
-    }
-  }
-
-  // ── RESERVAS: cargar reservas ya asignadas al cliente ──
   async function loadReservasAsignadas(clientId) {
     listaReservas.innerHTML = `<div class="client-item-empty"><p>Cargando reservas...</p></div>`;
     noReservas.classList.add("hidden");
+
     try {
       const data = await GymApp.api(`/api/clases/mis-reservas?clientId=${encodeURIComponent(clientId)}`);
-      const reservas = (data?.reservas || []).filter((r) => r.estado === "Confirmada");
+      const reservas = (data?.reservas || []).filter((reserva) => reserva.estado === "Confirmada");
       listaReservas.innerHTML = "";
+
       if (!reservas.length) {
         listaReservas.classList.add("hidden");
         noReservas.classList.remove("hidden");
         return;
       }
+
       listaReservas.classList.remove("hidden");
-      const fmt = (d) => new Date(d).toLocaleString("es-SV", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-      reservas.forEach((r) => {
-        const reservationSource = r.asignada_por != null
+      reservas.forEach((reserva) => {
+        const reservationSource = reserva.asignada_por != null
           ? "Asignada por entrenador"
           : "Reservada por cliente";
         const card = document.createElement("div");
@@ -455,17 +702,17 @@ document.addEventListener("DOMContentLoaded", () => {
         card.style.marginBottom = "16px";
         card.innerHTML = `
           <div class="measurement-date">
-            <span class="measurement-date-label">${r.nombre}</span>
-            <span class="measurement-date-value">${r.duracion_min} min</span>
+            <span class="measurement-date-label">${escapeHtml(reserva.nombre)}</span>
+            <span class="measurement-date-value">${Number(reserva.duracion_min || 0)} min</span>
           </div>
           <div class="measurement-values">
             <div class="measure-item">
               <span class="measure-label">Fecha</span>
-              <span class="measure-value" style="font-size:13px;">${fmt(r.fecha_hora)}</span>
+              <span class="measure-value" style="font-size:13px;">${escapeHtml(formatDateTime(reserva.fecha_hora))}</span>
             </div>
             <div class="measure-item">
               <span class="measure-label">Entrenador</span>
-              <span class="measure-value" style="font-size:13px;">${r.entrenador || "--"}</span>
+              <span class="measure-value" style="font-size:13px;">${escapeHtml(reserva.entrenador || "--")}</span>
             </div>
             <div class="measure-item">
               <span class="measure-label">Origen</span>
@@ -475,72 +722,108 @@ document.addEventListener("DOMContentLoaded", () => {
           <div style="display:flex;margin-top:10px;">
             <button class="btn-orange btn-cancelar-reserva" style="flex:1;padding:8px;font-size:13px;background:#8b1a1a;">Cancelar reserva</button>
           </div>`;
-        card.querySelector(".btn-cancelar-reserva").addEventListener("click", () => cancelarReservaAsignada(r));
+
+        card.querySelector(".btn-cancelar-reserva").addEventListener("click", () => cancelarReservaAsignada(reserva));
         listaReservas.appendChild(card);
       });
-    } catch (e) {
-      listaReservas.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-dim);"><p>Error: ${e.message}</p></div>`;
+    } catch (error) {
+      listaReservas.innerHTML = `
+        <div style="text-align:center;padding:20px;color:var(--text-dim);">
+          <p>Error: ${escapeHtml(error.message)}</p>
+        </div>`;
     }
   }
 
-  // ── RESERVAS: asignar clase ──
   btnAsignarClase.addEventListener("click", async () => {
     if (!selectedClientId) {
       GymApp.toast("Selecciona un cliente primero", "error");
       return;
     }
+
     const claseId = Number(selectClase.value);
     if (!Number.isFinite(claseId) || claseId <= 0) {
       GymApp.toast("Selecciona una clase", "error");
       return;
     }
+
     try {
       const response = await fetch(`/api/trainer/clientes/${selectedClientId}/reservas`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.token}`
+          Authorization: `Bearer ${session.token}`
         },
         body: JSON.stringify({ claseId })
       });
+
       if (!response.ok) {
         const err = await response.json();
         GymApp.toast(`Error: ${err.error}`, "error");
         return;
       }
-      GymApp.toast("Reserva asignada ✓", "success");
+
+      GymApp.toast("Reserva asignada correctamente", "success");
       selectClase.value = "";
       loadClasesDisponibles();
       loadReservasAsignadas(selectedClientId);
-    } catch (e) {
-      GymApp.toast(`Error: ${e.message}`, "error");
+    } catch (error) {
+      GymApp.toast(`Error: ${error.message}`, "error");
     }
   });
 
-  // ── RESERVAS: cancelar reserva asignada (solo entrenador) ──
   async function cancelarReservaAsignada(reserva) {
-    if (!confirm(`¿Cancelar la reserva de "${reserva.nombre}"?`)) return;
+    const confirmed = await GymApp.confirm({
+      title: "Cancelar reserva",
+      message: `Se cancelara la reserva de "${reserva.nombre}".`,
+      confirmText: "Cancelar reserva",
+      cancelText: "Volver",
+      danger: true
+    });
+
+    if (!confirmed) return;
+
     try {
       const response = await fetch(`/api/trainer/reservas/${reserva.id_reserva}`, {
         method: "DELETE",
-        headers: { "Authorization": `Bearer ${session.token}` }
+        headers: { Authorization: `Bearer ${session.token}` }
       });
+
       if (!response.ok) {
         const err = await response.json();
         GymApp.toast(`Error: ${err.error}`, "error");
         return;
       }
-      GymApp.toast("Reserva cancelada ✓", "success");
+
+      GymApp.toast("Reserva cancelada correctamente", "success");
       loadReservasAsignadas(selectedClientId);
       loadClasesDisponibles();
-    } catch (e) {
-      GymApp.toast(`Error: ${e.message}`, "error");
+    } catch (error) {
+      GymApp.toast(`Error: ${error.message}`, "error");
+    }
+  }
+
+  async function loadTrainerClients() {
+    try {
+      const data = await GymApp.api("/api/trainer/dashboard");
+      const clients = Array.isArray(data?.clients) ? data.clients : [];
+      renderClients(clients);
+      if (clients.length > 0) {
+        selectClient(clients[0]);
+      }
+    } catch (error) {
+      clientsList.innerHTML = `
+        <div class="client-item-empty">
+          <p>Error cargando clientes</p>
+          <p style="font-size:10px;margin-top:5px;">${escapeHtml(error.message)}</p>
+        </div>`;
+      GymApp.toast(`Error: ${error.message}`, "error");
     }
   }
 
   activateTab("rutinas");
+  resetClassForm();
 
-  loadTrainerClients().catch((e) => {
-    GymApp.toast(`Error inicial: ${e.message}`, "error");
+  loadTrainerClients().catch((error) => {
+    GymApp.toast(`Error inicial: ${error.message}`, "error");
   });
 });

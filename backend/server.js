@@ -30,6 +30,7 @@ const MAIL_FROM_NO_REPLY = String(
 const MAIL_FROM_ADMIN = String(
   process.env.MAIL_FROM_ADMIN || "Fitness Evolutions Gym Admin <admin@fitness-evolution-gym.pro>"
 ).trim();
+const GYM_TIMEZONE = String(process.env.GYM_TIMEZONE || "America/El_Salvador").trim() || "America/El_Salvador";
 const SMTP_AUTH_EMAIL = extractEmailAddress(SMTP_USER);
 const SMTP_FROM_EMAIL = extractEmailAddress(SMTP_FROM);
 const MAIL_FROM_NO_REPLY_EMAIL = extractEmailAddress(MAIL_FROM_NO_REPLY);
@@ -106,6 +107,16 @@ const EXPENSE_CATEGORIES = [
 let adminMailFallbackWarned = false;
 const YEAR_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 const ISO_DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+const GYM_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: GYM_TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23"
+});
 const BLOCKED_STATIC_PREFIXES = ["/backend", "/node_modules", "/.git"];
 const BLOCKED_STATIC_EXACT_PATHS = new Set([
   "/.env",
@@ -2878,6 +2889,111 @@ function parseDateOnly(value, label) {
   }
 
   return parsed;
+}
+
+function parseDateTimeLocal(value, label) {
+  const input = String(value || "").trim();
+  if (!input) return null;
+
+  const normalized = input.replace(" ", "T");
+  const match = normalized.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/
+  );
+
+  if (!match) {
+    throw createHttpError(400, `${label} invalida`);
+  }
+
+  const [, yearValue, monthValue, dayValue, hourValue, minuteValue, secondValue = "00"] = match;
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const hour = Number(hourValue);
+  const minute = Number(minuteValue);
+  const second = Number(secondValue);
+  const parsed = new Date(year, month - 1, day, hour, minute, second);
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day ||
+    parsed.getHours() !== hour ||
+    parsed.getMinutes() !== minute ||
+    parsed.getSeconds() !== second
+  ) {
+    throw createHttpError(400, `${label} invalida`);
+  }
+
+  return parsed;
+}
+
+function formatDateTimeLocal(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  const second = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+}
+
+function getCurrentGymDateTimeSql(date = new Date()) {
+  const parts = Object.fromEntries(
+    GYM_DATE_TIME_FORMATTER
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value])
+  );
+
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
+function normalizeClassPayload(body, auth) {
+  const nombre = String(body?.nombre || "").trim();
+  const descripcion = String(body?.descripcion || "").trim();
+  const fechaHora = parseDateTimeLocal(body?.fechaHora, "Fecha y hora");
+  const duracionMin = Number(body?.duracionMin ?? 60);
+  const capacidad = Number(body?.capacidad ?? 20);
+
+  if (!nombre) {
+    throw createHttpError(400, "El nombre de la clase es obligatorio");
+  }
+
+  if (nombre.length > 100) {
+    throw createHttpError(400, "El nombre de la clase es demasiado largo");
+  }
+
+  if (descripcion.length > 1000) {
+    throw createHttpError(400, "La descripcion es demasiado larga");
+  }
+
+  if (!fechaHora) {
+    throw createHttpError(400, "La fecha y hora es obligatoria");
+  }
+
+  const fechaHoraSql = formatDateTimeLocal(fechaHora);
+  if (fechaHoraSql <= getCurrentGymDateTimeSql()) {
+    throw createHttpError(400, "La clase debe programarse en una fecha futura");
+  }
+
+  if (!Number.isInteger(duracionMin) || duracionMin <= 0 || duracionMin > 1440) {
+    throw createHttpError(400, "La duracion debe ser un numero valido entre 1 y 1440");
+  }
+
+  if (!Number.isInteger(capacidad) || capacidad <= 0 || capacidad > 500) {
+    throw createHttpError(400, "La capacidad debe ser un numero valido entre 1 y 500");
+  }
+
+  return {
+    nombre,
+    descripcion: descripcion || null,
+    entrenador: String(auth?.name || auth?.username || "Coach").trim(),
+    fechaHora,
+    fechaHoraSql,
+    duracionMin,
+    capacidad
+  };
 }
 
 function addDays(date, amount) {
@@ -6218,11 +6334,14 @@ app.get("/api/admin/finance/summary", authenticate, requireRoles("admin"), async
 
 app.get("/api/clases", authenticate, async (_req, res) => {
   try {
+    const currentGymDateTime = getCurrentGymDateTimeSql();
     const [rows] = await pool.query(
       `SELECT id_clase, nombre, descripcion, entrenador, fecha_hora, duracion_min, capacidad, disponibles
        FROM clases
-       WHERE fecha_hora >= NOW()
+       WHERE fecha_hora >= ?
        ORDER BY fecha_hora ASC`
+      ,
+      [currentGymDateTime]
     );
     res.json({ clases: rows });
   } catch (error) {
@@ -6269,6 +6388,202 @@ app.get("/api/clases/mis-reservas", authenticate, async (req, res) => {
   }
 });
 
+app.post("/api/clases", authenticate, requireRoles("entrenador", "admin"), async (req, res) => {
+  try {
+    const draft = normalizeClassPayload(req.body, req.auth);
+    const [result] = await pool.query(
+      `INSERT INTO clases
+         (nombre, descripcion, entrenador, fecha_hora, duracion_min, capacidad, disponibles)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        draft.nombre,
+        draft.descripcion,
+        draft.entrenador,
+        draft.fechaHoraSql,
+        draft.duracionMin,
+        draft.capacidad,
+        draft.capacidad
+      ]
+    );
+
+    res.status(201).json({
+      ok: true,
+      clase: {
+        id_clase: result.insertId,
+        nombre: draft.nombre,
+        descripcion: draft.descripcion,
+        entrenador: draft.entrenador,
+        fecha_hora: draft.fechaHoraSql,
+        duracion_min: draft.duracionMin,
+        capacidad: draft.capacidad,
+        disponibles: draft.capacidad
+      },
+      message: "Clase creada correctamente"
+    });
+  } catch (error) {
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
+    res.status(500).json({ error: "Error creando clase", detail: error.message });
+  }
+});
+
+app.put("/api/clases/:id", authenticate, requireRoles("entrenador", "admin"), async (req, res) => {
+  const claseId = Number(req.params.id);
+  if (!Number.isFinite(claseId)) {
+    res.status(400).json({ error: "id de clase invalido" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const draft = normalizeClassPayload(req.body, req.auth);
+    const [classRows] = await connection.query(
+      `SELECT id_clase
+       FROM clases
+       WHERE id_clase = ?
+       LIMIT 1
+       FOR UPDATE`,
+      [claseId]
+    );
+
+    if (!classRows.length) {
+      await connection.rollback();
+      res.status(404).json({ error: "Clase no encontrada" });
+      return;
+    }
+
+    const [[reservationCount]] = await connection.query(
+      `SELECT COUNT(*) AS total
+       FROM reservas
+       WHERE id_clase = ?
+         AND estado = 'Confirmada'`,
+      [claseId]
+    );
+    const reservedSlots = Number(reservationCount?.total || 0);
+
+    if (draft.capacidad < reservedSlots) {
+      await connection.rollback();
+      res.status(409).json({
+        error: `La clase ya tiene ${reservedSlots} reserva(s) confirmada(s) y no puedes bajar la capacidad por debajo de ese valor`
+      });
+      return;
+    }
+
+    const disponibles = draft.capacidad - reservedSlots;
+
+    await connection.query(
+      `UPDATE clases
+       SET nombre = ?,
+           descripcion = ?,
+           entrenador = ?,
+           fecha_hora = ?,
+           duracion_min = ?,
+           capacidad = ?,
+           disponibles = ?
+       WHERE id_clase = ?`,
+      [
+        draft.nombre,
+        draft.descripcion,
+        draft.entrenador,
+        draft.fechaHoraSql,
+        draft.duracionMin,
+        draft.capacidad,
+        disponibles,
+        claseId
+      ]
+    );
+
+    await connection.commit();
+    res.json({
+      ok: true,
+      clase: {
+        id_clase: claseId,
+        nombre: draft.nombre,
+        descripcion: draft.descripcion,
+        entrenador: draft.entrenador,
+        fecha_hora: draft.fechaHoraSql,
+        duracion_min: draft.duracionMin,
+        capacidad: draft.capacidad,
+        disponibles
+      },
+      message: "Clase actualizada correctamente"
+    });
+  } catch (error) {
+    await connection.rollback();
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
+    res.status(500).json({ error: "Error actualizando clase", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+app.delete("/api/clases/:id", authenticate, requireRoles("entrenador", "admin"), async (req, res) => {
+  const claseId = Number(req.params.id);
+  if (!Number.isFinite(claseId)) {
+    res.status(400).json({ error: "id de clase invalido" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [classRows] = await connection.query(
+      `SELECT id_clase
+       FROM clases
+       WHERE id_clase = ?
+       LIMIT 1
+       FOR UPDATE`,
+      [claseId]
+    );
+
+    if (!classRows.length) {
+      await connection.rollback();
+      res.status(404).json({ error: "Clase no encontrada" });
+      return;
+    }
+
+    const [[reservationCount]] = await connection.query(
+      `SELECT COUNT(*) AS total
+       FROM reservas
+       WHERE id_clase = ?
+         AND estado = 'Confirmada'`,
+      [claseId]
+    );
+
+    if (Number(reservationCount?.total || 0) > 0) {
+      await connection.rollback();
+      res.status(409).json({
+        error: "No puedes eliminar una clase con reservas confirmadas. Cancela las reservas primero."
+      });
+      return;
+    }
+
+    await connection.query("DELETE FROM clases WHERE id_clase = ?", [claseId]);
+    await connection.commit();
+    res.json({ ok: true, message: "Clase eliminada correctamente" });
+  } catch (error) {
+    await connection.rollback();
+    if (error.status) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+
+    res.status(500).json({ error: "Error eliminando clase", detail: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
 // Entrenador/admin asigna una clase a un cliente
 app.post(
   "/api/trainer/clientes/:clientId/reservas",
@@ -6277,6 +6592,7 @@ app.post(
   async (req, res) => {
     const clientId = Number(req.params.clientId);
     const claseId = Number(req.body?.claseId);
+    const currentGymDateTime = getCurrentGymDateTimeSql();
 
     if (!Number.isFinite(clientId) || !Number.isFinite(claseId)) {
       return res.status(400).json({ error: "clientId y claseId requeridos" });
@@ -6289,12 +6605,17 @@ app.post(
       await ensureClientEvolutionManagementAccess(clientId, req.auth, connection);
 
       const [claseRows] = await connection.query(
-        "SELECT id_clase, disponibles FROM clases WHERE id_clase = ? LIMIT 1 FOR UPDATE",
-        [claseId]
+        `SELECT id_clase, disponibles
+         FROM clases
+         WHERE id_clase = ?
+           AND fecha_hora >= ?
+         LIMIT 1
+         FOR UPDATE`,
+        [claseId, currentGymDateTime]
       );
       if (!claseRows.length) {
         await connection.rollback();
-        return res.status(404).json({ error: "Clase no encontrada" });
+        return res.status(404).json({ error: "Clase no encontrada o ya finalizo" });
       }
       if (claseRows[0].disponibles <= 0) {
         await connection.rollback();
@@ -6386,6 +6707,7 @@ app.delete(
 
 app.post("/api/clases/:id/reservar", authenticate, requireRoles("cliente"), async (req, res) => {
   const claseId = Number(req.params.id);
+  const currentGymDateTime = getCurrentGymDateTimeSql();
 
   if (!Number.isFinite(claseId)) {
     res.status(400).json({ error: "id de clase requerido" });
@@ -6397,12 +6719,17 @@ app.post("/api/clases/:id/reservar", authenticate, requireRoles("cliente"), asyn
     await connection.beginTransaction();
 
     const [claseRows] = await connection.query(
-      "SELECT id_clase, disponibles FROM clases WHERE id_clase = ? LIMIT 1 FOR UPDATE",
-      [claseId]
+      `SELECT id_clase, disponibles
+       FROM clases
+       WHERE id_clase = ?
+         AND fecha_hora >= ?
+       LIMIT 1
+       FOR UPDATE`,
+      [claseId, currentGymDateTime]
     );
     if (!claseRows.length) {
       await connection.rollback();
-      res.status(404).json({ error: "Clase no encontrada" });
+      res.status(404).json({ error: "Clase no encontrada o ya finalizo" });
       return;
     }
     if (claseRows[0].disponibles <= 0) {

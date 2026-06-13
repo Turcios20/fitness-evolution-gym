@@ -73,6 +73,55 @@
       margin-top: 4px;
     }
     .btn-guardar:hover { background: var(--orange-dark); }
+    .btn-secondary {
+      width: 100%;
+      padding: 11px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-secondary:hover {
+      border-color: var(--orange);
+      background: rgba(232,124,42,0.08);
+    }
+    .class-form-actions {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .class-form-actions .btn-guardar,
+    .class-form-actions .btn-secondary {
+      flex: 1;
+      margin-top: 0;
+    }
+    .class-card-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .class-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .class-card-actions .btn-orange {
+      flex: 1;
+      padding: 8px;
+      font-size: 13px;
+    }
+    .class-card-desc {
+      margin: 0;
+      color: var(--text-dim);
+      font-size: 13px;
+      line-height: 1.4;
+    }
     .section-divider {
       font-size: 11px;
       font-weight: 700;
@@ -94,4 +143,7 @@
     }
     @media (max-width: 600px) {
       .form-row { grid-template-columns: 1fr; }
+      .class-form-actions,
+      .class-card-actions,
+      .class-card-meta { grid-template-columns: 1fr; display: grid; }
     }
