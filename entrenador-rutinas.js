@@ -51,31 +51,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   // ── Tabs ──
+  function activateTab(tabName) {
+    const showRutinas = tabName === "rutinas";
+    const showPlanes = tabName === "planes";
+    const showReservas = tabName === "reservas";
+
+    tabRutinas.classList.toggle("active", showRutinas);
+    tabPlanes.classList.toggle("active", showPlanes);
+    tabReservas.classList.toggle("active", showReservas);
+
+    seccionRutinas.classList.toggle("hidden", !showRutinas);
+    seccionPlanes.classList.toggle("hidden", !showPlanes);
+    seccionReservas.classList.toggle("hidden", !showReservas);
+  }
+
   tabRutinas.addEventListener("click", () => {
-    tabRutinas.classList.add("active");
-    tabPlanes.classList.remove("active");
-    seccionRutinas.classList.remove("hidden");
-    seccionPlanes.classList.add("hidden");
+    activateTab("rutinas");
     if (selectedClientId) loadRutinas(selectedClientId);
   });
 
   tabPlanes.addEventListener("click", () => {
-    tabPlanes.classList.add("active");
-    tabRutinas.classList.remove("active");
-    tabReservas.classList.remove("active");
-    seccionPlanes.classList.remove("hidden");
-    seccionRutinas.classList.add("hidden");
-    seccionReservas.classList.add("hidden");
+    activateTab("planes");
     if (selectedClientId) loadPlanes(selectedClientId);
   });
 
   tabReservas.addEventListener("click", () => {
-    tabReservas.classList.add("active");
-    tabRutinas.classList.remove("active");
-    tabPlanes.classList.remove("active");
-    seccionReservas.classList.remove("hidden");
-    seccionRutinas.classList.add("hidden");
-    seccionPlanes.classList.add("hidden");
+    activateTab("reservas");
     loadClasesDisponibles();
     if (selectedClientId) loadReservasAsignadas(selectedClientId);
   });
@@ -92,6 +93,18 @@ document.addEventListener("DOMContentLoaded", () => {
     detailsPlaceholder.style.display = "none";
     detailsContent.classList.remove("hidden");
     resetRutinaForm();
+
+    if (tabPlanes.classList.contains("active")) {
+      loadPlanes(client.id);
+      return;
+    }
+
+    if (tabReservas.classList.contains("active")) {
+      loadClasesDisponibles();
+      loadReservasAsignadas(client.id);
+      return;
+    }
+
     loadRutinas(client.id);
   }
 
@@ -418,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
     noReservas.classList.add("hidden");
     try {
       const data = await GymApp.api(`/api/clases/mis-reservas?clientId=${encodeURIComponent(clientId)}`);
-      const reservas = (data?.reservas || []).filter((r) => r.estado === "Confirmada" && r.asignada_por != null);
+      const reservas = (data?.reservas || []).filter((r) => r.estado === "Confirmada");
       listaReservas.innerHTML = "";
       if (!reservas.length) {
         listaReservas.classList.add("hidden");
@@ -428,6 +441,9 @@ document.addEventListener("DOMContentLoaded", () => {
       listaReservas.classList.remove("hidden");
       const fmt = (d) => new Date(d).toLocaleString("es-SV", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
       reservas.forEach((r) => {
+        const reservationSource = r.asignada_por != null
+          ? "Asignada por entrenador"
+          : "Reservada por cliente";
         const card = document.createElement("div");
         card.className = "measurement-card";
         card.style.marginBottom = "16px";
@@ -444,6 +460,10 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="measure-item">
               <span class="measure-label">Entrenador</span>
               <span class="measure-value" style="font-size:13px;">${r.entrenador || "--"}</span>
+            </div>
+            <div class="measure-item">
+              <span class="measure-label">Origen</span>
+              <span class="measure-value" style="font-size:13px;">${reservationSource}</span>
             </div>
           </div>
           <div style="display:flex;margin-top:10px;">

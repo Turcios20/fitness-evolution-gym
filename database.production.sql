@@ -381,8 +381,10 @@ CREATE TABLE IF NOT EXISTS reservas (
     id_clase INT NOT NULL,
     fecha_reserva TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado ENUM('Confirmada', 'Cancelada') DEFAULT 'Confirmada',
+    asignada_por INT NULL,
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
     FOREIGN KEY (id_clase)   REFERENCES clases(id_clase)   ON DELETE CASCADE,
+    FOREIGN KEY (asignada_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
     UNIQUE KEY uq_reserva (id_usuario, id_clase)
 );
 

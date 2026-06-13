@@ -1114,6 +1114,21 @@ async function indexExists(executor, tableName, indexName) {
   return rows.length > 0;
 }
 
+async function foreignKeyExists(executor, tableName, constraintName) {
+  const [rows] = await executor.query(
+    `SELECT 1
+     FROM information_schema.TABLE_CONSTRAINTS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND CONSTRAINT_NAME = ?
+       AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+     LIMIT 1`,
+    [tableName, constraintName]
+  );
+
+  return rows.length > 0;
+}
+
 async function getUserById(userId, executor = pool) {
   const [rows] = await executor.query(
     `SELECT id_usuario, nombre_completo, correo, password, rol, estado_usuario, id_entrenador_asignado
@@ -1536,6 +1551,143 @@ async function ensureGymScheduleSchema() {
           day.activo
         ])]
       );
+    }
+
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS clases (
+        id_clase INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL,
+        descripcion TEXT,
+        entrenador VARCHAR(100),
+        fecha_hora DATETIME NOT NULL,
+        duracion_min INT DEFAULT 60,
+        capacidad INT DEFAULT 20,
+        disponibles INT DEFAULT 20
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    if (!await columnExists(connection, "clases", "descripcion")) {
+      await connection.query(
+        `ALTER TABLE clases
+         ADD COLUMN descripcion TEXT NULL AFTER nombre`
+      );
+    }
+
+    if (!await columnExists(connection, "clases", "entrenador")) {
+      await connection.query(
+        `ALTER TABLE clases
+         ADD COLUMN entrenador VARCHAR(100) NULL AFTER descripcion`
+      );
+    }
+
+    if (!await columnExists(connection, "clases", "duracion_min")) {
+      await connection.query(
+        `ALTER TABLE clases
+         ADD COLUMN duracion_min INT NOT NULL DEFAULT 60 AFTER fecha_hora`
+      );
+    }
+
+    if (!await columnExists(connection, "clases", "capacidad")) {
+      await connection.query(
+        `ALTER TABLE clases
+         ADD COLUMN capacidad INT NOT NULL DEFAULT 20 AFTER duracion_min`
+      );
+    }
+
+    if (!await columnExists(connection, "clases", "disponibles")) {
+      await connection.query(
+        `ALTER TABLE clases
+         ADD COLUMN disponibles INT NOT NULL DEFAULT 20 AFTER capacidad`
+      );
+    }
+
+    await connection.query(
+      `UPDATE clases
+       SET capacidad = 20
+       WHERE capacidad IS NULL OR capacidad <= 0`
+    );
+
+    await connection.query(
+      `UPDATE clases
+       SET disponibles = CASE
+         WHEN disponibles IS NULL THEN capacidad
+         WHEN disponibles < 0 THEN 0
+         WHEN disponibles > capacidad THEN capacidad
+         ELSE disponibles
+       END`
+    );
+
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS reservas (
+        id_reserva INT AUTO_INCREMENT PRIMARY KEY,
+        id_usuario INT NOT NULL,
+        id_clase INT NOT NULL,
+        fecha_reserva TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        estado ENUM('Confirmada', 'Cancelada') NOT NULL DEFAULT 'Confirmada',
+        asignada_por INT NULL,
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+        FOREIGN KEY (id_clase) REFERENCES clases(id_clase) ON DELETE CASCADE,
+        CONSTRAINT fk_reservas_asignada_por
+          FOREIGN KEY (asignada_por)
+          REFERENCES usuarios(id_usuario)
+          ON DELETE SET NULL,
+        UNIQUE KEY uq_reserva (id_usuario, id_clase)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    if (!await columnExists(connection, "reservas", "fecha_reserva")) {
+      await connection.query(
+        `ALTER TABLE reservas
+         ADD COLUMN fecha_reserva TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP AFTER id_clase`
+      );
+    }
+
+    if (!await columnExists(connection, "reservas", "estado")) {
+      await connection.query(
+        `ALTER TABLE reservas
+         ADD COLUMN estado ENUM('Confirmada', 'Cancelada') NOT NULL DEFAULT 'Confirmada' AFTER fecha_reserva`
+      );
+    }
+
+    if (!await columnExists(connection, "reservas", "asignada_por")) {
+      await connection.query(
+        `ALTER TABLE reservas
+         ADD COLUMN asignada_por INT NULL AFTER estado`
+      );
+    }
+
+    await connection.query(
+      `UPDATE reservas
+       SET estado = 'Confirmada'
+       WHERE estado IS NULL`
+    );
+
+    if (!await indexExists(connection, "reservas", "uq_reserva")) {
+      try {
+        await connection.query(
+          `CREATE UNIQUE INDEX uq_reserva
+           ON reservas (id_usuario, id_clase)`
+        );
+      } catch (error) {
+        console.warn("No se pudo crear el indice uq_reserva automaticamente:", error.message);
+      }
+    }
+
+    if (
+      await columnExists(connection, "reservas", "asignada_por") &&
+      !await foreignKeyExists(connection, "reservas", "fk_reservas_asignada_por")
+    ) {
+      try {
+        await connection.query(
+          `ALTER TABLE reservas
+           ADD CONSTRAINT fk_reservas_asignada_por
+           FOREIGN KEY (asignada_por)
+           REFERENCES usuarios(id_usuario)
+           ON DELETE SET NULL`
+        );
+      } catch (error) {
+        console.warn("No se pudo crear la llave foranea fk_reservas_asignada_por automaticamente:", error.message);
+      }
     }
   } finally {
     connection.release();
