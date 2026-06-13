@@ -59,10 +59,16 @@ document.addEventListener("DOMContentLoaded", () => {
     tabRutinas.classList.toggle("active", showRutinas);
     tabPlanes.classList.toggle("active", showPlanes);
     tabReservas.classList.toggle("active", showReservas);
+    tabRutinas.setAttribute("aria-selected", showRutinas ? "true" : "false");
+    tabPlanes.setAttribute("aria-selected", showPlanes ? "true" : "false");
+    tabReservas.setAttribute("aria-selected", showReservas ? "true" : "false");
 
     seccionRutinas.classList.toggle("hidden", !showRutinas);
     seccionPlanes.classList.toggle("hidden", !showPlanes);
     seccionReservas.classList.toggle("hidden", !showReservas);
+    seccionRutinas.hidden = !showRutinas;
+    seccionPlanes.hidden = !showPlanes;
+    seccionReservas.hidden = !showReservas;
   }
 
   tabRutinas.addEventListener("click", () => {
@@ -531,6 +537,8 @@ document.addEventListener("DOMContentLoaded", () => {
       GymApp.toast(`Error: ${e.message}`, "error");
     }
   }
+
+  activateTab("rutinas");
 
   loadTrainerClients().catch((e) => {
     GymApp.toast(`Error inicial: ${e.message}`, "error");

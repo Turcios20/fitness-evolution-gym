@@ -1,4 +1,7 @@
- .rutinas-tabs {
+.hidden {
+      display: none !important;
+    }
+    .rutinas-tabs {
       display: flex;
       gap: 8px;
       margin-bottom: 20px;

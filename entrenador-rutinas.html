@@ -6,7 +6,7 @@
   <title>Rutinas y Planes — FITNESS EVOLUTIONS GYM</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="entrenador-progreso.css">
-  <link rel="stylesheet" href="entrenador-rutinas.css">
+  <link rel="stylesheet" href="entrenador-rutinas.css?v=20260612-tabs">
   <link rel="stylesheet" href="entrenador.css">
   
 </head>
@@ -59,9 +59,9 @@
 
               <!-- Tabs -->
               <div class="rutinas-tabs">
-                <button type="button" class="tab-btn active" id="tabRutinas">Rutinas</button>
-                <button type="button" class="tab-btn" id="tabPlanes">Planes</button>
-                <button type="button" class="tab-btn" id="tabReservas">Reservas</button>
+                <button type="button" class="tab-btn active" id="tabRutinas" aria-selected="true">Rutinas</button>
+                <button type="button" class="tab-btn" id="tabPlanes" aria-selected="false">Planes</button>
+                <button type="button" class="tab-btn" id="tabReservas" aria-selected="false">Reservas</button>
               </div>
 
               <!-- SECCIÓN RUTINAS -->
@@ -95,7 +95,7 @@
               </div>
 
               <!-- SECCIÓN RESERVAS -->
-              <div id="seccionReservas" class="hidden">
+              <div id="seccionReservas" class="hidden" hidden>
                 <p class="section-divider">Asignar clase a este cliente</p>
                 <div class="rutina-form">
                   <select id="selectClase" class="rutina-input">
@@ -111,7 +111,7 @@
               </div>
 
               <!-- SECCIÓN PLANES -->
-              <div id="seccionPlanes" class="hidden">
+              <div id="seccionPlanes" class="hidden" hidden>
                 <p class="section-divider">Nuevo Plan de Entrenamiento</p>
                 <div class="rutina-form">
                   <input type="text" id="inputNombrePlan" class="rutina-input" placeholder="Nombre del plan *">
@@ -159,6 +159,6 @@
   </div>
 
   <script src="common.js"></script>
-  <script src="entrenador-rutinas.js"></script>
+  <script src="entrenador-rutinas.js?v=20260612-tabs"></script>
 </body>
 </html>
